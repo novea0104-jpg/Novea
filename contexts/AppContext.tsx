@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Novel } from "@/types/models";
-import { novelsApi, chaptersApi, userDataApi } from "@/utils/api";
+import { supabase } from "@/utils/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface AppContextType {
@@ -17,7 +17,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, updateCoinBalance } = useAuth();
   const [novels, setNovels] = useState<Novel[]>([]);
   const [followingNovels, setFollowingNovels] = useState<Set<string>>(new Set());
   const [unlockedChapters, setUnlockedChapters] = useState<Set<string>>(new Set());
@@ -31,22 +31,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       setIsLoading(true);
 
-      // Fetch novels first (store temporarily)
-      const novelsData = await novelsApi.getAll();
+      // Fetch all novels from Supabase
+      const { data: novelsData, error: novelsError } = await supabase
+        .from('novels')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (novelsError) throw novelsError;
 
       // Fetch user-specific data if logged in
       let followingSet = new Set<string>();
       let unlockedSet = new Set<string>();
 
       if (user) {
-        const [followingIds, unlockedIds] = await Promise.all([
-          userDataApi.getFollowing(),
-          userDataApi.getUnlockedChapters(),
-        ]);
-        
-        followingSet = new Set(followingIds.map(id => id.toString()));
-        unlockedSet = new Set(unlockedIds.map(id => id.toString()));
-        
+        // Fetch following novels
+        const { data: followingData, error: followingError } = await supabase
+          .from('following_novels')
+          .select('novel_id')
+          .eq('user_id', parseInt(user.id));
+
+        if (!followingError && followingData) {
+          followingSet = new Set(followingData.map(f => f.novel_id.toString()));
+        }
+
+        // Fetch unlocked chapters
+        const { data: unlockedData, error: unlockedError } = await supabase
+          .from('unlocked_chapters')
+          .select('chapter_id')
+          .eq('user_id', parseInt(user.id));
+
+        if (!unlockedError && unlockedData) {
+          unlockedSet = new Set(unlockedData.map(u => u.chapter_id.toString()));
+        }
+
         setFollowingNovels(followingSet);
         setUnlockedChapters(unlockedSet);
       } else {
@@ -55,25 +72,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUnlockedChapters(new Set());
       }
 
-      // NOW convert novels with FRESH following data
-      const convertedNovels: Novel[] = novelsData.map(apiNovel => ({
+      // Convert API novels to app Novel type
+      const convertedNovels: Novel[] = (novelsData || []).map(apiNovel => ({
         id: apiNovel.id.toString(),
         title: apiNovel.title,
         author: apiNovel.author,
-        authorId: apiNovel.authorId?.toString() || "0",
-        coverImage: apiNovel.coverUrl || "",
+        authorId: apiNovel.author_id?.toString() || "0",
+        coverImage: apiNovel.cover_url || "",
         genre: apiNovel.genre as any,
         status: apiNovel.status as any,
         rating: apiNovel.rating,
-        ratingCount: 0, // Backend doesn't track this yet
+        ratingCount: 0,
         synopsis: apiNovel.description,
-        coinPerChapter: apiNovel.chapterPrice,
-        totalChapters: apiNovel.totalChapters,
-        followers: apiNovel.totalReads,
-        isFollowing: followingSet.has(apiNovel.id.toString()), // Use FRESH data
-        lastUpdated: new Date(), // Backend doesn't expose timestamps yet
+        coinPerChapter: apiNovel.chapter_price,
+        totalChapters: apiNovel.total_chapters,
+        followers: apiNovel.total_reads,
+        isFollowing: followingSet.has(apiNovel.id.toString()),
+        lastUpdated: new Date(apiNovel.updated_at),
       }));
-      
+
       setNovels(convertedNovels);
     } catch (error) {
       console.error("Error loading app data:", error);
@@ -87,23 +104,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw new Error("Must be logged in to follow novels");
     }
 
-    // Call backend API
-    const result = await novelsApi.follow(parseInt(novelId, 10));
-    
-    // Update following Set
+    const isCurrentlyFollowing = followingNovels.has(novelId);
     const newFollowing = new Set(followingNovels);
-    if (result.isFollowing) {
-      newFollowing.add(novelId);
-    } else {
+
+    if (isCurrentlyFollowing) {
+      // Unfollow: Delete from following_novels
+      const { error } = await supabase
+        .from('following_novels')
+        .delete()
+        .eq('user_id', parseInt(user.id))
+        .eq('novel_id', parseInt(novelId));
+
+      if (error) throw error;
       newFollowing.delete(novelId);
+    } else {
+      // Follow: Insert into following_novels
+      const { error } = await supabase
+        .from('following_novels')
+        .insert({
+          user_id: parseInt(user.id),
+          novel_id: parseInt(novelId),
+        });
+
+      if (error) throw error;
+      newFollowing.add(novelId);
     }
+
     setFollowingNovels(newFollowing);
 
     // Update novels array to reflect new isFollowing state
-    setNovels(prevNovels => 
-      prevNovels.map(novel => 
-        novel.id === novelId 
-          ? { ...novel, isFollowing: result.isFollowing }
+    setNovels(prevNovels =>
+      prevNovels.map(novel =>
+        novel.id === novelId
+          ? { ...novel, isFollowing: !isCurrentlyFollowing }
           : novel
       )
     );
@@ -115,23 +148,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      // Call backend API to unlock chapter (deducts coins and returns new balance)
-      const result = await chaptersApi.unlock(parseInt(chapterId, 10));
-      
+      // Check if user has enough coins
+      if (user.coinBalance < cost) {
+        throw new Error("Insufficient coins");
+      }
+
+      // Get chapter info to find novel_id
+      const { data: chapter, error: chapterError } = await supabase
+        .from('chapters')
+        .select('novel_id')
+        .eq('id', parseInt(chapterId))
+        .single();
+
+      if (chapterError) throw chapterError;
+
+      // Insert into unlocked_chapters
+      const { error: unlockError } = await supabase
+        .from('unlocked_chapters')
+        .insert({
+          user_id: parseInt(user.id),
+          chapter_id: parseInt(chapterId),
+          novel_id: chapter.novel_id,
+        });
+
+      if (unlockError) throw unlockError;
+
+      // Record coin transaction
+      await supabase
+        .from('coin_transactions')
+        .insert({
+          user_id: parseInt(user.id),
+          amount: -cost,
+          type: 'unlock_chapter',
+          description: `Unlocked chapter ${chapterId}`,
+          metadata: { chapter_id: parseInt(chapterId) },
+        });
+
+      // Update coin balance (this will update both Supabase and local state)
+      await updateCoinBalance(-cost);
+
       // Update local unlocked chapters
       const newUnlocked = new Set(unlockedChapters);
       newUnlocked.add(chapterId);
       setUnlockedChapters(newUnlocked);
-      
-      // Note: Backend already deducted coins
-      // AuthContext should refresh user data via GET /auth/me to get new balance
-      // Or we could call updateCoinBalance(-cost) here, but that would double-deduct
-      // For now, rely on AuthContext refreshing when needed
-      
+
       return true;
     } catch (error) {
       console.error("Error unlocking chapter:", error);
-      return false;
+      throw error;
     }
   }
 
