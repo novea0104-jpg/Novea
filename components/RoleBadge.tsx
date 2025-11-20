@@ -16,7 +16,7 @@ const ROLE_CONFIG = {
   pembaca: {
     label: 'Pembaca',
     icon: 'book-open' as const,
-    gradient: ['#64748B', '#475569'] as const,
+    gradient: ['#10B981', '#059669'] as const,
   },
   penulis: {
     label: 'Penulis',
@@ -26,17 +26,17 @@ const ROLE_CONFIG = {
   editor: {
     label: 'Editor',
     icon: 'edit-3' as const,
-    gradient: ['#14B8A6', '#06B6D4'] as const,
+    gradient: ['#FACC15', '#F59E0B'] as const,
   },
   co_admin: {
     label: 'Co Admin',
     icon: 'shield' as const,
-    gradient: ['#F59E0B', '#EF4444'] as const,
+    gradient: ['#F59E0B', '#FB923C'] as const,
   },
   super_admin: {
     label: 'Super Admin',
-    icon: 'star' as const,
-    gradient: ['#FACC15', '#84CC16'] as const,
+    icon: 'award' as const,
+    gradient: ['#EF4444', '#DC2626'] as const,
   },
 };
 
