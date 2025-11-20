@@ -231,15 +231,51 @@ Preferred communication style: Simple, everyday language.
 - **Prettier**: Code formatting
 - **Babel module resolver**: Path aliasing
 
+## 🚀 Development Workflow (REQUIRED SETUP)
+
+Novea requires **TWO PROCESSES** running simultaneously:
+
+### **Process 1: Frontend (Expo) - AUTO-STARTS**
+Already running via "Start application" workflow on port 8081
+- ✅ No action needed - automatically starts
+
+### **Process 2: Backend (Express) - MANUAL START REQUIRED**
+
+**IMPORTANT:** Backend MUST be started manually in separate terminal.
+
+#### Step-by-Step:
+1. **Open NEW Terminal/Shell** in Replit
+2. **Run Backend:**
+   ```bash
+   PORT=3000 npx tsx server/index.ts
+   ```
+3. **Verify Output:**
+   ```
+   🚀 Novea Backend API running on port 3000
+   📚 Database connected: Yes
+   ```
+4. **Keep Terminal Running** - Don't close!
+
+#### Quick Health Check:
+```bash
+curl http://localhost:3000/api/health
+# Should return: {"status":"ok","message":"Novea Backend API is running"}
+```
+
+📖 **Full Guide:** See [RUN_BACKEND.md](./RUN_BACKEND.md)
+
+---
+
 ### Recent Changes (November 2025)
 
-**Authentication Implementation**
-- ✅ Complete email/password authentication flow
-- ✅ Persistent multi-user storage using AsyncStorage
-- ✅ Logout bug fix: Changed from `clearAll()` to `clearSession()` to preserve users database
-- ✅ AuthScreen compatibility: Uses regular ScrollView instead of ScreenKeyboardAwareScrollView (which requires navigator context)
-- ✅ ProfileScreen accessibility: Added bottom spacer and accessibility labels to prevent tab bar overlap with logout button
-- ✅ End-to-end testing verified: Signup → Logout → Login → Data persistence confirmed
+**Fullstack Architecture Migration**
+- ✅ PostgreSQL database with 7 tables (users, novels, chapters, etc)
+- ✅ Express backend API with bcrypt authentication
+- ✅ 5 sample novels, 163 chapters seeded
+- ✅ AuthContext migrated to backend API
+- ✅ AppContext migrated to backend API
+- ✅ Dual-terminal development workflow established
+- ⏳ End-to-end testing pending (requires backend running)
 
 ### Future Integration Points
 - Payment Gateway (GoPay, DANA, bank transfers, credit cards)
