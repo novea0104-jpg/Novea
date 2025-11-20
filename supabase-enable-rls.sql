@@ -4,6 +4,20 @@
 -- Enable RLS on users table (required for stats queries to work)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
+-- Critical: Allow users to read their own user record
+DROP POLICY IF EXISTS "Users can read own profile" ON users;
+CREATE POLICY "Users can read own profile" ON users
+  FOR SELECT USING (
+    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  );
+
+-- Allow users to update their own profile (name, bio, avatar)
+DROP POLICY IF EXISTS "Users can update own profile" ON users;
+CREATE POLICY "Users can update own profile" ON users
+  FOR UPDATE USING (
+    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  );
+
 -- Enable RLS on all other tables for security
 ALTER TABLE novels ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chapters ENABLE ROW LEVEL SECURITY;
@@ -37,6 +51,31 @@ CREATE POLICY "Writers can manage own chapters" ON chapters
         SELECT id FROM users WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid())
       )
     )
+  );
+
+-- User-specific data policies
+DROP POLICY IF EXISTS "Users can manage own reading progress" ON reading_progress;
+CREATE POLICY "Users can manage own reading progress" ON reading_progress
+  FOR ALL USING (
+    user_id = (SELECT id FROM users WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid()))
+  );
+
+DROP POLICY IF EXISTS "Users can manage own unlocked chapters" ON unlocked_chapters;
+CREATE POLICY "Users can manage own unlocked chapters" ON unlocked_chapters
+  FOR ALL USING (
+    user_id = (SELECT id FROM users WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid()))
+  );
+
+DROP POLICY IF EXISTS "Users can manage own following" ON following_novels;
+CREATE POLICY "Users can manage own following" ON following_novels
+  FOR ALL USING (
+    user_id = (SELECT id FROM users WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid()))
+  );
+
+DROP POLICY IF EXISTS "Users can view own transactions" ON coin_transactions;
+CREATE POLICY "Users can view own transactions" ON coin_transactions
+  FOR SELECT USING (
+    user_id = (SELECT id FROM users WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid()))
   );
 
 -- Verification query
