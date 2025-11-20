@@ -1,20 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
-// Get Supabase credentials from environment
-// Try multiple sources: expo config extra, process.env, and hardcoded for Replit
+// Get Supabase credentials from environment with fallback
+// NOTE: These are PUBLIC keys (anon key is safe to expose - it's meant for client-side use)
+// Row Level Security (RLS) in Supabase protects data even with exposed anon key
 const supabaseUrl = 
   Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_URL || 
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  'https://aqhoqcyespikebuatbmp.supabase.co'; // Hardcoded for Replit (temporary)
+  'https://aqhoqcyespikebuatbmp.supabase.co';
 
 const supabaseAnonKey = 
   Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxaG9xY3llc3Bpa2VidWF0Ym1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg3ODksImV4cCI6MjA3OTIxNDc4OX0.YpzzzAwEewbwDihxZ9d-mTZJzoxN8mGQC-z_nd-ecUY'; // Hardcoded for Replit (temporary)
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxaG9xY3llc3Bpa2VidWF0Ym1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg3ODksImV4cCI6MjA3OTIxNDc4OX0.YpzzzAwEewbwDihxZ9d-mTZJzoxN8mGQC-z_nd-ecUY';
+
+console.log('[DEBUG] Supabase URL:', supabaseUrl);
+console.log('[DEBUG] Supabase Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase credentials! Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in Replit Secrets.');
+  throw new Error('Missing Supabase credentials! Check Replit Secrets configuration.');
 }
 
 // Create Supabase client
