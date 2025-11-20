@@ -91,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    await storage.clearAll();
+    await storage.clearSession();
     setUser(null);
   }
 
@@ -99,7 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     const updatedUser = { ...user, isWriter: !user.isWriter };
-    await storage.setUser(updatedUser);
+    
+    await Promise.all([
+      storage.setUser(updatedUser),
+      storage.updateUserInDatabase(user.id, { isWriter: !user.isWriter }),
+    ]);
+    
     setUser(updatedUser);
   }
 
@@ -107,7 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     
     const newBalance = user.coinBalance + amount;
-    await storage.setCoinBalance(newBalance);
+    
+    await Promise.all([
+      storage.setCoinBalance(newBalance),
+      storage.updateUserInDatabase(user.id, { coinBalance: newBalance }),
+    ]);
+    
     setUser({ ...user, coinBalance: newBalance });
   }
 

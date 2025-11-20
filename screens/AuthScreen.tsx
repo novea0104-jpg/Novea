@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TextInput, Alert, Pressable } from "react-native";
+import { View, StyleSheet, TextInput, Alert, Pressable, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
-import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
@@ -19,6 +19,7 @@ export default function AuthScreen() {
 
   const { login, signup } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -89,9 +90,16 @@ export default function AuthScreen() {
   };
 
   return (
-    <ScreenKeyboardAwareScrollView
-      contentContainerStyle={styles.container}
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        {
+          paddingTop: insets.top + Spacing.xl,
+          paddingBottom: insets.bottom + Spacing.xl,
+        },
+      ]}
       style={{ backgroundColor: theme.backgroundRoot }}
+      keyboardShouldPersistTaps="handled"
     >
       {/* Logo Section */}
       <View style={styles.logoContainer}>
@@ -293,7 +301,7 @@ export default function AuthScreen() {
       <ThemedText style={[styles.footer, { color: theme.textMuted }]}>
         By continuing, you agree to Novea's Terms of Service and Privacy Policy
       </ThemedText>
-    </ScreenKeyboardAwareScrollView>
+    </ScrollView>
   );
 }
 

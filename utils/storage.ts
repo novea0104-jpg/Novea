@@ -149,6 +149,21 @@ export const storage = {
     }
   },
 
+  async clearSession(): Promise<void> {
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem(KEYS.USER),
+        AsyncStorage.removeItem(KEYS.COIN_BALANCE),
+        AsyncStorage.removeItem(KEYS.UNLOCKED_CHAPTERS),
+        AsyncStorage.removeItem(KEYS.FOLLOWING_NOVELS),
+        AsyncStorage.removeItem(KEYS.READING_PROGRESS),
+        AsyncStorage.removeItem(KEYS.NOTIFICATIONS_READ),
+      ]);
+    } catch (error) {
+      console.error("Error clearing session:", error);
+    }
+  },
+
   async clearAll(): Promise<void> {
     try {
       await AsyncStorage.clear();
@@ -199,6 +214,21 @@ export const storage = {
     } catch (error) {
       console.error("Error validating credentials:", error);
       return null;
+    }
+  },
+
+  async updateUserInDatabase(userId: string, updates: Partial<StoredUser>): Promise<void> {
+    try {
+      const users = await this.getUsersDatabase();
+      const index = users.findIndex(u => u.id === userId);
+      
+      if (index >= 0) {
+        users[index] = { ...users[index], ...updates };
+        await AsyncStorage.setItem(KEYS.USERS_DB, JSON.stringify(users));
+      }
+    } catch (error) {
+      console.error("Error updating user in database:", error);
+      throw new Error("Failed to update user");
     }
   },
 };

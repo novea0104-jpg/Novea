@@ -159,6 +159,8 @@ export default function ProfileScreen() {
             styles.logoutButton,
             { opacity: pressed ? 0.7 : 1, backgroundColor: theme.backgroundDefault },
           ]}
+          accessibilityRole="button"
+          accessibilityLabel="Logout"
         >
           <View style={styles.menuItemLeft}>
             <View style={[styles.iconCircle, styles.logoutIconCircle]}>
@@ -171,6 +173,8 @@ export default function ProfileScreen() {
           <Feather name="chevron-right" size={20} color={theme.textMuted} />
         </Pressable>
       </View>
+
+      <View style={styles.spacer} />
     </ScreenScrollView>
   );
 }
@@ -314,5 +318,8 @@ const styles = StyleSheet.create({
   menuSubtitle: {
     fontSize: 13,
     marginTop: 2,
+  },
+  spacer: {
+    height: Spacing["3xl"],
   },
 });
