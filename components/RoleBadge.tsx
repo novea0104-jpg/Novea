@@ -83,13 +83,14 @@ export function RoleBadge({ role, size = 'medium' }: RoleBadgeProps) {
     >
       <Feather name={config.icon} size={sizeConfig.iconSize} color="#FFFFFF" />
       <ThemedText
-        style={[
-          styles.label,
-          {
-            fontSize: sizeConfig.fontSize,
-            marginLeft: sizeConfig.gap,
-          },
-        ]}
+        lightColor="#FFFFFF"
+        darkColor="#FFFFFF"
+        style={{
+          fontSize: sizeConfig.fontSize,
+          marginLeft: sizeConfig.gap,
+          fontWeight: '700',
+          letterSpacing: 0.3,
+        }}
       >
         {config.label}
       </ThemedText>

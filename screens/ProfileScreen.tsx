@@ -57,13 +57,7 @@ export default function ProfileScreen() {
   return (
     <ScreenScrollView>
       <Card elevation={1} style={styles.profileCard}>
-        <Pressable
-          onPress={() => navigation.navigate("EditProfile")}
-          style={({ pressed }) => [
-            styles.avatarContainer,
-            { opacity: pressed ? 0.8 : 1 },
-          ]}
-        >
+        <View style={styles.avatarContainer}>
           {user.avatarUrl ? (
             <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
           ) : (
@@ -74,7 +68,7 @@ export default function ProfileScreen() {
           <View style={styles.editBadge}>
             <Feather name="check" size={12} color="#FFFFFF" />
           </View>
-        </Pressable>
+        </View>
 
         <ThemedText style={[Typography.h2, styles.userName]}>{user.name}</ThemedText>
         <ThemedText style={[styles.userEmail, { color: theme.textSecondary }]}>
@@ -149,8 +143,8 @@ export default function ProfileScreen() {
         <MenuItem
           icon="user"
           title="Edit Profile"
-          subtitle="Update your profile information"
-          onPress={() => navigation.navigate("EditProfile")}
+          subtitle="Coming Soon"
+          onPress={() => {}}
         />
         <MenuItem
           icon="award"
