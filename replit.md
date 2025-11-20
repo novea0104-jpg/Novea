@@ -19,11 +19,12 @@ Preferred communication style: Simple, everyday language.
 - React Compiler experimental feature enabled
 
 **Navigation System**
-- React Navigation v7 with bottom tab navigation
+- React Navigation v7 with custom floating bottom tab navigation
 - Native stack navigators for each tab section
 - Four main tabs: Browse, Library, Notifications, Profile
 - Floating Action Button (FAB) for Writers to create content
 - Transparent/blur headers using platform-specific effects (iOS blur, Android solid)
+- Custom tab bar with gradient pill-shaped active indicators and glass effect background
 
 **State Management**
 - React Context API for global state
@@ -46,8 +47,11 @@ Preferred communication style: Simple, everyday language.
 - Error boundaries for graceful error handling
 
 **Design System**
-- Centralized theme constants (colors, typography, spacing, gradients)
+- Centralized theme constants (colors, typography, spacing, gradients) with TypeScript const assertions
+- Pure black theme (#000000) with dark grey elevated cards (#1A1A1A)
 - Genre-specific gradient colors (Romance, Fantasy, Thriller, Mystery, Sci-Fi)
+- Purple-pink gradient for highlights and active states
+- Yellow-green gradient for CTAs
 - Consistent spacing scale (xs to 3xl)
 - BorderRadius and Typography constants
 - Platform-specific shadow and blur effects
