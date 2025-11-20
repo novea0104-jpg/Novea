@@ -2,41 +2,41 @@ import { Platform } from "react-native";
 
 export const GradientColors = {
   purplePink: {
-    colors: ["#8B5CF6", "#EC4899"],
-    start: { x: 0, y: 0 },
-    end: { x: 1, y: 1 },
+    colors: ["#8B5CF6", "#EC4899"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 1, y: 1 } as const,
   },
   yellowGreen: {
-    colors: ["#FACC15", "#84CC16"],
-    start: { x: 0, y: 0 },
-    end: { x: 1, y: 0 },
+    colors: ["#FACC15", "#84CC16"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 1, y: 0 } as const,
   },
   romance: {
-    colors: ["#EC4899", "#8B5CF6"],
-    start: { x: 0, y: 0 },
-    end: { x: 0, y: 1 },
+    colors: ["#EC4899", "#8B5CF6"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
   },
   fantasy: {
-    colors: ["#8B5CF6", "#3B82F6"],
-    start: { x: 0, y: 0 },
-    end: { x: 0, y: 1 },
+    colors: ["#8B5CF6", "#3B82F6"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
   },
   thriller: {
-    colors: ["#DC2626", "#000000"],
-    start: { x: 0, y: 0 },
-    end: { x: 0, y: 1 },
+    colors: ["#DC2626", "#000000"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
   },
   mystery: {
-    colors: ["#14B8A6", "#000000"],
-    start: { x: 0, y: 0 },
-    end: { x: 0, y: 1 },
+    colors: ["#14B8A6", "#000000"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
   },
   sciFi: {
-    colors: ["#06B6D4", "#8B5CF6"],
-    start: { x: 0, y: 0 },
-    end: { x: 0, y: 1 },
+    colors: ["#06B6D4", "#8B5CF6"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
   },
-};
+} as const;
 
 export const Colors = {
   light: {

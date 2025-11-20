@@ -62,7 +62,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                   >
                     {isFocused ? (
                       <LinearGradient
-                        colors={GradientColors.purplePink.colors as any}
+                        colors={GradientColors.purplePink.colors}
                         start={GradientColors.purplePink.start}
                         end={GradientColors.purplePink.end}
                         style={styles.activeTabPill}
@@ -132,7 +132,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
                   >
                     {isFocused ? (
                       <LinearGradient
-                        colors={GradientColors.purplePink.colors as any}
+                        colors={GradientColors.purplePink.colors}
                         start={GradientColors.purplePink.start}
                         end={GradientColors.purplePink.end}
                         style={styles.activeTabPill}
