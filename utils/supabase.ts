@@ -1,21 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
-// Get Supabase credentials from environment with fallback
-// NOTE: These are PUBLIC keys (anon key is safe to expose - it's meant for client-side use)
-// Row Level Security (RLS) in Supabase protects data even with exposed anon key
-const supabaseUrl = 
-  Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_URL || 
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  'https://aqhoqcyespikebuatbmp.supabase.co';
-
-const supabaseAnonKey = 
-  Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxaG9xY3llc3Bpa2VidWF0Ym1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg3ODksImV4cCI6MjA3OTIxNDc4OX0.YpzzzAwEewbwDihxZ9d-mTZJzoxN8mGQC-z_nd-ecUY';
-
-console.log('[DEBUG] Supabase URL:', supabaseUrl);
-console.log('[DEBUG] Supabase Anon Key:', supabaseAnonKey ? 'Present' : 'Missing');
+// Supabase credentials
+// NOTE: These are PUBLIC keys (anon key is safe to expose in client-side code)
+// Row Level Security (RLS) in Supabase protects your data even with exposed anon key
+const supabaseUrl = 'https://aqhoqcyespikebuatbmp.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxaG9xY3llc3Bpa2VidWF0Ym1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg3ODksImV4cCI6MjA3OTIxNDc4OX0.YpzzzAwEewbwDihxZ9d-mTZJzoxN8mGQC-z_nd-ecUY';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase credentials! Check Replit Secrets configuration.');
