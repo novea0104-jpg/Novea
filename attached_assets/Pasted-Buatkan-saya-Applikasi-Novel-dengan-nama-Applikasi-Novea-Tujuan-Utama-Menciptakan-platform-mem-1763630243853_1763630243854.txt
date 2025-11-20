@@ -1,0 +1,59 @@
+Buatkan saya Applikasi Novel dengan nama Applikasi "Novea"
+
+Tujuan Utama: Menciptakan platform membaca dan menulis novel digital dengan sistem monetisasi koin dan langganan, fokus pada kualitas konten dan pengalaman pengguna yang mulus. Target Pengguna: Pembaca (usia 15-35 tahun, menyukai genre Roman, Fantasi, Thriller) dan Penulis (ingin mempublikasikan karya dan mendapatkan penghasilan).
+
+1. 📚 Fitur Utama (Fokus Pengguna)
+Antarmuka Pengguna (UI/UX):
+
+Desain modern, clean, dan mudah dinavigasi (mirip Netflix/Spotify, bukan sekadar daftar).
+
+Mode Baca: Kustomisasi (ukuran font, warna latar, scrolling vs turning page).
+
+Pencarian: Filter mendalam berdasarkan genre, status (Selesai/On-Going), dan popularitas.
+
+Sistem Konten:
+
+Katalog: Tampilkan novel dalam kategori populer (Trending, Baru Dirilis, Pilihan Editor).
+
+Halaman Detail Novel: Sertakan sinopsis, rating, jumlah koin per bab, dan ulasan.
+
+Pembaruan: Sistem notifikasi untuk bab baru dari novel yang diikuti.
+
+2. 💰 Sistem Monetisasi (Koin)
+Mata Uang Digital:
+
+Nama mata uang: [Sebutkan nama koin, cth: Dream Coin atau Starlight].
+
+Pembelian Koin: Sediakan paket pembelian koin (kecil, sedang, besar) dengan bonus koin untuk paket yang lebih besar.
+
+Metode Pembayaran: Integrasi dengan Payment Gateway lokal (seperti GoPay, DANA, Transfer Bank, Pulsa, dan kartu kredit).
+
+Mekanisme Pembayaran Konten:
+
+Bab Berbayar: Bab awal (1-5) gratis. Bab selanjutnya terkunci dan harus dibuka dengan koin.
+
+Pilihan Langganan (Opsional): Berikan opsi Premium Membership bulanan/tahunan untuk diskon koin atau akses eksklusif.
+
+Koin Gratis (Reward): Fitur untuk mendapatkan koin gratis melalui Daily Login, menyelesaikan misi (baca 3 bab), atau menonton iklan.
+
+3. ✍️ Fitur Penulis (Writer's Portal)
+Pendaftaran & Verifikasi: Proses onboarding yang mudah untuk penulis.
+
+Sistem Unggah Bab:
+
+Editor yang mudah digunakan (termasuk fitur save draft).
+
+Penjadwalan rilis bab secara otomatis.
+
+Dashboard Penulis:
+
+Analitik: Tampilkan jumlah pembaca, jumlah koin yang dihabiskan untuk novelnya, dan total pendapatan.
+
+Withdrawal/Penarikan: Mekanisme pengajuan penarikan pendapatan yang transparan (bagi hasil 50:50, 60:40, dll.).
+
+4. ⚙️ Teknologi dan Infrastruktur
+Platform: iOS dan Android (Native atau Cross-Platform seperti React Native/Flutter).
+
+Backend: Pilihan teknologi (misalnya: Firebase, AWS, atau custom stack).
+
+Keamanan: Pastikan keamanan data pengguna dan transaksi koin (anti-cheat/anti-hacking).
