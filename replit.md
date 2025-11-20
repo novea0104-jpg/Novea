@@ -73,11 +73,28 @@ Preferred communication style: Simple, everyday language.
 - AsyncStorage for client-side persistence
 - Storage utilities in `utils/storage.ts` manage:
   - User profile and authentication state
+  - Multi-user database (persistent across sessions)
+  - Session state (cleared on logout)
   - Coin balance tracking
   - Unlocked chapters set
   - Following novels set
   - Reading progress
   - Notification read status
+
+**Authentication System**
+- Email/password authentication using AsyncStorage
+- Dual-state storage model:
+  - Session state: Cleared on logout (`clearSession()`)
+  - Users database: Persistent across logout/login cycles
+- Storage keys:
+  - Session (cleared on logout): `@novea_user`, `@novea_coin_balance`, `@novea_unlocked_chapters`, `@novea_following_novels`, `@novea_reading_progress`, `@novea_notifications_read`
+  - Persistent: `@novea_users_database`
+- Auth flow:
+  - Signup: Validates email uniqueness → saves to database → creates session
+  - Login: Validates credentials from database → restores session
+  - Logout: Clears session only, preserves user database
+- AuthScreen renders outside NavigationContainer (uses regular ScrollView with safe area insets)
+- ProfileScreen logout button positioned with extra bottom spacing to avoid floating tab bar overlap
 
 **Mock Data Strategy**
 - Mock data generators in `utils/mockData.ts`
@@ -181,9 +198,19 @@ Preferred communication style: Simple, everyday language.
 - **Prettier**: Code formatting
 - **Babel module resolver**: Path aliasing
 
+### Recent Changes (November 2025)
+
+**Authentication Implementation**
+- ✅ Complete email/password authentication flow
+- ✅ Persistent multi-user storage using AsyncStorage
+- ✅ Logout bug fix: Changed from `clearAll()` to `clearSession()` to preserve users database
+- ✅ AuthScreen compatibility: Uses regular ScrollView instead of ScreenKeyboardAwareScrollView (which requires navigator context)
+- ✅ ProfileScreen accessibility: Added bottom spacer and accessibility labels to prevent tab bar overlap with logout button
+- ✅ End-to-end testing verified: Signup → Logout → Login → Data persistence confirmed
+
 ### Future Integration Points
 - Payment Gateway (GoPay, DANA, bank transfers, credit cards)
 - Push notification service for chapter updates
 - Cloud storage for user-generated content
-- Backend API for user authentication and data sync
+- Backend API for enhanced authentication and data sync
 - Analytics service for writer dashboards
