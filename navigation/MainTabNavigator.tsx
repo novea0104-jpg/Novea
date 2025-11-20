@@ -3,12 +3,16 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import HomeStackNavigator from "@/navigation/HomeStackNavigator";
+import BrowseStackNavigator from "@/navigation/BrowseStackNavigator";
+import LibraryStackNavigator from "@/navigation/LibraryStackNavigator";
+import NotificationsStackNavigator from "@/navigation/NotificationsStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
-  HomeTab: undefined;
+  BrowseTab: undefined;
+  LibraryTab: undefined;
+  NotificationsTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -19,7 +23,7 @@ export default function MainTabNavigator() {
 
   return (
     <Tab.Navigator
-      initialRouteName="HomeTab"
+      initialRouteName="BrowseTab"
       screenOptions={{
         tabBarActiveTintColor: theme.tabIconSelected,
         tabBarInactiveTintColor: theme.tabIconDefault,
@@ -44,12 +48,32 @@ export default function MainTabNavigator() {
       }}
     >
       <Tab.Screen
-        name="HomeTab"
-        component={HomeStackNavigator}
+        name="BrowseTab"
+        component={BrowseStackNavigator}
         options={{
-          title: "Home",
+          title: "Browse",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+            <Feather name="compass" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="LibraryTab"
+        component={LibraryStackNavigator}
+        options={{
+          title: "Library",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="book-open" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="NotificationsTab"
+        component={NotificationsStackNavigator}
+        options={{
+          title: "Notifications",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="bell" size={size} color={color} />
           ),
         }}
       />

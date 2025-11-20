@@ -1,194 +1,239 @@
-import { useState } from "react";
-import { StyleSheet, View, TextInput } from "react-native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-
-import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
+import React from "react";
+import { View, StyleSheet, Pressable, Image, Switch } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Feather } from "@expo/vector-icons";
+import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
+import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
-import Spacer from "@/components/Spacer";
-import type { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 
-type ProfileScreenProps = {
-  navigation: NativeStackNavigationProp<ProfileStackParamList, "Profile">;
-};
+type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
-export default function ProfileScreen({ navigation }: ProfileScreenProps) {
-  const { theme, isDark } = useTheme();
+export default function ProfileScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const { theme } = useTheme();
+  const { user, logout, toggleWriterMode } = useAuth();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  if (!user) return null;
 
-  const handleSubmit = () => {
-    console.log("Form submitted:", { name, email, password });
-  };
-
-  const inputStyle = [
-    styles.input,
-    {
-      backgroundColor: theme.backgroundDefault,
-      color: theme.text,
-    },
-  ];
+  const MenuItem = ({ icon, title, onPress, badge }: any) => (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.menuItem,
+        { opacity: pressed ? 0.7 : 1, backgroundColor: theme.backgroundDefault },
+      ]}
+    >
+      <View style={styles.menuItemLeft}>
+        <Feather name={icon} size={20} color={theme.text} />
+        <ThemedText style={styles.menuItemText}>{title}</ThemedText>
+      </View>
+      {badge ? (
+        <View style={[styles.badge, { backgroundColor: theme.primary }]}>
+          <ThemedText style={styles.badgeText}>{badge}</ThemedText>
+        </View>
+      ) : (
+        <Feather name="chevron-right" size={20} color={theme.textMuted} />
+      )}
+    </Pressable>
+  );
 
   return (
-    <ScreenKeyboardAwareScrollView>
-      <View style={styles.section}>
-        <ThemedText type="h1">Heading 1</ThemedText>
-        <ThemedText type="small" style={styles.meta}>
-          32px • Bold
+    <ScreenScrollView>
+      <View style={styles.header}>
+        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+          <ThemedText style={styles.avatarText}>
+            {user.name.charAt(0).toUpperCase()}
+          </ThemedText>
+        </View>
+        <ThemedText style={[Typography.h2, styles.userName]}>{user.name}</ThemedText>
+        <ThemedText style={[styles.userEmail, { color: theme.textSecondary }]}>
+          {user.email}
         </ThemedText>
+        {user.isWriter && (
+          <View style={[styles.writerBadge, { backgroundColor: theme.secondary }]}>
+            <Feather name="feather" size={12} color="#000" />
+            <ThemedText style={styles.writerBadgeText}>Writer</ThemedText>
+          </View>
+        )}
       </View>
 
-      <View style={styles.section}>
-        <ThemedText type="h2">Heading 2</ThemedText>
-        <ThemedText type="small" style={styles.meta}>
-          28px • Bold
-        </ThemedText>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="h3">Heading 3</ThemedText>
-        <ThemedText type="small" style={styles.meta}>
-          24px • Semi-Bold
-        </ThemedText>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="h4">Heading 4</ThemedText>
-        <ThemedText type="small" style={styles.meta}>
-          20px • Semi-Bold
-        </ThemedText>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="body">
-          Body text - This is the default text style for paragraphs and general
-          content.
-        </ThemedText>
-        <ThemedText type="small" style={styles.meta}>
-          16px • Regular
-        </ThemedText>
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="small">
-          Small text - Used for captions, labels, and secondary information.
-        </ThemedText>
-        <ThemedText type="small" style={styles.meta}>
-          14px • Regular
-        </ThemedText>
-      </View>
+      <Card elevation={1}>
+        <Pressable
+          onPress={() => navigation.navigate("CoinStore")}
+          style={styles.coinCard}
+        >
+          <View style={styles.coinCardLeft}>
+            <Image
+              source={require("@/assets/images/icons/coin.png")}
+              style={styles.coinIconLarge}
+            />
+            <View>
+              <ThemedText style={styles.coinLabel}>Coin Balance</ThemedText>
+              <ThemedText style={[Typography.h2, { color: theme.secondary }]}>
+                {user.coinBalance}
+              </ThemedText>
+            </View>
+          </View>
+          <Feather name="plus-circle" size={24} color={theme.primary} />
+        </Pressable>
+      </Card>
 
       <View style={styles.section}>
-        <ThemedText type="link">Link text - Interactive elements</ThemedText>
-        <ThemedText type="small" style={styles.meta}>
-          16px • Regular • Colored
-        </ThemedText>
+        <View style={[styles.writerToggleRow, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={styles.writerToggleLeft}>
+            <Feather name="feather" size={20} color={theme.text} />
+            <ThemedText style={styles.menuItemText}>Writer Mode</ThemedText>
+          </View>
+          <Switch value={user.isWriter} onValueChange={toggleWriterMode} />
+        </View>
       </View>
 
-      <Spacer height={Spacing["4xl"]} />
+      {user.isWriter && (
+        <View style={styles.section}>
+          <MenuItem
+            icon="book"
+            title="My Novels"
+            onPress={() => navigation.navigate("WriterDashboard")}
+          />
+        </View>
+      )}
 
-      <View style={styles.fieldContainer}>
-        <ThemedText type="small" style={styles.label}>
-          Name
-        </ThemedText>
-        <TextInput
-          style={inputStyle}
-          value={name}
-          onChangeText={setName}
-          placeholder="Enter your name"
-          placeholderTextColor={isDark ? "#9BA1A6" : "#687076"}
-          autoCapitalize="words"
-          returnKeyType="next"
-        />
+      <View style={styles.section}>
+        <MenuItem icon="settings" title="Settings" onPress={() => {}} />
+        <MenuItem icon="help-circle" title="Help & Support" onPress={() => {}} />
+        <MenuItem icon="shield" title="Privacy Policy" onPress={() => {}} />
       </View>
 
-      <Spacer height={Spacing.lg} />
-
-      <View style={styles.fieldContainer}>
-        <ThemedText type="small" style={styles.label}>
-          Email
-        </ThemedText>
-        <TextInput
-          style={inputStyle}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="your.email@example.com"
-          placeholderTextColor={isDark ? "#9BA1A6" : "#687076"}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          returnKeyType="next"
-        />
+      <View style={styles.section}>
+        <Pressable
+          onPress={logout}
+          style={({ pressed }) => [
+            styles.logoutButton,
+            { backgroundColor: theme.error, opacity: pressed ? 0.7 : 1 },
+          ]}
+        >
+          <Feather name="log-out" size={20} color="#FFFFFF" />
+          <ThemedText style={styles.logoutText}>Log Out</ThemedText>
+        </Pressable>
       </View>
-
-      <Spacer height={Spacing.lg} />
-
-      <View style={styles.fieldContainer}>
-        <ThemedText type="small" style={styles.label}>
-          Password
-        </ThemedText>
-        <TextInput
-          style={inputStyle}
-          value={password}
-          onChangeText={setPassword}
-          placeholder="Enter a password"
-          placeholderTextColor={isDark ? "#9BA1A6" : "#687076"}
-          secureTextEntry
-          autoCapitalize="none"
-          returnKeyType="next"
-        />
-      </View>
-
-      <Spacer height={Spacing.lg} />
-
-      <Button onPress={handleSubmit}>Submit Form</Button>
-
-      <Spacer height={Spacing["2xl"]} />
-
-      <ThemedText type="h3" style={styles.sectionTitle}>
-        Testing
-      </ThemedText>
-      <Spacer height={Spacing.md} />
-      <Button
-        onPress={() => navigation.navigate("Crash")}
-        style={styles.crashButton}
-      >
-        Crash App
-      </Button>
-    </ScreenKeyboardAwareScrollView>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  section: {
-    marginBottom: Spacing["3xl"],
+  header: {
+    alignItems: "center",
+    marginBottom: Spacing.xl,
   },
-  meta: {
-    opacity: 0.5,
-    marginTop: Spacing.sm,
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.md,
   },
-  fieldContainer: {
-    width: "100%",
+  avatarText: {
+    fontSize: 32,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
-  label: {
+  userName: {
+    marginBottom: Spacing.xs,
+  },
+  userEmail: {
     marginBottom: Spacing.sm,
+  },
+  writerBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+    gap: Spacing.xs,
+  },
+  writerBadgeText: {
+    fontSize: 12,
     fontWeight: "600",
-    opacity: 0.8,
+    color: "#000",
   },
-  input: {
-    height: Spacing.inputHeight,
-    borderWidth: 0,
-    borderRadius: BorderRadius.md,
+  coinCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  coinCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  coinIconLarge: {
+    width: 48,
+    height: 48,
+  },
+  coinLabel: {
+    fontSize: 14,
+    marginBottom: Spacing.xs,
+  },
+  section: {
+    marginTop: Spacing.lg,
+  },
+  writerToggleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    fontSize: Typography.body.fontSize,
+    borderRadius: BorderRadius.sm,
   },
-  sectionTitle: {
-    marginTop: Spacing.xl,
+  writerToggleLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
   },
-  crashButton: {
-    backgroundColor: "#FF3B30",
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.sm,
+  },
+  menuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  menuItemText: {
+    fontSize: 16,
+  },
+  badge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    gap: Spacing.sm,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
 });

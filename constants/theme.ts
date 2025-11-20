@@ -1,30 +1,44 @@
 import { Platform } from "react-native";
 
-const tintColorLight = "#007AFF";
-const tintColorDark = "#0A84FF";
+const primaryColor = "#6C5CE7";
+const goldColor = "#FFD700";
 
 export const Colors = {
   light: {
-    text: "#11181C",
+    text: "#1A1A2E",
+    textSecondary: "#6C6C80",
+    textMuted: "#B0B0C3",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#687076",
-    tabIconSelected: tintColorLight,
-    link: "#007AFF",
-    backgroundRoot: "#FFFFFF", // Elevation 0
-    backgroundDefault: "#F2F2F2", // Elevation 1
-    backgroundSecondary: "#E6E6E6", // Elevation 2
-    backgroundTertiary: "#D9D9D9", // Elevation 3
+    tabIconDefault: "#B0B0C3",
+    tabIconSelected: primaryColor,
+    link: primaryColor,
+    primary: primaryColor,
+    secondary: goldColor,
+    success: "#27AE60",
+    warning: "#F39C12",
+    error: "#E74C3C",
+    backgroundRoot: "#FFFFFF",
+    backgroundDefault: "#F5F5F5",
+    backgroundSecondary: "#EBEBEB",
+    backgroundTertiary: "#E0E0E0",
   },
   dark: {
-    text: "#ECEDEE",
+    text: "#FFFFFF",
+    textSecondary: "#B0B0C3",
+    textMuted: "#6C6C80",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: tintColorDark,
-    link: "#0A84FF",
-    backgroundRoot: "#1F2123", // Elevation 0
-    backgroundDefault: "#2A2C2E", // Elevation 1
-    backgroundSecondary: "#353739", // Elevation 2
-    backgroundTertiary: "#404244", // Elevation 3
+    tabIconDefault: "#6C6C80",
+    tabIconSelected: primaryColor,
+    link: primaryColor,
+    primary: primaryColor,
+    secondary: goldColor,
+    success: "#27AE60",
+    warning: "#F39C12",
+    error: "#E74C3C",
+    backgroundRoot: "#1A1A2E",
+    backgroundDefault: "#16213E",
+    backgroundSecondary: "#1E2A47",
+    backgroundTertiary: "#253150",
   },
 };
 
@@ -55,38 +69,27 @@ export const BorderRadius = {
 
 export const Typography = {
   h1: {
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 28,
     fontWeight: "700" as const,
   },
   h2: {
-    fontSize: 28,
-    lineHeight: 36,
-    fontWeight: "700" as const,
-  },
-  h3: {
-    fontSize: 24,
-    lineHeight: 32,
+    fontSize: 22,
     fontWeight: "600" as const,
   },
-  h4: {
+  h3: {
     fontSize: 20,
-    lineHeight: 28,
     fontWeight: "600" as const,
   },
   body: {
     fontSize: 16,
-    lineHeight: 24,
     fontWeight: "400" as const,
   },
-  small: {
+  caption: {
     fontSize: 14,
-    lineHeight: 20,
     fontWeight: "400" as const,
   },
-  link: {
-    fontSize: 16,
-    lineHeight: 24,
+  reading: {
+    fontSize: 18,
     fontWeight: "400" as const,
   },
 };
