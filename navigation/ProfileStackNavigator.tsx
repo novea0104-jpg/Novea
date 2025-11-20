@@ -2,6 +2,7 @@ import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import ProfileScreen from "@/screens/ProfileScreen";
+import EditProfileScreen from "@/screens/EditProfileScreen";
 import CoinStoreScreen from "@/screens/CoinStoreScreen";
 import WriterDashboardScreen from "@/screens/WriterDashboardScreen";
 import WriterCenterScreen from "@/screens/WriterCenterScreen";
@@ -13,6 +14,7 @@ import { useTheme } from "@/hooks/useTheme";
 
 export type ProfileStackParamList = {
   Profile: undefined;
+  EditProfile: undefined;
   CoinStore: undefined;
   WriterDashboard: undefined;
   WriterCenter: undefined;
@@ -32,6 +34,11 @@ export default function ProfileStackNavigator() {
         name="Profile"
         component={ProfileScreen}
         options={{ title: "Profile" }}
+      />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ title: "Edit Profile" }}
       />
       <Stack.Screen
         name="CoinStore"

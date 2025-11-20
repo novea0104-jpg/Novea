@@ -10,6 +10,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
+  updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,6 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isWriter: userProfile.is_writer,
           role: (userProfile.role || 'pembaca') as any,
           coinBalance: userProfile.coin_balance,
+          avatarUrl: userProfile.avatar_url || undefined,
+          bio: userProfile.bio || undefined,
         };
         setUser(user);
       }
@@ -114,6 +117,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: userProfile.is_writer,
       role: (userProfile.role || 'pembaca') as any,
       coinBalance: userProfile.coin_balance,
+      avatarUrl: userProfile.avatar_url || undefined,
+      bio: userProfile.bio || undefined,
     };
     setUser(newUser);
   }
@@ -167,6 +172,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: data.is_writer,
       role: data.role as any,
       coinBalance: data.coin_balance,
+      avatarUrl: data.avatar_url || undefined,
+      bio: data.bio || undefined,
     };
     setUser(updatedUser);
   }
@@ -194,6 +201,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: data.is_writer,
       role: (data.role || 'pembaca') as any,
       coinBalance: data.coin_balance,
+      avatarUrl: data.avatar_url || undefined,
+      bio: data.bio || undefined,
+    };
+    setUser(updatedUser);
+  }
+
+  async function updateProfile(updates: { name?: string; bio?: string; avatarUrl?: string }) {
+    if (!user) return;
+
+    // Build update object with snake_case for database
+    const dbUpdates: any = {};
+    if (updates.name !== undefined) dbUpdates.name = updates.name;
+    if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
+    if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+
+    // Update profile in Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .update(dbUpdates)
+      .eq('id', parseInt(user.id))
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+
+    // Update local state
+    const updatedUser: User = {
+      id: data.id.toString(),
+      name: data.name,
+      email: data.email,
+      isWriter: data.is_writer,
+      role: (data.role || 'pembaca') as any,
+      coinBalance: data.coin_balance,
+      avatarUrl: data.avatar_url || undefined,
+      bio: data.bio || undefined,
     };
     setUser(updatedUser);
   }
@@ -208,6 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         upgradeToWriter,
         updateCoinBalance,
+        updateProfile,
       }}
     >
       {children}
