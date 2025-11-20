@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ProfileScreen from "@/screens/ProfileScreen";
 import CoinStoreScreen from "@/screens/CoinStoreScreen";
 import WriterDashboardScreen from "@/screens/WriterDashboardScreen";
+import WriterCenterScreen from "@/screens/WriterCenterScreen";
 import ManageNovelScreen from "@/screens/ManageNovelScreen";
 import EditChapterScreen from "@/screens/EditChapterScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
@@ -13,6 +14,7 @@ export type ProfileStackParamList = {
   Profile: undefined;
   CoinStore: undefined;
   WriterDashboard: undefined;
+  WriterCenter: undefined;
   ManageNovel: { novelId: string };
   EditChapter: { novelId: string; chapterId?: string };
 };
@@ -38,6 +40,11 @@ export default function ProfileStackNavigator() {
         name="WriterDashboard"
         component={WriterDashboardScreen}
         options={{ title: "My Novels" }}
+      />
+      <Stack.Screen
+        name="WriterCenter"
+        component={WriterCenterScreen}
+        options={{ title: "Pusat Penulis" }}
       />
       <Stack.Screen
         name="ManageNovel"

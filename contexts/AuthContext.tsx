@@ -8,7 +8,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
-  toggleWriterMode: () => Promise<void>;
+  upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
 }
 
@@ -144,28 +144,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function toggleWriterMode() {
+  async function upgradeToWriter() {
     if (!user) return;
     
-    const newIsWriter = !user.isWriter;
+    // Only upgrade if user is currently 'pembaca'
+    if (user.role !== 'pembaca') return;
     
-    // Update user profile in Supabase
-    const { data, error } = await supabase
-      .from('users')
-      .update({ is_writer: newIsWriter })
-      .eq('id', parseInt(user.id))
-      .select()
-      .single();
+    // Call secure database function to upgrade role
+    // This bypasses RLS restrictions for safe role upgrades
+    const { data, error } = await supabase.rpc('upgrade_user_to_writer');
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error upgrading to writer:', error);
+      throw error;
+    }
 
-    // Update local state
+    // Update local state with returned user data
     const updatedUser: User = {
       id: data.id.toString(),
       name: data.name,
       email: data.email,
       isWriter: data.is_writer,
-      role: (data.role || 'pembaca') as any,
+      role: data.role as any,
       coinBalance: data.coin_balance,
     };
     setUser(updatedUser);
@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
-        toggleWriterMode,
+        upgradeToWriter,
         updateCoinBalance,
       }}
     >

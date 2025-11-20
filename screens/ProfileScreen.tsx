@@ -19,10 +19,13 @@ type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
-  const { user, logout, toggleWriterMode } = useAuth();
+  const { user, logout, upgradeToWriter } = useAuth();
   const { stats, isLoading: statsLoading } = useUserStats();
 
   if (!user) return null;
+
+  // Check if user is at least a writer (penulis or higher roles)
+  const isWriterOrAbove = user.role !== 'pembaca';
 
   const MenuItem = ({ icon, title, subtitle, onPress }: any) => (
     <Pressable
@@ -143,19 +146,19 @@ export default function ProfileScreen() {
           subtitle="Upgrade for unlimited access"
           onPress={() => navigation.navigate("CoinStore")}
         />
-        {user.isWriter ? (
+        {isWriterOrAbove ? (
           <MenuItem
             icon="book"
-            title="Writer Dashboard"
+            title="Pusat Penulis"
             subtitle="Manage your stories"
-            onPress={() => navigation.navigate("WriterDashboard")}
+            onPress={() => navigation.navigate("WriterCenter")}
           />
         ) : (
           <MenuItem
             icon="feather"
-            title="Become a Writer"
+            title="Menjadi Penulis"
             subtitle="Share your stories with the world"
-            onPress={toggleWriterMode}
+            onPress={upgradeToWriter}
           />
         )}
         <MenuItem
