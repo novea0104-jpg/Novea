@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { Novel } from "@/types/models";
+import { Novel, Chapter } from "@/types/models";
 import { supabase } from "@/utils/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -12,6 +12,8 @@ interface AppContextType {
   unlockChapter: (chapterId: string, cost: number) => Promise<boolean>;
   searchNovels: (query: string) => Novel[];
   filterNovelsByGenre: (genre: string) => Novel[];
+  getChaptersForNovel: (novelId: string) => Promise<Chapter[]>;
+  getChapter: (chapterId: string) => Promise<Chapter | null>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -213,6 +215,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return novels.filter((novel) => novel.genre === genre);
   }
 
+  async function getChaptersForNovel(novelId: string): Promise<Chapter[]> {
+    try {
+      const { data: chaptersData, error } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('novel_id', parseInt(novelId))
+        .order('chapter_number', { ascending: true });
+
+      if (error) throw error;
+
+      // Convert to app Chapter type
+      const chapters: Chapter[] = (chaptersData || []).map(ch => ({
+        id: ch.id.toString(),
+        novelId: ch.novel_id.toString(),
+        chapterNumber: ch.chapter_number,
+        title: ch.title,
+        content: ch.content,
+        wordCount: ch.word_count,
+        isFree: ch.is_free,
+        publishedAt: new Date(ch.published_at),
+      }));
+
+      return chapters;
+    } catch (error) {
+      console.error("Error fetching chapters:", error);
+      return [];
+    }
+  }
+
+  async function getChapter(chapterId: string): Promise<Chapter | null> {
+    try {
+      const { data: chapterData, error } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('id', parseInt(chapterId))
+        .single();
+
+      if (error) throw error;
+      if (!chapterData) return null;
+
+      const chapter: Chapter = {
+        id: chapterData.id.toString(),
+        novelId: chapterData.novel_id.toString(),
+        chapterNumber: chapterData.chapter_number,
+        title: chapterData.title,
+        content: chapterData.content,
+        wordCount: chapterData.word_count,
+        isFree: chapterData.is_free,
+        publishedAt: new Date(chapterData.published_at),
+      };
+
+      return chapter;
+    } catch (error) {
+      console.error("Error fetching chapter:", error);
+      return null;
+    }
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -224,6 +284,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         unlockChapter,
         searchNovels,
         filterNovelsByGenre,
+        getChaptersForNovel,
+        getChapter,
       }}
     >
       {children}

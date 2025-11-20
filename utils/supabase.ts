@@ -2,8 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 
 // Get Supabase credentials from environment
-const supabaseUrl = Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Try multiple sources: expo config extra, process.env, and hardcoded for Replit
+const supabaseUrl = 
+  Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_URL || 
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  'https://aqhoqcyespikebuatbmp.supabase.co'; // Hardcoded for Replit (temporary)
+
+const supabaseAnonKey = 
+  Constants.expoConfig?.extra?.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFxaG9xY3llc3Bpa2VidWF0Ym1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2Mzg3ODksImV4cCI6MjA3OTIxNDc4OX0.YpzzzAwEewbwDihxZ9d-mTZJzoxN8mGQC-z_nd-ecUY'; // Hardcoded for Replit (temporary)
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase credentials! Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in Replit Secrets.');

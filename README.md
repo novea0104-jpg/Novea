@@ -1,66 +1,164 @@
-# 🚀 Novea - Quick Start Guide
+# 🚀 Novea - Digital Novel Reading Platform
 
-## ⚡ IMPORTANT: Start Backend First!
-
-**Before testing signup**, you MUST start the backend server. Here's how:
-
-### Step 1: Open Terminal
-- Click "+" next to "Shell" tab in bottom panel
-- OR click "Tools → Shell" in top menu
-
-### Step 2: Run This ONE Command
-```bash
-bash start-backend.sh
-```
-
-### Step 3: Wait for This Message
-```
-🚀 Novea Backend API running on port 3000
-📚 Database connected: Yes
-```
-
-**That's it!** Now you can test signup. ✅
+**A React Native mobile app for reading and writing digital novels** with coin-based monetization, built with Expo and Supabase.
 
 ---
 
-## 🎯 What This Does
+## ✨ Features
 
-- **Frontend (Expo)**: Already running automatically on port 8081
-- **Backend (Express)**: You just started it on port 3000
+- 📚 **Browse & Read Novels** - 5 genres: Romance, Fantasy, Thriller, Mystery, Sci-Fi
+- 🆓 **Free + Premium Content** - First 5 chapters free, unlock more with coins
+- 💰 **Coin System** - Virtual currency for unlocking premium chapters
+- ✍️ **Writer Portal** - Create and publish your own novels (toggle writer mode)
+- 🔒 **Secure Authentication** - Email/password signup powered by Supabase Auth
+- 📱 **Cross-Platform** - iOS, Android, and Web support
 
-Both need to be running at the same time.
+---
+
+## 🎯 Quick Start (Development)
+
+### **Prerequisites**
+- Node.js 18+ installed
+- Expo Go app on your phone (optional, for testing on device)
+
+### **Setup & Run**
+
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+2. **Start the app:**
+   ```bash
+   npm run dev
+   ```
+
+3. **Test the app:**
+   - **Web**: Click "Open website" in Replit
+   - **Mobile**: Scan QR code with Expo Go app
+
+**That's it!** No backend server needed - everything runs through Supabase! ✅
+
+---
+
+## 🗄️ Tech Stack
+
+### **Frontend**
+- **React Native 0.81** with Expo SDK 54
+- **React Navigation 7** - Tab + Stack navigation
+- **TypeScript** - Type safety
+- **AsyncStorage** - Local persistence
+
+### **Backend (Supabase)**
+- **PostgreSQL Database** - 7 tables (users, novels, chapters, etc.)
+- **Supabase Auth** - Email/password authentication
+- **Supabase Client** - Auto-generated REST APIs
+- **Row Level Security (RLS)** - Database-level authorization
+
+### **Design**
+- **Dark theme** with pure black background (#000000)
+- **Gradient accents** - Purple-pink highlights, yellow-green CTAs
+- **iOS 26 Liquid Glass UI** - Blur effects, safe area handling
+
+---
+
+## 📊 Database
+
+**Powered by Supabase PostgreSQL:**
+
+- `users` - Auth, profiles, coin balance
+- `novels` - Titles, authors, genres, pricing
+- `chapters` - Content, free/paid status, word count
+- `following_novels` - User's followed novels
+- `unlocked_chapters` - Purchased chapters per user
+- `reading_progress` - User reading history
+- `coin_transactions` - Transaction log
+
+**Sample Data:** 5 novels, 163 chapters (seeded automatically)
+
+---
+
+## 🔐 Environment Setup
+
+**Supabase credentials are stored in Replit Secrets:**
+
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase public anonymous key
+
+**These are auto-loaded via `app.json` extras config.**
+
+---
+
+## 📱 App Structure
+
+```
+screens/
+├── AuthScreen.tsx          # Signup/Login
+├── BrowseStackNavigator/
+│   ├── HomeScreen.tsx      # Novel discovery
+│   ├── SearchScreen.tsx    # Search & filters
+│   ├── NovelDetailScreen.tsx # Novel info + chapters
+│   └── ReaderScreen.tsx    # Immersive reading
+├── LibraryStackNavigator/
+│   └── LibraryScreen.tsx   # Following + History
+├── NotificationsScreen.tsx
+└── ProfileStackNavigator/
+    ├── ProfileScreen.tsx   # User account
+    ├── CoinStoreScreen.tsx # Buy coins
+    └── WriterDashboard.tsx # Writer portal
+
+contexts/
+├── AuthContext.tsx         # Supabase Auth integration
+└── AppContext.tsx          # Novels, chapters, user data
+
+utils/
+└── supabase.ts            # Supabase client setup
+```
+
+---
+
+## 🧪 Testing
+
+**Try the full flow:**
+
+1. **Signup** - Create account (test@example.com / password123)
+2. **Browse** - Explore 5 sample novels
+3. **Read** - First 5 chapters free
+4. **Unlock** - Use coins to unlock premium chapters
+5. **Writer Mode** - Toggle in Profile → Create novels
+
+---
+
+## 🚀 Deployment
+
+**Publish to Expo:**
+```bash
+expo publish
+```
+
+**The app works on Expo Go without custom native code.**
+
+---
+
+## 📚 Documentation
+
+- **Project Architecture**: See [replit.md](./replit.md)
+- **Supabase SQL Schema**: See [supabase-schema.sql](./supabase-schema.sql)
+- **Supabase Seed Data**: See [supabase-seed.sql](./supabase-seed.sql)
 
 ---
 
 ## 🐛 Troubleshooting
 
-**"Backend Server Not Running" error when signing up?**
-→ Backend not started yet. Run `bash start-backend.sh` in a new terminal.
+**"Missing Supabase credentials" error?**
+→ Make sure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set in Replit Secrets.
 
-**Can't find start-backend.sh?**
-→ Make sure you're in the project root directory. Run `ls` to check.
+**App not loading?**
+→ Check console logs for errors. Restart workflow: `npm run dev`
 
-**Port 3000 already in use?**
-→ Old backend still running. Kill it: `pkill -f "tsx.*server/index.ts"` then restart.
-
----
-
-## 📚 Full Documentation
-
-- **Backend API**: See [server/README.md](server/README.md)
-- **Development Guide**: See [RUN_BACKEND.md](RUN_BACKEND.md)
-- **Project Architecture**: See [replit.md](replit.md)
+**Database empty?**
+→ Run SQL seed script in Supabase SQL Editor (see [supabase-seed.sql](./supabase-seed.sql))
 
 ---
 
-## 🎮 Testing the App
-
-1. ✅ Start backend: `bash start-backend.sh`
-2. ✅ Frontend auto-starts (already running)
-3. ✅ Open app in browser (click "Open website" in Replit)
-4. ✅ Try signup with any email/password
-5. ✅ Check database: `npx drizzle-kit studio`
-
----
-
-**Need help?** Check the error message in the app - it will tell you exactly what to do!
+**Built with ❤️ using Expo & Supabase**

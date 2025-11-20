@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Modal } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
@@ -10,14 +10,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
-import { generateMockChapters } from "@/utils/mockData";
+import { Chapter } from "@/types/models";
 
 export default function ReaderScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { novels, unlockedChapters, unlockChapter } = useApp();
+  const { novels, unlockedChapters, unlockChapter, getChaptersForNovel, getChapter } = useApp();
   const { user, updateCoinBalance } = useAuth();
 
   const { novelId, chapterId } = route.params as { novelId: string; chapterId: string };
@@ -26,11 +26,32 @@ export default function ReaderScreen() {
   const [showHeader, setShowHeader] = useState(true);
   const [fontSize, setFontSize] = useState(18);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  if (!novel) return null;
+  useEffect(() => {
+    loadChapterData();
+  }, [chapterId, novelId]);
 
-  const chapters = generateMockChapters(novelId, novel.totalChapters);
-  const currentChapter = chapters.find((c) => c.id === chapterId);
+  async function loadChapterData() {
+    setIsLoading(true);
+    const [fetchedChapters, fetchedChapter] = await Promise.all([
+      getChaptersForNovel(novelId),
+      getChapter(chapterId),
+    ]);
+    setChapters(fetchedChapters);
+    setCurrentChapter(fetchedChapter);
+    setIsLoading(false);
+  }
+
+  if (!novel || isLoading) {
+    return (
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </ThemedView>
+    );
+  }
 
   if (!currentChapter) return null;
 

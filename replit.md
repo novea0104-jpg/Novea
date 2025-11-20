@@ -2,7 +2,9 @@
 
 ## Overview
 
-Novea is a React Native mobile application for reading and writing digital novels with a coin-based monetization system. Built with Expo, it targets iOS and Android platforms and provides an immersive reading experience similar to modern content streaming apps. The app supports two user roles: Readers who consume content and Writers who create and publish novels.
+Novea is a React Native mobile application for reading and writing digital novels with a coin-based monetization system. Built with Expo and Supabase, it targets iOS and Android platforms and provides an immersive reading experience similar to modern content streaming apps. The app supports two user roles: Readers who consume content and Writers who create and publish novels.
+
+**Backend:** Fully powered by Supabase (PostgreSQL + Auth + Auto-generated APIs). No Express server needed!
 
 ## User Preferences
 
@@ -60,37 +62,34 @@ Preferred communication style: Simple, everyday language.
 - Path aliasing using `@/` for root-level imports
 - Babel module resolver for cleaner import statements
 
-### Backend Architecture
+### Backend Architecture (Supabase)
 
-**Server Framework**
-- Express 5.1 REST API server
-- Runs on port 3000 (mapped to external 3003 in Replit)
-- Separate process from Expo frontend (dual-shell startup pattern)
-- CORS enabled for cross-origin requests
+**Backend-as-a-Service**
+- Supabase Cloud (PostgreSQL + Auth + REST APIs)
+- No custom server - fully serverless!
+- Auto-generated REST APIs from database schema
+- Row Level Security (RLS) for authorization
 
 **Database**
-- PostgreSQL (Neon-backed) via Replit integration
-- Drizzle ORM for type-safe database queries
-- Schema defined in `shared/schema.ts`
-- Database client in `server/storage.ts`
+- PostgreSQL hosted on Supabase
+- Client library: `@supabase/supabase-js`
+- Schema defined in `supabase-schema.sql`
+- Direct queries from frontend via Supabase client
 
-**Backend API Endpoints**
-- `POST /api/auth/signup` - Create user with bcrypt-hashed password
-- `POST /api/auth/login` - Authenticate user credentials
-- `GET /api/auth/me` - Fetch current user data
-- `PATCH /api/auth/me` - Update user profile (writer mode, coins)
-- `GET /api/novels` - Get all novels with chapters
-- `GET /api/novels/:id` - Get novel details
-- `POST /api/novels/:id/follow` - Follow/unfollow novel
-- `GET /api/chapters/:id` - Get chapter with unlock status
-- `POST /api/chapters/:id/unlock` - Purchase chapter with coins
-- `GET /api/user/unlocked-chapters` - User's unlocked chapters
-- `GET /api/user/following` - User's followed novels
-- `GET /api/user/reading-progress` - Reading history
-- `POST /api/reading-progress` - Update progress
+**Supabase Client** (`utils/supabase.ts`)
+- Initialized with project URL + anon key (from Replit Secrets)
+- Provides type-safe database operations
+- Built-in auth session management
+- Real-time subscription support (not used yet, but available)
+
+**Authentication**
+- Supabase Auth (email/password)
+- Session managed via cookies + localStorage
+- User profiles stored in `users` table
+- Auth state synced with React Context
 
 **Database Schema** (7 tables)
-- `users`: Auth, profile, coin balance (bcrypt passwords)
+- `users`: Profiles, coin balance, writer mode (linked to Supabase Auth via email)
 - `novels`: Metadata, genre, pricing, statistics
 - `chapters`: Content, pricing, word count
 - `reading_progress`: User reading history
@@ -101,7 +100,7 @@ Preferred communication style: Simple, everyday language.
 **Sample Data**
 - 5 novels across genres (Romance, Fantasy, Thriller, Mystery, Sci-Fi)
 - 163 total chapters (5 free + paid per novel)
-- Seeded via `server/seed.ts`
+- Seeded via `supabase-seed.sql` (run in Supabase SQL Editor)
 
 ### Data Architecture
 
@@ -112,27 +111,28 @@ Preferred communication style: Simple, everyday language.
 - `CoinPackage`: In-app purchase packages with bonus coins
 - `Genre`: Type-safe genre classification (Romance, Fantasy, Thriller, Mystery, Sci-Fi)
 
-**API Client**
-- `utils/api.ts` - HTTP client for backend API
-- Environment-aware base URL (localhost for web, configurable for Expo Go)
-- User ID header injection via `setCurrentUserId()`
-- Type-safe request/response interfaces
+**Data Client**
+- `utils/supabase.ts` - Supabase client singleton
+- Environment-aware credentials (from Replit Secrets via `app.json` extras)
+- Type-safe database operations via TypeScript interfaces
+- Direct database queries (no REST API layer needed)
 
 **Data Storage**
-- **Authoritative:** PostgreSQL database via backend API
-- **Session Persistence:** AsyncStorage stores user ID only (`@novea_user_id`)
-- **Legacy:** AsyncStorage utilities in `utils/storage.ts` (deprecated in favor of API)
+- **Authoritative:** Supabase PostgreSQL database
+- **Session Persistence:** Supabase Auth handles sessions automatically (cookies + localStorage)
+- **No AsyncStorage for user data** - Supabase Auth manages everything
 
 **Authentication System**
-- Email/password authentication via backend API
-- Passwords hashed with bcrypt (10 rounds) on server
-- Session managed via user ID in AsyncStorage
+- Email/password authentication via Supabase Auth
+- Passwords hashed automatically by Supabase (bcrypt)
+- Session managed via Supabase Auth (JWT tokens)
 - Auth flow:
-  - Signup: POST /api/auth/signup → Store user ID locally → Set current user
-  - Login: POST /api/auth/login → Store user ID locally → Set current user
-  - Session Restore: Load user ID → GET /api/auth/me → Restore user state
-  - Logout: Clear user ID from AsyncStorage → Clear app state
-- AuthContext in `contexts/AuthContext.tsx` handles all auth operations
+  - Signup: `supabase.auth.signUp()` → Create user profile in `users` table → Auto-login
+  - Login: `supabase.auth.signInWithPassword()` → Load user profile from `users` table
+  - Session Restore: `supabase.auth.getSession()` → Load user profile if session exists
+  - Logout: `supabase.auth.signOut()` → Clear all session data
+- AuthContext in `contexts/AuthContext.tsx` wraps Supabase Auth
+- Auth state changes handled via `supabase.auth.onAuthStateChange()` listener
 - AuthScreen renders outside NavigationContainer (uses regular ScrollView with safe area insets)
 - ProfileScreen logout button positioned with extra bottom spacing to avoid floating tab bar overlap
 
@@ -231,51 +231,35 @@ Preferred communication style: Simple, everyday language.
 - **Prettier**: Code formatting
 - **Babel module resolver**: Path aliasing
 
-## 🚀 Development Workflow (REQUIRED SETUP)
+## 🚀 Development Workflow
 
-Novea requires **TWO PROCESSES** running simultaneously:
+Novea uses **Supabase Backend-as-a-Service** - no manual backend startup needed!
 
-### **Process 1: Frontend (Expo) - AUTO-STARTS**
-Already running via "Start application" workflow on port 8081
-- ✅ No action needed - automatically starts
+### **Single Process: Frontend (Expo)**
+Running via "Start application" workflow on port 8081
+- ✅ Auto-starts when you open Replit
+- ✅ No backend server needed!
 
-### **Process 2: Backend (Express) - MANUAL START REQUIRED**
-
-**IMPORTANT:** Backend MUST be started manually in separate terminal.
-
-#### Step-by-Step:
-1. **Open NEW Terminal/Shell** in Replit
-2. **Run Backend:**
-   ```bash
-   PORT=3000 npx tsx server/index.ts
-   ```
-3. **Verify Output:**
-   ```
-   🚀 Novea Backend API running on port 3000
-   📚 Database connected: Yes
-   ```
-4. **Keep Terminal Running** - Don't close!
-
-#### Quick Health Check:
+### **Quick Start:**
 ```bash
-curl http://localhost:3000/api/health
-# Should return: {"status":"ok","message":"Novea Backend API is running"}
+npm run dev
 ```
 
-📖 **Full Guide:** See [RUN_BACKEND.md](./RUN_BACKEND.md)
+That's it! The app connects directly to Supabase Cloud.
 
 ---
 
-### Recent Changes (November 2025)
+### Recent Changes (January 2025)
 
-**Fullstack Architecture Migration**
-- ✅ PostgreSQL database with 7 tables (users, novels, chapters, etc)
-- ✅ Express backend API with bcrypt authentication
-- ✅ 5 sample novels, 163 chapters seeded
-- ✅ AuthContext migrated to backend API
-- ✅ AppContext migrated to backend API
-- ✅ Dual-terminal development workflow established
-- ⏳ End-to-end testing pending (requires backend running)
+**Supabase Migration Completed ✅**
+- ✅ Migrated from Express + PostgreSQL to Supabase BaaS
+- ✅ Removed manual backend server startup requirement
+- ✅ Supabase Auth replaces custom bcrypt authentication
+- ✅ Auto-generated REST APIs replace Express routes
+- ✅ AuthContext & AppContext updated to use Supabase client
+- ✅ NovelDetailScreen & ReaderScreen fetch chapters from Supabase
+- ✅ Single-process development workflow (Expo only)
+- ✅ Credentials managed via Replit Secrets
 
 ### Future Integration Points
 - Payment Gateway (GoPay, DANA, bank transfers, credit cards)

@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet, Pressable, Image, FlatList } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
@@ -11,7 +11,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
-import { generateMockChapters } from "@/utils/mockData";
+import { Chapter } from "@/types/models";
 
 type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
 
@@ -19,16 +19,29 @@ export default function NovelDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
-  const { novels, followingNovels, toggleFollow, unlockedChapters } = useApp();
+  const { novels, followingNovels, toggleFollow, unlockedChapters, getChaptersForNovel } = useApp();
   const { user } = useAuth();
   
   const { novelId } = route.params as { novelId: string };
   const novel = novels.find((n) => n.id === novelId);
   
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [isLoadingChapters, setIsLoadingChapters] = useState(true);
+
+  useEffect(() => {
+    loadChapters();
+  }, [novelId]);
+
+  async function loadChapters() {
+    setIsLoadingChapters(true);
+    const fetchedChapters = await getChaptersForNovel(novelId);
+    setChapters(fetchedChapters);
+    setIsLoadingChapters(false);
+  }
+  
   if (!novel) return null;
   
   const isFollowing = followingNovels.has(novelId);
-  const chapters = generateMockChapters(novelId, novel.totalChapters);
 
   const coverImageSource = {
     romance: require("@/assets/images/novels/romance.png"),
@@ -121,13 +134,19 @@ export default function NovelDetailScreen() {
         <ThemedText style={[Typography.h3, styles.sectionTitle]}>
           Chapters ({novel.totalChapters})
         </ThemedText>
-        <FlatList
-          data={chapters}
-          renderItem={renderChapter}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          contentContainerStyle={styles.chapterList}
-        />
+        {isLoadingChapters ? (
+          <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+        ) : (
+          <FlatList
+            data={chapters}
+            renderItem={renderChapter}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+            contentContainerStyle={styles.chapterList}
+          />
+        )}
       </View>
     </ScreenScrollView>
   );
