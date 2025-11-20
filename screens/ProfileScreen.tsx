@@ -3,13 +3,14 @@ import { View, StyleSheet, Pressable, Image, Switch } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -20,7 +21,7 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
-  const MenuItem = ({ icon, title, onPress, badge }: any) => (
+  const MenuItem = ({ icon, title, subtitle, onPress }: any) => (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
@@ -29,172 +30,227 @@ export default function ProfileScreen() {
       ]}
     >
       <View style={styles.menuItemLeft}>
-        <Feather name={icon} size={20} color={theme.text} />
-        <ThemedText style={styles.menuItemText}>{title}</ThemedText>
-      </View>
-      {badge ? (
-        <View style={[styles.badge, { backgroundColor: theme.primary }]}>
-          <ThemedText style={styles.badgeText}>{badge}</ThemedText>
+        <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSecondary }]}>
+          <Feather name={icon} size={18} color={theme.text} />
         </View>
-      ) : (
-        <Feather name="chevron-right" size={20} color={theme.textMuted} />
-      )}
+        <View>
+          <ThemedText style={styles.menuItemText}>{title}</ThemedText>
+          {subtitle ? (
+            <ThemedText style={[styles.menuSubtitle, { color: theme.textSecondary }]}>
+              {subtitle}
+            </ThemedText>
+          ) : null}
+        </View>
+      </View>
+      <Feather name="chevron-right" size={20} color={theme.textMuted} />
     </Pressable>
   );
 
   return (
     <ScreenScrollView>
-      <View style={styles.header}>
-        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-          <ThemedText style={styles.avatarText}>
-            {user.name.charAt(0).toUpperCase()}
-          </ThemedText>
+      <Card elevation={1} style={styles.profileCard}>
+        <View style={styles.avatarContainer}>
+          <View style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}>
+            <Feather name="user" size={32} color={theme.text} />
+          </View>
+          <View style={styles.editBadge}>
+            <Feather name="check" size={12} color="#FFFFFF" />
+          </View>
         </View>
+
         <ThemedText style={[Typography.h2, styles.userName]}>{user.name}</ThemedText>
         <ThemedText style={[styles.userEmail, { color: theme.textSecondary }]}>
-          {user.email}
+          @{user.email.split("@")[0]}
         </ThemedText>
-        {user.isWriter && (
-          <View style={[styles.writerBadge, { backgroundColor: theme.secondary }]}>
-            <Feather name="feather" size={12} color="#000" />
-            <ThemedText style={styles.writerBadgeText}>Writer</ThemedText>
-          </View>
-        )}
-      </View>
+        <ThemedText style={[styles.checkMark, { color: theme.textSecondary }]}>
+          ✓ Terverifikasi
+        </ThemedText>
 
-      <Card elevation={1}>
-        <Pressable
-          onPress={() => navigation.navigate("CoinStore")}
-          style={styles.coinCard}
+        <LinearGradient
+          colors={["#FACC15", "#84CC16"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.premiumButton}
         >
-          <View style={styles.coinCardLeft}>
-            <Image
-              source={require("@/assets/images/icons/coin.png")}
-              style={styles.coinIconLarge}
-            />
-            <View>
-              <ThemedText style={styles.coinLabel}>Coin Balance</ThemedText>
-              <ThemedText style={[Typography.h2, { color: theme.secondary }]}>
-                {user.coinBalance}
-              </ThemedText>
+          <Pressable
+            onPress={() => navigation.navigate("CoinStore")}
+            style={({ pressed }) => [
+              styles.premiumButtonInner,
+              { opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <Feather name="award" size={16} color="#000000" />
+            <ThemedText style={styles.premiumButtonText}>Upgrade to Premium</ThemedText>
+          </Pressable>
+        </LinearGradient>
+
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
+              <Feather name="book-open" size={16} color={theme.text} />
             </View>
+            <ThemedText style={[Typography.h2, styles.statValue]}>12</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
+              Books Read
+            </ThemedText>
           </View>
-          <Feather name="plus-circle" size={24} color={theme.primary} />
-        </Pressable>
+          <View style={styles.statItem}>
+            <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
+              <Feather name="file-text" size={16} color={theme.text} />
+            </View>
+            <ThemedText style={[Typography.h2, styles.statValue]}>247</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
+              Chapters
+            </ThemedText>
+          </View>
+          <View style={styles.statItem}>
+            <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
+              <Feather name="zap" size={16} color={theme.text} />
+            </View>
+            <ThemedText style={[Typography.h2, styles.statValue]}>7</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
+              Day Streak
+            </ThemedText>
+          </View>
+        </View>
       </Card>
 
       <View style={styles.section}>
-        <View style={[styles.writerToggleRow, { backgroundColor: theme.backgroundDefault }]}>
-          <View style={styles.writerToggleLeft}>
-            <Feather name="feather" size={20} color={theme.text} />
-            <ThemedText style={styles.menuItemText}>Writer Mode</ThemedText>
-          </View>
-          <Switch value={user.isWriter} onValueChange={toggleWriterMode} />
-        </View>
-      </View>
-
-      {user.isWriter && (
-        <View style={styles.section}>
+        <ThemedText style={[Typography.h3, styles.sectionTitle]}>Account</ThemedText>
+        <MenuItem
+          icon="user"
+          title="Edit Profile"
+          subtitle="Update your profile information"
+          onPress={() => {}}
+        />
+        <MenuItem
+          icon="award"
+          title="Premium Membership"
+          subtitle="Upgrade for unlimited access"
+          onPress={() => navigation.navigate("CoinStore")}
+        />
+        {user.isWriter ? (
           <MenuItem
             icon="book"
-            title="My Novels"
+            title="Writer Dashboard"
+            subtitle="Manage your stories"
             onPress={() => navigation.navigate("WriterDashboard")}
           />
-        </View>
-      )}
-
-      <View style={styles.section}>
-        <MenuItem icon="settings" title="Settings" onPress={() => {}} />
-        <MenuItem icon="help-circle" title="Help & Support" onPress={() => {}} />
-        <MenuItem icon="shield" title="Privacy Policy" onPress={() => {}} />
-      </View>
-
-      <View style={styles.section}>
-        <Pressable
-          onPress={logout}
-          style={({ pressed }) => [
-            styles.logoutButton,
-            { backgroundColor: theme.error, opacity: pressed ? 0.7 : 1 },
-          ]}
-        >
-          <Feather name="log-out" size={20} color="#FFFFFF" />
-          <ThemedText style={styles.logoutText}>Log Out</ThemedText>
-        </Pressable>
+        ) : (
+          <MenuItem
+            icon="feather"
+            title="Become a Writer"
+            subtitle="Share your stories with the world"
+            onPress={toggleWriterMode}
+          />
+        )}
+        <MenuItem
+          icon="alert-circle"
+          title="Kebijakan dan Akun"
+          subtitle="Privacy, Terms & Conditions"
+          onPress={() => {}}
+        />
       </View>
     </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
+  profileCard: {
     alignItems: "center",
-    marginBottom: Spacing.xl,
+    paddingVertical: Spacing["2xl"],
+  },
+  avatarContainer: {
+    position: "relative",
+    marginBottom: Spacing.lg,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: Spacing.md,
   },
-  avatarText: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#FFFFFF",
+  editBadge: {
+    position: "absolute",
+    right: 0,
+    bottom: 0,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#14B8A6",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#1A1A1A",
   },
   userName: {
     marginBottom: Spacing.xs,
   },
   userEmail: {
+    marginBottom: 2,
+    fontSize: 14,
+  },
+  checkMark: {
+    fontSize: 12,
+    marginBottom: Spacing.lg,
+  },
+  premiumButton: {
+    borderRadius: BorderRadius.xs,
+    overflow: "hidden",
+    marginBottom: Spacing["2xl"],
+  },
+  premiumButtonInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing["2xl"],
+    gap: Spacing.sm,
+  },
+  premiumButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#000000",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    gap: Spacing.md,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: Spacing.sm,
   },
-  writerBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.xs,
-    gap: Spacing.xs,
+  statValue: {
+    marginBottom: 2,
   },
-  writerBadgeText: {
+  statLabel: {
     fontSize: 12,
-    fontWeight: "600",
-    color: "#000",
-  },
-  coinCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  coinCardLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  coinIconLarge: {
-    width: 48,
-    height: 48,
-  },
-  coinLabel: {
-    fontSize: 14,
-    marginBottom: Spacing.xs,
+    textAlign: "center",
   },
   section: {
-    marginTop: Spacing.lg,
+    marginTop: Spacing["2xl"],
   },
-  writerToggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.sm,
+  sectionTitle: {
+    marginBottom: Spacing.md,
+    fontWeight: "700",
   },
-  writerToggleLeft: {
-    flexDirection: "row",
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
     alignItems: "center",
-    gap: Spacing.md,
   },
   menuItem: {
     flexDirection: "row",
@@ -209,19 +265,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
+    flex: 1,
   },
   menuItemText: {
     fontSize: 16,
+    fontWeight: "500",
   },
-  badge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.xs,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FFFFFF",
+  menuSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
   },
   logoutButton: {
     flexDirection: "row",

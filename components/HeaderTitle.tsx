@@ -1,8 +1,7 @@
 import React from "react";
-import { View, StyleSheet, Image } from "react-native";
-
-import { ThemedText } from "@/components/ThemedText";
-import { Spacing } from "@/constants/theme";
+import { View, StyleSheet } from "react-native";
+import { GradientText } from "@/components/GradientText";
+import { Typography } from "@/constants/theme";
 
 interface HeaderTitleProps {
   title: string;
@@ -11,12 +10,9 @@ interface HeaderTitleProps {
 export function HeaderTitle({ title }: HeaderTitleProps) {
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../assets/images/icon.png")}
-        style={styles.icon}
-        resizeMode="contain"
-      />
-      <ThemedText style={styles.title}>{title}</ThemedText>
+      <GradientText gradient="purplePink" style={styles.title}>
+        {title}
+      </GradientText>
     </View>
   );
 }
@@ -27,13 +23,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
   },
-  icon: {
-    width: 28,
-    height: 28,
-    marginRight: Spacing.sm,
-  },
   title: {
-    fontSize: 17,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "700",
+    letterSpacing: -0.5,
   },
 });
