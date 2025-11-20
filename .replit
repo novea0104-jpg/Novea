@@ -5,12 +5,20 @@ modules = ["nodejs-22", "postgresql-16"]
 channel = "stable-24_05"
 
 [[ports]]
+localPort = 3000
+externalPort = 3003
+
+[[ports]]
 localPort = 8081
 externalPort = 80
 
 [[ports]]
 localPort = 8082
 externalPort = 3000
+
+[[ports]]
+localPort = 34237
+externalPort = 3001
 
 [[ports]]
 localPort = 42847

@@ -60,6 +60,49 @@ Preferred communication style: Simple, everyday language.
 - Path aliasing using `@/` for root-level imports
 - Babel module resolver for cleaner import statements
 
+### Backend Architecture
+
+**Server Framework**
+- Express 5.1 REST API server
+- Runs on port 3000 (mapped to external 3003 in Replit)
+- Separate process from Expo frontend (dual-shell startup pattern)
+- CORS enabled for cross-origin requests
+
+**Database**
+- PostgreSQL (Neon-backed) via Replit integration
+- Drizzle ORM for type-safe database queries
+- Schema defined in `shared/schema.ts`
+- Database client in `server/storage.ts`
+
+**Backend API Endpoints**
+- `POST /api/auth/signup` - Create user with bcrypt-hashed password
+- `POST /api/auth/login` - Authenticate user credentials
+- `GET /api/auth/me` - Fetch current user data
+- `PATCH /api/auth/me` - Update user profile (writer mode, coins)
+- `GET /api/novels` - Get all novels with chapters
+- `GET /api/novels/:id` - Get novel details
+- `POST /api/novels/:id/follow` - Follow/unfollow novel
+- `GET /api/chapters/:id` - Get chapter with unlock status
+- `POST /api/chapters/:id/unlock` - Purchase chapter with coins
+- `GET /api/user/unlocked-chapters` - User's unlocked chapters
+- `GET /api/user/following` - User's followed novels
+- `GET /api/user/reading-progress` - Reading history
+- `POST /api/reading-progress` - Update progress
+
+**Database Schema** (7 tables)
+- `users`: Auth, profile, coin balance (bcrypt passwords)
+- `novels`: Metadata, genre, pricing, statistics
+- `chapters`: Content, pricing, word count
+- `reading_progress`: User reading history
+- `unlocked_chapters`: Purchased chapters per user
+- `following_novels`: User's followed novels
+- `coin_transactions`: Transaction log
+
+**Sample Data**
+- 5 novels across genres (Romance, Fantasy, Thriller, Mystery, Sci-Fi)
+- 163 total chapters (5 free + paid per novel)
+- Seeded via `server/seed.ts`
+
 ### Data Architecture
 
 **Data Models**
@@ -67,41 +110,31 @@ Preferred communication style: Simple, everyday language.
 - `Novel`: Metadata, genre, status, rating, pricing, chapters count
 - `Chapter`: Content, pricing (free/paid), unlock status, word count
 - `CoinPackage`: In-app purchase packages with bonus coins
-- `Genre`: Type-safe genre classification (Romance, Fantasy, Thriller, Mystery, Adventure)
+- `Genre`: Type-safe genre classification (Romance, Fantasy, Thriller, Mystery, Sci-Fi)
+
+**API Client**
+- `utils/api.ts` - HTTP client for backend API
+- Environment-aware base URL (localhost for web, configurable for Expo Go)
+- User ID header injection via `setCurrentUserId()`
+- Type-safe request/response interfaces
 
 **Data Storage**
-- AsyncStorage for client-side persistence
-- Storage utilities in `utils/storage.ts` manage:
-  - User profile and authentication state
-  - Multi-user database (persistent across sessions)
-  - Session state (cleared on logout)
-  - Coin balance tracking
-  - Unlocked chapters set
-  - Following novels set
-  - Reading progress
-  - Notification read status
+- **Authoritative:** PostgreSQL database via backend API
+- **Session Persistence:** AsyncStorage stores user ID only (`@novea_user_id`)
+- **Legacy:** AsyncStorage utilities in `utils/storage.ts` (deprecated in favor of API)
 
 **Authentication System**
-- Email/password authentication using AsyncStorage
-- Dual-state storage model:
-  - Session state: Cleared on logout (`clearSession()`)
-  - Users database: Persistent across logout/login cycles
-- Storage keys:
-  - Session (cleared on logout): `@novea_user`, `@novea_coin_balance`, `@novea_unlocked_chapters`, `@novea_following_novels`, `@novea_reading_progress`, `@novea_notifications_read`
-  - Persistent: `@novea_users_database`
+- Email/password authentication via backend API
+- Passwords hashed with bcrypt (10 rounds) on server
+- Session managed via user ID in AsyncStorage
 - Auth flow:
-  - Signup: Validates email uniqueness → saves to database → creates session
-  - Login: Validates credentials from database → restores session
-  - Logout: Clears session only, preserves user database
+  - Signup: POST /api/auth/signup → Store user ID locally → Set current user
+  - Login: POST /api/auth/login → Store user ID locally → Set current user
+  - Session Restore: Load user ID → GET /api/auth/me → Restore user state
+  - Logout: Clear user ID from AsyncStorage → Clear app state
+- AuthContext in `contexts/AuthContext.tsx` handles all auth operations
 - AuthScreen renders outside NavigationContainer (uses regular ScrollView with safe area insets)
 - ProfileScreen logout button positioned with extra bottom spacing to avoid floating tab bar overlap
-
-**Mock Data Strategy**
-- Mock data generators in `utils/mockData.ts`
-- Programmatically generated novels across all genres
-- Dynamic chapter generation based on novel metadata
-- Coin packages with promotional bonuses
-- No backend integration - pure client-side data
 
 ### Monetization System
 
