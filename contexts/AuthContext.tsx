@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   toggleWriterMode: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
@@ -27,17 +28,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (savedUser) {
         const coinBalance = await storage.getCoinBalance();
         setUser({ ...savedUser, coinBalance });
-      } else {
-        const defaultUser: User = {
-          id: "user-1",
-          name: "Demo User",
-          email: "demo@novea.app",
-          isWriter: false,
-          coinBalance: 100,
-        };
-        await storage.setUser(defaultUser);
-        await storage.setCoinBalance(100);
-        setUser(defaultUser);
       }
     } catch (error) {
       console.error("Error loading user:", error);
@@ -46,18 +36,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function login(email: string, password: string) {
-    const newUser: User = {
-      id: "user-1",
-      name: email.split("@")[0],
+  async function signup(email: string, password: string, name: string) {
+    // Check if user already exists
+    const existingUser = await storage.findUserByEmail(email);
+    if (existingUser) {
+      throw new Error("An account with this email already exists");
+    }
+
+    // Create new user
+    const newStoredUser = {
+      id: `user-${Date.now()}`,
       email,
+      password, // In production, this should be hashed
+      name,
+      isWriter: false,
+      coinBalance: 100, // Welcome bonus
+      createdAt: new Date().toISOString(),
+    };
+
+    await storage.saveUserToDatabase(newStoredUser);
+
+    // Log the user in
+    const newUser: User = {
+      id: newStoredUser.id,
+      name: newStoredUser.name,
+      email: newStoredUser.email,
       isWriter: false,
       coinBalance: 100,
     };
-    
+
     await storage.setUser(newUser);
     await storage.setCoinBalance(100);
     setUser(newUser);
+  }
+
+  async function login(email: string, password: string) {
+    const storedUser = await storage.validateCredentials(email, password);
+    
+    if (!storedUser) {
+      throw new Error("Invalid email or password");
+    }
+
+    const user: User = {
+      id: storedUser.id,
+      name: storedUser.name,
+      email: storedUser.email,
+      isWriter: storedUser.isWriter,
+      coinBalance: storedUser.coinBalance,
+    };
+    
+    await storage.setUser(user);
+    await storage.setCoinBalance(storedUser.coinBalance);
+    setUser(user);
   }
 
   async function logout() {
@@ -87,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         login,
+        signup,
         logout,
         toggleWriterMode,
         updateCoinBalance,

@@ -151,6 +151,26 @@ export default function ProfileScreen() {
           onPress={() => {}}
         />
       </View>
+
+      <View style={[styles.section, styles.logoutSection]}>
+        <Pressable
+          onPress={logout}
+          style={({ pressed }) => [
+            styles.logoutButton,
+            { opacity: pressed ? 0.7 : 1, backgroundColor: theme.backgroundDefault },
+          ]}
+        >
+          <View style={styles.menuItemLeft}>
+            <View style={[styles.iconCircle, styles.logoutIconCircle]}>
+              <Feather name="log-out" size={18} color="#EF4444" />
+            </View>
+            <ThemedText style={[styles.menuItemText, styles.logoutText]}>
+              Logout
+            </ThemedText>
+          </View>
+          <Feather name="chevron-right" size={20} color={theme.textMuted} />
+        </Pressable>
+      </View>
     </ScreenScrollView>
   );
 }
@@ -245,6 +265,26 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     fontWeight: "700",
   },
+  logoutSection: {
+    marginTop: Spacing.xl,
+    paddingTop: Spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.05)",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+  },
+  logoutIconCircle: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+  },
+  logoutText: {
+    color: "#EF4444",
+  },
   iconCircle: {
     width: 36,
     height: 36,
@@ -274,18 +314,5 @@ const styles = StyleSheet.create({
   menuSubtitle: {
     fontSize: 13,
     marginTop: 2,
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.sm,
-    gap: Spacing.sm,
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FFFFFF",
   },
 });

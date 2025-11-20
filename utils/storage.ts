@@ -8,7 +8,18 @@ const KEYS = {
   FOLLOWING_NOVELS: "@novea_following_novels",
   READING_PROGRESS: "@novea_reading_progress",
   NOTIFICATIONS_READ: "@novea_notifications_read",
+  USERS_DB: "@novea_users_database",
 };
+
+interface StoredUser {
+  email: string;
+  password: string;
+  name: string;
+  id: string;
+  isWriter: boolean;
+  coinBalance: number;
+  createdAt: string;
+}
 
 export const storage = {
   async getUser(): Promise<User | null> {
@@ -143,6 +154,51 @@ export const storage = {
       await AsyncStorage.clear();
     } catch (error) {
       console.error("Error clearing storage:", error);
+    }
+  },
+
+  // Multi-user authentication
+  async getUsersDatabase(): Promise<StoredUser[]> {
+    try {
+      const data = await AsyncStorage.getItem(KEYS.USERS_DB);
+      return data ? JSON.parse(data) : [];
+    } catch (error) {
+      console.error("Error getting users database:", error);
+      return [];
+    }
+  },
+
+  async saveUserToDatabase(user: StoredUser): Promise<void> {
+    try {
+      const users = await this.getUsersDatabase();
+      users.push(user);
+      await AsyncStorage.setItem(KEYS.USERS_DB, JSON.stringify(users));
+    } catch (error) {
+      console.error("Error saving user to database:", error);
+      throw new Error("Failed to create account");
+    }
+  },
+
+  async findUserByEmail(email: string): Promise<StoredUser | null> {
+    try {
+      const users = await this.getUsersDatabase();
+      return users.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
+    } catch (error) {
+      console.error("Error finding user by email:", error);
+      return null;
+    }
+  },
+
+  async validateCredentials(email: string, password: string): Promise<StoredUser | null> {
+    try {
+      const user = await this.findUserByEmail(email);
+      if (user && user.password === password) {
+        return user;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error validating credentials:", error);
+      return null;
     }
   },
 };

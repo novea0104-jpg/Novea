@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -7,9 +7,35 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
 import MainTabNavigator from "@/navigation/MainTabNavigator";
+import AuthScreen from "@/screens/AuthScreen";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
+import { Colors } from "@/constants/theme";
+
+function AppContent() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: Colors.dark.backgroundRoot }]}>
+        <ActivityIndicator size="large" color={Colors.dark.primary} />
+      </View>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
+  return (
+    <AppProvider>
+      <NavigationContainer>
+        <MainTabNavigator />
+      </NavigationContainer>
+    </AppProvider>
+  );
+}
 
 export default function App() {
   return (
@@ -18,12 +44,8 @@ export default function App() {
         <GestureHandlerRootView style={styles.root}>
           <KeyboardProvider>
             <AuthProvider>
-              <AppProvider>
-                <NavigationContainer>
-                  <MainTabNavigator />
-                </NavigationContainer>
-                <StatusBar style="auto" />
-              </AppProvider>
+              <AppContent />
+              <StatusBar style="light" />
             </AuthProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>
@@ -35,5 +57,10 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
