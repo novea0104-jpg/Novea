@@ -74,7 +74,18 @@ export default function AuthScreen() {
         );
       }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Something went wrong");
+      // Check if it's a backend connection error
+      const errorMessage = error.message || "Something went wrong";
+      
+      if (errorMessage.includes("fetch") || errorMessage.includes("Network") || errorMessage.includes("Failed to fetch")) {
+        Alert.alert(
+          "⚠️ Backend Server Not Running",
+          "Backend API is not responding. Please start it first:\n\n1. Open NEW terminal in Replit\n2. Run: bash start-backend.sh\n3. Wait for success message\n4. Try signup again",
+          [{ text: "Got it" }]
+        );
+      } else {
+        Alert.alert("Error", errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
