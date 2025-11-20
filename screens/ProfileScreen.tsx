@@ -8,8 +8,10 @@ import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
+import { RoleBadge } from "@/components/RoleBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserStats } from "@/hooks/useUserStats";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
@@ -18,6 +20,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const { user, logout, toggleWriterMode } = useAuth();
+  const { stats, isLoading: statsLoading } = useUserStats();
 
   if (!user) return null;
 
@@ -62,6 +65,11 @@ export default function ProfileScreen() {
         <ThemedText style={[styles.userEmail, { color: theme.textSecondary }]}>
           @{user.email.split("@")[0]}
         </ThemedText>
+        
+        <View style={styles.badgeContainer}>
+          <RoleBadge role={user.role} size="medium" />
+        </View>
+        
         <ThemedText style={[styles.checkMark, { color: theme.textSecondary }]}>
           ✓ Terverifikasi
         </ThemedText>
@@ -89,7 +97,9 @@ export default function ProfileScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
               <Feather name="book-open" size={16} color={theme.text} />
             </View>
-            <ThemedText style={[Typography.h2, styles.statValue]}>12</ThemedText>
+            <ThemedText style={[Typography.h2, styles.statValue]}>
+              {statsLoading ? '-' : stats.novelsRead}
+            </ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
               Books Read
             </ThemedText>
@@ -98,7 +108,9 @@ export default function ProfileScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
               <Feather name="file-text" size={16} color={theme.text} />
             </View>
-            <ThemedText style={[Typography.h2, styles.statValue]}>247</ThemedText>
+            <ThemedText style={[Typography.h2, styles.statValue]}>
+              {statsLoading ? '-' : stats.chaptersRead}
+            </ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
               Chapters
             </ThemedText>
@@ -107,7 +119,9 @@ export default function ProfileScreen() {
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
               <Feather name="zap" size={16} color={theme.text} />
             </View>
-            <ThemedText style={[Typography.h2, styles.statValue]}>7</ThemedText>
+            <ThemedText style={[Typography.h2, styles.statValue]}>
+              {statsLoading ? '-' : stats.dayStreak}
+            </ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
               Day Streak
             </ThemedText>
@@ -214,6 +228,10 @@ const styles = StyleSheet.create({
   userEmail: {
     marginBottom: 2,
     fontSize: 14,
+  },
+  badgeContainer: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   checkMark: {
     fontSize: 12,

@@ -67,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name: userProfile.name,
           email: userProfile.email,
           isWriter: userProfile.is_writer,
+          role: (userProfile.role || 'pembaca') as any,
           coinBalance: userProfile.coin_balance,
         };
         setUser(user);
@@ -111,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: userProfile.name,
       email: userProfile.email,
       isWriter: userProfile.is_writer,
+      role: (userProfile.role || 'pembaca') as any,
       coinBalance: userProfile.coin_balance,
     };
     setUser(newUser);
@@ -131,9 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    // Sign out from Supabase Auth
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      // Sign out from Supabase Auth
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+      setUser(null);
+    }
   }
 
   async function toggleWriterMode() {
@@ -157,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: data.name,
       email: data.email,
       isWriter: data.is_writer,
+      role: (data.role || 'pembaca') as any,
       coinBalance: data.coin_balance,
     };
     setUser(updatedUser);
@@ -183,6 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name: data.name,
       email: data.email,
       isWriter: data.is_writer,
+      role: (data.role || 'pembaca') as any,
       coinBalance: data.coin_balance,
     };
     setUser(updatedUser);

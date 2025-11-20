@@ -45,8 +45,9 @@ Preferred communication style: Simple, everyday language.
 **Component Design Pattern**
 - Themed components (`ThemedView`, `ThemedText`) for consistent styling
 - Screen wrapper components that handle insets and scrolling (`ScreenScrollView`, `ScreenFlatList`, `ScreenKeyboardAwareScrollView`)
-- Reusable UI components: `Button`, `Card`, `NovelCard`, `EmptyState`, `FloatingActionButton`
+- Reusable UI components: `Button`, `Card`, `NovelCard`, `EmptyState`, `FloatingActionButton`, `RoleBadge`
 - Error boundaries for graceful error handling
+- Custom hooks: `useAuth`, `useTheme`, `useUserStats` for data fetching and state management
 
 **Design System**
 - Centralized theme constants (colors, typography, spacing, gradients) with TypeScript const assertions
@@ -89,13 +90,19 @@ Preferred communication style: Simple, everyday language.
 - Auth state synced with React Context
 
 **Database Schema** (7 tables)
-- `users`: Profiles, coin balance, writer mode (linked to Supabase Auth via email)
+- `users`: Profiles, coin balance, role system (5 tiers), linked to Supabase Auth via email
 - `novels`: Metadata, genre, pricing, statistics
 - `chapters`: Content, pricing, word count
-- `reading_progress`: User reading history
+- `reading_progress`: User reading history (used to calculate user stats)
 - `unlocked_chapters`: Purchased chapters per user
 - `following_novels`: User's followed novels
 - `coin_transactions`: Transaction log
+
+**Role System**
+- 5-tier hierarchy: Pembaca (default reader) → Penulis (writer) → Editor → Co Admin → Super Admin
+- Role-based badges displayed on user profiles with gradient colors
+- `RoleBadge` component for consistent role visualization
+- Backward compatible: maintains `is_writer` boolean alongside new `role` field
 
 **Sample Data**
 - 5 novels across genres (Romance, Fantasy, Thriller, Mystery, Sci-Fi)
@@ -105,11 +112,12 @@ Preferred communication style: Simple, everyday language.
 ### Data Architecture
 
 **Data Models**
-- `User`: Authentication, role (Reader/Writer), coin balance
+- `User`: Authentication, 5-tier role system (Pembaca/Penulis/Editor/Co Admin/Super Admin), coin balance, user statistics
 - `Novel`: Metadata, genre, status, rating, pricing, chapters count
 - `Chapter`: Content, pricing (free/paid), unlock status, word count
 - `CoinPackage`: In-app purchase packages with bonus coins
 - `Genre`: Type-safe genre classification (Romance, Fantasy, Thriller, Mystery, Sci-Fi)
+- `UserStats`: Dynamic statistics (novels read, chapters read, day streak) calculated from reading_progress table
 
 **Data Client**
 - `utils/supabase.ts` - Supabase client singleton
@@ -260,6 +268,15 @@ That's it! The app connects directly to Supabase Cloud.
 - ✅ NovelDetailScreen & ReaderScreen fetch chapters from Supabase
 - ✅ Single-process development workflow (Expo only)
 - ✅ Credentials managed via Replit Secrets
+
+**Role System & Profile Enhancements ✅ (November 20, 2025)**
+- ✅ Added 5-tier role system: Pembaca, Penulis, Editor, Co Admin, Super Admin
+- ✅ Created professional `RoleBadge` component with gradient styling
+- ✅ Implemented `useUserStats` hook to fetch real user statistics from database
+- ✅ Profile screen now displays dynamic stats (novels read, chapters read) from `reading_progress` table
+- ✅ Fixed logout error handling with graceful fallback
+- ✅ Updated Row Level Security policies to use email-based matching (UUID vs integer ID compatibility)
+- 📝 SQL files for migration: `supabase-add-roles.sql`, `supabase-rls-fix.sql`
 
 ### Future Integration Points
 - Payment Gateway (GoPay, DANA, bank transfers, credit cards)

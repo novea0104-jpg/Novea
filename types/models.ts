@@ -2,11 +2,14 @@ export type Genre = "Romance" | "Fantasy" | "Thriller" | "Mystery" | "Adventure"
 
 export type NovelStatus = "On-Going" | "Completed";
 
+export type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   isWriter: boolean;
+  role: UserRole;
   coinBalance: number;
   avatar?: string;
 }
