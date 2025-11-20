@@ -1,12 +1,14 @@
 import React from "react";
 import { View, StyleSheet, FlatList, Pressable, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { coinPackages } from "@/utils/mockData";
 
 export default function CoinStoreScreen() {
@@ -20,25 +22,27 @@ export default function CoinStoreScreen() {
   };
 
   const renderPackage = ({ item }: any) => (
-    <Pressable
+    <Card 
+      elevation={1}
       onPress={() => handlePurchase(item)}
-      style={({ pressed }) => [
+      style={[
         styles.packageCard,
-        {
-          backgroundColor: theme.backgroundDefault,
-          borderWidth: item.isPopular ? 2 : 0,
-          borderColor: item.isPopular ? theme.primary : "transparent",
-          opacity: pressed ? 0.7 : 1,
-        },
+        item.isPopular && { borderWidth: 2, borderColor: theme.primary },
       ]}
     >
       {item.isPopular && (
-        <View style={[styles.popularBadge, { backgroundColor: theme.primary }]}>
+        <LinearGradient
+          colors={GradientColors.purplePink.colors}
+          start={GradientColors.purplePink.start}
+          end={GradientColors.purplePink.end}
+          style={styles.popularBadge}
+        >
+          <Feather name="star" size={10} color="#FFFFFF" />
           <ThemedText style={styles.popularText}>POPULAR</ThemedText>
-        </View>
+        </LinearGradient>
       )}
-      <Image source={require("@/assets/images/icons/coin.png")} style={styles.packageIcon} />
-      <ThemedText style={[Typography.h2, { color: theme.secondary, marginVertical: Spacing.sm }]}>
+      <Feather name="circle" size={48} color={theme.secondary} />
+      <ThemedText style={[Typography.h1, { color: theme.text, marginVertical: Spacing.sm, fontWeight: "800" }]}>
         {item.coins}
       </ThemedText>
       {item.bonus > 0 && (
@@ -46,33 +50,42 @@ export default function CoinStoreScreen() {
           <ThemedText style={styles.bonusText}>+{item.bonus} BONUS</ThemedText>
         </View>
       )}
-      <ThemedText style={[styles.price, { color: theme.textSecondary, marginTop: Spacing.md }]}>
+      <ThemedText style={[styles.price, { color: theme.textSecondary, marginTop: Spacing.md, fontSize: 18, fontWeight: "700" }]}>
         Rp {(item.price / 100).toLocaleString()}
       </ThemedText>
-      <Button
-        onPress={() => handlePurchase(item)}
+      <LinearGradient
+        colors={GradientColors.yellowGreen.colors}
+        start={GradientColors.yellowGreen.start}
+        end={GradientColors.yellowGreen.end}
         style={[styles.buyButton, { marginTop: Spacing.md }]}
       >
-        Buy Now
-      </Button>
-    </Pressable>
+        <Pressable onPress={() => handlePurchase(item)} style={styles.buyButtonInner}>
+          <ThemedText style={styles.buyButtonText}>Buy Now</ThemedText>
+        </Pressable>
+      </LinearGradient>
+    </Card>
   );
 
   return (
     <ScreenScrollView>
-      <View style={[styles.balanceCard, { backgroundColor: theme.backgroundDefault }]}>
-        <ThemedText style={[styles.balanceLabel, { color: theme.textSecondary }]}>
+      <LinearGradient
+        colors={GradientColors.yellowGreen.colors}
+        start={GradientColors.yellowGreen.start}
+        end={GradientColors.yellowGreen.end}
+        style={styles.balanceCard}
+      >
+        <ThemedText style={[styles.balanceLabel, { color: "#000000" }]}>
           Current Balance
         </ThemedText>
         <View style={styles.balanceRow}>
-          <Image source={require("@/assets/images/icons/coin.png")} style={styles.balanceIcon} />
-          <ThemedText style={[Typography.h1, { color: theme.secondary }]}>
+          <Feather name="circle" size={32} color="#000000" />
+          <ThemedText style={[Typography.h1, { color: "#000000", fontWeight: "800" }]}>
             {user?.coinBalance || 0}
           </ThemedText>
         </View>
-      </View>
+      </LinearGradient>
 
-      <ThemedText style={[Typography.h2, styles.sectionTitle]}>Coin Packages</ThemedText>
+      <ThemedText style={[Typography.h2, styles.sectionTitle, { fontWeight: "700" }]}>Coin Packages</ThemedText>
       
       <FlatList
         data={coinPackages}
@@ -103,14 +116,15 @@ export default function CoinStoreScreen() {
 
 const styles = StyleSheet.create({
   balanceCard: {
-    padding: Spacing.xl,
-    borderRadius: BorderRadius.sm,
+    padding: Spacing["2xl"],
+    borderRadius: BorderRadius.md,
     alignItems: "center",
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing["2xl"],
   },
   balanceLabel: {
     fontSize: 14,
     marginBottom: Spacing.sm,
+    fontWeight: "600",
   },
   balanceRow: {
     flexDirection: "row",
@@ -122,7 +136,7 @@ const styles = StyleSheet.create({
     height: 32,
   },
   sectionTitle: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
   packageGrid: {
     gap: Spacing.md,
@@ -132,8 +146,9 @@ const styles = StyleSheet.create({
   },
   packageCard: {
     flex: 1,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.sm,
+    padding: Spacing.xl,
+    paddingTop: Spacing["2xl"],
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     position: "relative",
   },
@@ -142,10 +157,12 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    flexDirection: "row",
+    gap: 4,
+    justifyContent: "center",
     paddingVertical: Spacing.xs,
-    borderTopLeftRadius: BorderRadius.sm,
-    borderTopRightRadius: BorderRadius.sm,
-    alignItems: "center",
+    borderTopLeftRadius: BorderRadius.md,
+    borderTopRightRadius: BorderRadius.md,
   },
   popularText: {
     fontSize: 10,
@@ -173,6 +190,18 @@ const styles = StyleSheet.create({
   },
   buyButton: {
     width: "100%",
+    borderRadius: BorderRadius.xs,
+    overflow: "hidden",
+  },
+  buyButtonInner: {
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buyButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#000000",
   },
   freeCoinsCard: {
     flexDirection: "row",
