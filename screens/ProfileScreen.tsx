@@ -24,8 +24,10 @@ export default function ProfileScreen() {
 
   if (!user) return null;
 
-  // Check if user is at least a writer (penulis or higher roles)
-  const isWriterOrAbove = user.role !== 'pembaca';
+  // Determine which role-based button to show
+  const isAdmin = user.role === 'editor' || user.role === 'co_admin' || user.role === 'super_admin';
+  const isPenulis = user.role === 'penulis';
+  const isPembaca = user.role === 'pembaca';
 
   const MenuItem = ({ icon, title, subtitle, onPress }: any) => (
     <Pressable
@@ -146,7 +148,14 @@ export default function ProfileScreen() {
           subtitle="Upgrade for unlimited access"
           onPress={() => navigation.navigate("CoinStore")}
         />
-        {isWriterOrAbove ? (
+        {isAdmin ? (
+          <MenuItem
+            icon="shield"
+            title="Dashboard Admin"
+            subtitle="Manage platform & users"
+            onPress={() => navigation.navigate("AdminDashboard")}
+          />
+        ) : isPenulis ? (
           <MenuItem
             icon="book"
             title="Pusat Penulis"

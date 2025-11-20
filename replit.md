@@ -276,7 +276,16 @@ That's it! The app connects directly to Supabase Cloud.
 - ✅ Profile screen now displays dynamic stats (novels read, chapters read) from `reading_progress` table
 - ✅ Fixed logout error handling with graceful fallback
 - ✅ Updated Row Level Security policies to use email-based matching (UUID vs integer ID compatibility)
-- 📝 SQL files for migration: `supabase-add-roles.sql`, `supabase-rls-fix.sql`
+- ✅ Implemented role-based navigation with secure upgrade system
+- ✅ Created AdminDashboardScreen for editor/co_admin/super_admin roles
+- ✅ Created WriterCenterScreen for penulis role
+- ✅ Built secure PostgreSQL function `upgrade_user_to_writer()` to handle role upgrades
+- 📝 SQL files: `supabase-add-roles.sql`, `supabase-rls-fix-v2.sql`, `supabase-enable-rls.sql`, `supabase-upgrade-writer-function.sql`
+
+**Role-Based Navigation System:**
+- **Pembaca** (default): Shows "Menjadi Penulis" button → upgrades to Penulis role
+- **Penulis**: Shows "Pusat Penulis" button → navigates to WriterCenter (coming soon)
+- **Editor/Co Admin/Super Admin**: Shows "Dashboard Admin" button → navigates to AdminDashboard (coming soon)
 
 ### Future Integration Points
 - Payment Gateway (GoPay, DANA, bank transfers, credit cards)
