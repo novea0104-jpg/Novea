@@ -30,21 +30,28 @@ export default function MainTabNavigator() {
         tabBarStyle: {
           position: "absolute",
           backgroundColor: Platform.select({
-            ios: "transparent",
-            android: theme.backgroundRoot,
+            ios: "rgba(0, 0, 0, 0.9)",
+            android: "#000000",
           }),
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: "#1A1A1A",
           elevation: 0,
+          height: 60,
+          paddingBottom: 8,
         },
         tabBarBackground: () =>
           Platform.OS === "ios" ? (
             <BlurView
-              intensity={100}
-              tint={isDark ? "dark" : "light"}
+              intensity={80}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
           ) : null,
         headerShown: false,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
       }}
     >
       <Tab.Screen
