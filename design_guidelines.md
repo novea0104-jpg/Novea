@@ -3,251 +3,160 @@
 ## Architecture Decisions
 
 ### Authentication
-**Auth Required** - The app has explicit user accounts, monetization, and social features.
+**Auth Required** - App has user accounts, monetization, and social features.
 
 **Implementation:**
-- Use SSO with Google Sign-In and Apple Sign-In
-- Include email/password as fallback option
-- Separate onboarding flows for Readers vs Writers (user selects role during signup)
-- Login screen features:
-  - App logo and tagline
-  - Social sign-in buttons (Apple, Google)
-  - Email/password form (collapsible)
-  - Privacy policy & terms of service links
-- Account screen includes:
-  - User profile (avatar, display name, role badge: Reader/Writer)
-  - Coin balance display (prominent)
-  - Switch to Writer mode (for readers who want to publish)
-  - Log out with confirmation
-  - Delete account (Settings > Account > Delete Account, double confirmation)
+- SSO with Apple Sign-In (required for iOS) and Google Sign-In
+- Email/password fallback
+- User role selection during signup: Reader or Writer
+- Login screen with social sign-in buttons, collapsible email form, privacy policy/terms links
+- Account screen includes: user profile (avatar, display name, role badge), prominent coin balance, role switching, logout (with confirmation), delete account (nested under Settings > Account > Delete, double confirmation)
 
-### Navigation Structure
-**Tab Navigation** with 4 tabs + Floating Action Button (FAB) for Writers:
-
-1. **Browse (Home)** - Novel catalog and discovery
-2. **Library** - Followed novels and reading history
-3. **Notifications** - Updates on followed novels and system notifications
-4. **Profile** - User account, settings, coin management
+### Navigation
+**Tab Navigation** with 4 tabs + FAB:
+- **Browse** - Novel discovery and catalog
+- **Library** - Followed novels and reading history
+- **Notifications** - Novel updates and system alerts
+- **Profile** - Account settings and coin management
 
 **FAB (Writer Mode Only):**
-- Visible when user has writer role activated
-- Action: Create New Novel or Add Chapter
-- Positioned bottom-right, above tab bar
+- Visible for writer role
+- Action: Create novel or add chapter
+- Position: bottom-right, above tab bar with drop shadow (shadowOffset: {width: 0, height: 2}, shadowOpacity: 0.10, shadowRadius: 2)
 
-### Information Architecture
+### Screen Specifications
 
-**Browse Stack:**
-- Browse Home (catalog with categories)
-- Novel Detail
-- Reader (reading experience)
-- Genre Filter Results
-- Search Results
+**Browse Home**
+- Purpose: Discover novels
+- Layout: Transparent header with logo (left), search icon (right); scrollable horizontal carousels
+- Top inset: headerHeight + Spacing.xl; Bottom inset: tabBarHeight + Spacing.xl
+- Components: Search, carousels (Trending, New Releases, Editor's Pick, genres); cards show cover, title, author, rating, coin price
+- Interaction: Tap card → Novel Detail
 
-**Library Stack:**
-- Library Home (followed novels, reading history)
-- Novel Detail
-- Reader
+**Novel Detail**
+- Purpose: Novel info and chapter list
+- Layout: Transparent header with back (left), share + bookmark (right); scrollable content
+- Top inset: headerHeight + Spacing.xl; Bottom inset: insets.bottom + Spacing.xl
+- Components: Hero (cover, title, author, rating), Follow/Share buttons, coin pricing, genre pills, expandable synopsis, chapter list (lock icon for paid, "FREE" badge for first 5)
+- Interaction: Tap chapter → Reader (check coins if locked)
 
-**Notifications Stack:**
-- Notifications List
-- Novel Detail (deep link)
+**Reader**
+- Purpose: Immersive reading
+- Layout: Hidden header (appears on tap), full-screen content, footer with Previous/Next buttons
+- Components: Title/chapter number (fades out), scrollable text, floating settings button (bottom-right with drop shadow), progress indicator
+- Unlock flow: Modal showing coin balance, unlock price, "Unlock" CTA
+- Reading settings: font size (14-24px), background (pure black/dark grey/sepia), scroll/page mode, serif/sans-serif toggle
 
-**Profile Stack:**
-- Profile Home
-- Edit Profile
-- Coin Store (purchase coins)
-- Payment Method
-- Writer Dashboard (if writer role active)
-- Manage Novel (writer)
-- Edit Chapter (writer)
-- Settings
-- Privacy Policy / Terms
+**Library Home**
+- Layout: Default header with "Library" title, filter icon (right); scrollable list/grid toggle
+- Top inset: Spacing.xl; Bottom inset: tabBarHeight + Spacing.xl
+- Components: Segmented control (Following/History), grid/list toggle, novel cards with progress bars and "New Chapter" badges
+- Empty state: Book illustration + message
 
-## Screen Specifications
+**Coin Store**
+- Purpose: Purchase coins
+- Layout: Default header, scrollable content
+- Components: Current balance (prominent gradient card at top), coin package cards with bonus badges, payment method selector (icons), "Get Free Coins" section (daily login, ads, missions)
+- Interaction: Tap package → Payment modal → Process
 
-### Browse Home
-- **Purpose:** Discover and browse novels
-- **Layout:**
-  - Transparent header with app logo (left), search icon (right)
-  - Scrollable content with horizontal carousels
-  - Top inset: headerHeight + Spacing.xl
-  - Bottom inset: tabBarHeight + Spacing.xl
-- **Components:**
-  - Search bar (modal screen when tapped)
-  - Horizontal scrolling carousels:
-    - Trending (large cards with cover images)
-    - New Releases (medium cards)
-    - Editor's Pick (medium cards)
-    - Genre sections (Romance, Fantasy, Thriller)
-  - Each card shows: cover, title, author, rating stars, coin icon + price per chapter
-- **Interactions:** Tap card → Navigate to Novel Detail
+**Writer Dashboard**
+- Layout: Default header with "My Novels" title, add icon (right)
+- Components: Stats cards (total readers, earnings, pending withdrawal), "Withdraw Earnings" button, published novel list with metrics
+- Interaction: Tap novel → Manage Novel
 
-### Novel Detail
-- **Purpose:** Display novel information and chapter list
-- **Layout:**
-  - Custom transparent header with back button (left), share + bookmark icons (right)
-  - Scrollable content
-  - Top inset: headerHeight + Spacing.xl
-  - Bottom inset: insets.bottom + Spacing.xl
-- **Components:**
-  - Hero section: Cover image, title, author name, rating (stars + count)
-  - Action buttons: Follow/Unfollow, Share
-  - Coin pricing: "X coins per chapter" with icon
-  - Genre tags (pills)
-  - Synopsis (expandable)
-  - Chapter list (numbered, with lock icon for paid chapters, "FREE" badge for first 5 chapters)
-- **Interactions:** Tap chapter → Reader screen (check coin balance if locked)
+**Manage Novel (Writer)**
+- Layout: Default header, scrollable list
+- Components: Editable cover/info, analytics (views, readers, revenue), chapter list with edit/delete, floating "Add Chapter" button
 
-### Reader
-- **Purpose:** Immersive reading experience
-- **Layout:**
-  - Hidden header (appears on tap with back, settings icons)
-  - Full-screen content area
-  - Footer with chapter navigation (Previous/Next buttons)
-  - Top/bottom insets: 0 when header hidden, normal when visible
-- **Components:**
-  - Novel title and chapter number (top, fades out)
-  - Reading content (scrollable or paginated based on user preference)
-  - Reading settings button (floating, bottom-right): font size, background color, scroll/page mode
-  - Progress indicator (small, bottom center)
-- **Unlock Flow:** If chapter is locked, show modal with coin balance, unlock price, and "Unlock" CTA
+**Edit Chapter (Writer)**
+- Layout: Header with cancel (left), "Save Draft" + "Publish" (right); scrollable form, keyboard-aware
+- Components: Chapter number (auto), title input, markdown text editor, schedule publish toggle
 
-### Library Home
-- **Purpose:** Access followed novels and reading history
-- **Layout:**
-  - Default header with "Library" title, filter icon (right)
-  - Scrollable list/grid toggle
-  - Top inset: Spacing.xl
-  - Bottom inset: tabBarHeight + Spacing.xl
-- **Components:**
-  - Segmented control: "Following" / "History"
-  - Grid or list view of novel cards
-  - Each card shows: cover, title, progress bar, "New Chapter" badge if updated
-  - Empty state: Illustration + "Start following novels to see them here"
-
-### Coin Store
-- **Purpose:** Purchase coin packages
-- **Layout:**
-  - Default header with "Buy Coins" title, close button (left)
-  - Scrollable content
-  - Top inset: Spacing.xl
-  - Bottom inset: insets.bottom + Spacing.xl
-- **Components:**
-  - Current balance display (prominent, at top)
-  - Coin packages (cards with coin amount, price, bonus badge for larger packages)
-  - Payment method selector (GoPay, DANA, Bank Transfer, Credit Card icons)
-  - "Get Free Coins" section: Daily login, watch ads, complete missions
-- **Interactions:** Tap package → Payment confirmation modal → Process payment
-
-### Writer Dashboard (Writer Role Only)
-- **Purpose:** Manage published novels and view analytics
-- **Layout:**
-  - Default header with "My Novels" title, add icon (right)
-  - Scrollable list
-  - Top inset: Spacing.xl
-  - Bottom inset: tabBarHeight + Spacing.xl
-- **Components:**
-  - Stats summary cards: Total readers, total earnings (coins), pending withdrawal
-  - "Withdraw Earnings" button (if balance > threshold)
-  - List of published novels with: cover thumbnail, title, status (On-Going/Completed), chapter count, reader count, earnings
-  - FAB for creating new novel
-- **Interactions:** Tap novel → Manage Novel screen
-
-### Manage Novel (Writer)
-- **Purpose:** Edit novel details and manage chapters
-- **Layout:**
-  - Default header with novel title, edit icon (right)
-  - Scrollable list
-  - Top inset: Spacing.xl
-  - Bottom inset: insets.bottom + Spacing.xl
-- **Components:**
-  - Novel cover and basic info (editable)
-  - Analytics: views, readers, revenue per chapter
-  - Chapter list with edit/delete actions
-  - "Add Chapter" button (floating)
-- **Interactions:** Tap chapter → Edit Chapter screen
-
-### Edit Chapter (Writer)
-- **Purpose:** Write or edit chapter content
-- **Layout:**
-  - Header with cancel (left), "Save Draft" and "Publish" (right)
-  - Scrollable form
-  - Top inset: Spacing.xl
-  - Bottom inset: insets.bottom + Spacing.xl (keyboard aware)
-- **Components:**
-  - Chapter number (auto-incremented)
-  - Chapter title input
-  - Rich text editor (simple markdown support)
-  - Schedule publish toggle + date picker
-  - Draft indicator if not published
-
-### Profile Home
-- **Purpose:** User account management
-- **Layout:**
-  - Default header with "Profile" title, settings icon (right)
-  - Scrollable content
-  - Top inset: Spacing.xl
-  - Bottom inset: tabBarHeight + Spacing.xl
-- **Components:**
-  - User avatar (tappable to change), display name, role badge
-  - Coin balance card (prominent, tappable → Coin Store)
-  - "Switch to Writer Mode" toggle (if reader) or "Writer Dashboard" link (if writer)
-  - Menu items: Edit Profile, Reading Stats, Privacy, Help & Support, Log Out
+**Profile Home**
+- Layout: Default header with settings icon (right)
+- Components: Avatar (tappable), display name, role badge, gradient coin balance card (tappable → Coin Store), role switch/dashboard link, menu items (Edit Profile, Reading Stats, Privacy, Help, Log Out)
 
 ## Design System
 
 ### Color Palette
-- **Primary:** Deep Purple (#6C5CE7) - for CTAs, active states, branding
-- **Secondary:** Warm Gold (#FFD700) - for coin icons, premium badges
-- **Background:** Dark mode optimized
-  - Dark: #1A1A2E (primary background)
-  - Card: #16213E (elevated surfaces)
-  - Light: #FFFFFF (for light mode toggle)
-- **Text:**
-  - Primary: #FFFFFF (dark mode) / #1A1A2E (light mode)
-  - Secondary: #B0B0C3
-  - Muted: #6C6C80
-- **Accent:**
-  - Success: #27AE60 (for "Free" badges)
-  - Warning: #F39C12 (for lock icons)
-  - Error: #E74C3C
+**Pure Black Theme:**
+- **Background Primary:** #000000 (pure black for main screens)
+- **Card/Elevated:** #1A1A1A (dark grey for cards, modals)
+- **Card Hover/Active:** #2A2A2A (interaction states)
+
+**Gradients:**
+- **Primary Accent:** Linear gradient purple to pink (#8B5CF6 → #EC4899)
+  - Use for: Premium badges, featured content, highlights
+- **CTA Accent:** Linear gradient yellow to green (#FACC15 → #84CC16)
+  - Use for: Primary buttons, unlock actions, purchase CTAs
+
+**Text:**
+- **Primary:** #FFFFFF (high contrast on black)
+- **Secondary:** #A3A3A3 (metadata, captions)
+- **Muted:** #737373 (disabled states)
+
+**Functional:**
+- **Success:** #10B981 (free badges, confirmations)
+- **Warning:** #F59E0B (lock icons, alerts)
+- **Error:** #EF4444 (destructive actions)
+- **Coin:** #FCD34D (solid gold for coin icon)
 
 ### Typography
-- **System Font:** SF Pro (iOS) / Roboto (Android)
-- **Novel Reading Font:** Serif option (Georgia, Merriweather) for immersive reading
-- **Sizes:**
-  - H1: 28px, Bold (screen titles)
-  - H2: 22px, Semibold (section headers)
-  - Body: 16px, Regular (default text)
-  - Caption: 14px, Regular (metadata)
-  - Reading: 18px adjustable (14-24px, user preference)
+- **System:** SF Pro (iOS) / Roboto (Android)
+- **Reading Font:** Serif option (Merriweather) for immersive mode
+- **Scale:**
+  - H1: 28px Bold (titles)
+  - H2: 22px Semibold (headers)
+  - Body: 16px Regular (default)
+  - Caption: 14px Regular (meta)
+  - Reading: 18px adjustable (14-24px)
 
 ### Visual Design
-- **Icons:** Use Feather icons from @expo/vector-icons
-- **Touchable Feedback:** All buttons have press state with 0.7 opacity
-- **Cards:** Rounded corners (12px), subtle elevation
-  - Novel cards use cover images as hero
-  - Floating elements (FAB, reading settings) use drop shadow:
-    - shadowOffset: {width: 0, height: 2}
-    - shadowOpacity: 0.10
-    - shadowRadius: 2
-- **Coin Icon:** Custom asset - golden coin with "N" emblem
-- **Lock Icon:** Standard Feather "lock" icon in Warning color
-- **Rating:** Star icons (filled/outline) in Secondary Gold color
+- **Minimalist Aesthetic:**
+  - Generous white space (24px minimum between sections)
+  - Clean hierarchy with clear size/weight differences
+  - Reduced visual clutter - only essential elements visible
+  
+- **Rounded Corners:** 16px for cards, 12px for buttons, 8px for pills/badges
+
+- **Touchable Feedback:**
+  - All interactive elements: 0.7 opacity on press
+  - No blurred shadows except floating elements
+  - Gradient buttons: slight scale (0.98) on press
+
+- **Cards:**
+  - Dark grey (#1A1A1A) background
+  - 1px border with #2A2A2A for subtle definition
+  - No drop shadow (flat design)
+  - Novel cover cards: gradient overlay from transparent to black at bottom (for text readability)
+
+- **Icons:** Feather icons (@expo/vector-icons), 24px default size, #FFFFFF or gradient fill for featured items
+
+- **Elevation Hierarchy:**
+  - Level 0: Pure black background
+  - Level 1: Dark grey cards (#1A1A1A)
+  - Level 2: Modals, dropdowns (#2A2A2A)
+  - Floating only: FAB and reading settings button use subtle drop shadow
 
 ### Critical Assets
-1. **App Logo** - "Novea" wordmark with book icon
-2. **Coin Icon** - Golden coin with "N" emblem (used throughout app)
-3. **Novel Cover Placeholders** - 5 generic covers for different genres (Romance: pink gradient, Fantasy: purple mystical, Thriller: dark blue)
-4. **Empty State Illustrations:**
-   - Library empty: Open book illustration
-   - No search results: Magnifying glass with question mark
-   - No notifications: Bell with checkmark
-5. **User Avatar Presets** - 6 book-themed avatars (different colored books, reader silhouettes) that users can select
+1. **App Logo:** "Novea" wordmark with minimalist book icon (gradient purple-pink)
+2. **Coin Icon:** Solid gold coin (#FCD34D) with "N" emblem
+3. **Novel Cover Placeholders:** 5 genre-specific covers with gradient overlays:
+   - Romance: Pink-purple gradient
+   - Fantasy: Purple-blue gradient  
+   - Thriller: Dark red-black gradient
+   - Mystery: Teal-black gradient
+   - Sci-Fi: Cyan-purple gradient
+4. **Empty State Illustrations:** Minimalist line art in gradient:
+   - Library: Open book outline
+   - Search: Magnifying glass
+   - Notifications: Bell with checkmark
+5. **User Avatar Presets:** 6 book-themed gradient avatars (abstract book shapes in different gradient combinations)
 
 ### Accessibility
-- Minimum touch target: 44x44 points
-- Text contrast ratio: 4.5:1 minimum
-- Reading mode supports: Dark mode toggle, font size adjustment (14-24px), serif/sans-serif toggle
-- VoiceOver/TalkBack labels for all interactive elements
-- Haptic feedback on critical actions (unlock chapter, purchase coins)
+- Touch targets: 44x44 minimum
+- Text contrast: 4.5:1 minimum (white on pure black exceeds this)
+- Reading mode: Dark/sepia toggle, font size adjustment, serif/sans-serif
+- VoiceOver/TalkBack labels on all interactive elements
+- Haptic feedback on critical actions (unlock, purchase)
+- Gradient text: Ensure underlying solid color meets contrast requirements for accessibility mode

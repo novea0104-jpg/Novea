@@ -1,7 +1,42 @@
 import { Platform } from "react-native";
 
-const primaryColor = "#6C5CE7";
-const goldColor = "#FFD700";
+export const GradientColors = {
+  purplePink: {
+    colors: ["#8B5CF6", "#EC4899"],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 1 },
+  },
+  yellowGreen: {
+    colors: ["#FACC15", "#84CC16"],
+    start: { x: 0, y: 0 },
+    end: { x: 1, y: 0 },
+  },
+  romance: {
+    colors: ["#EC4899", "#8B5CF6"],
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+  },
+  fantasy: {
+    colors: ["#8B5CF6", "#3B82F6"],
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+  },
+  thriller: {
+    colors: ["#DC2626", "#000000"],
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+  },
+  mystery: {
+    colors: ["#14B8A6", "#000000"],
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+  },
+  sciFi: {
+    colors: ["#06B6D4", "#8B5CF6"],
+    start: { x: 0, y: 0 },
+    end: { x: 0, y: 1 },
+  },
+};
 
 export const Colors = {
   light: {
@@ -10,35 +45,37 @@ export const Colors = {
     textMuted: "#B0B0C3",
     buttonText: "#FFFFFF",
     tabIconDefault: "#B0B0C3",
-    tabIconSelected: primaryColor,
-    link: primaryColor,
-    primary: primaryColor,
-    secondary: goldColor,
-    success: "#27AE60",
-    warning: "#F39C12",
-    error: "#E74C3C",
+    tabIconSelected: "#8B5CF6",
+    link: "#8B5CF6",
+    primary: "#8B5CF6",
+    secondary: "#FCD34D",
+    success: "#10B981",
+    warning: "#F59E0B",
+    error: "#EF4444",
     backgroundRoot: "#FFFFFF",
     backgroundDefault: "#F5F5F5",
     backgroundSecondary: "#EBEBEB",
     backgroundTertiary: "#E0E0E0",
+    cardBorder: "#E0E0E0",
   },
   dark: {
     text: "#FFFFFF",
-    textSecondary: "#B0B0C3",
-    textMuted: "#6C6C80",
+    textSecondary: "#A3A3A3",
+    textMuted: "#737373",
     buttonText: "#FFFFFF",
-    tabIconDefault: "#6C6C80",
-    tabIconSelected: primaryColor,
-    link: primaryColor,
-    primary: primaryColor,
-    secondary: goldColor,
-    success: "#27AE60",
-    warning: "#F39C12",
-    error: "#E74C3C",
-    backgroundRoot: "#1A1A2E",
-    backgroundDefault: "#16213E",
-    backgroundSecondary: "#1E2A47",
-    backgroundTertiary: "#253150",
+    tabIconDefault: "#737373",
+    tabIconSelected: "#8B5CF6",
+    link: "#8B5CF6",
+    primary: "#8B5CF6",
+    secondary: "#FCD34D",
+    success: "#10B981",
+    warning: "#F59E0B",
+    error: "#EF4444",
+    backgroundRoot: "#000000",
+    backgroundDefault: "#1A1A1A",
+    backgroundSecondary: "#2A2A2A",
+    backgroundTertiary: "#3A3A3A",
+    cardBorder: "#2A2A2A",
   },
 };
 
@@ -59,11 +96,11 @@ export const Spacing = {
 export const BorderRadius = {
   xs: 8,
   sm: 12,
-  md: 18,
-  lg: 24,
-  xl: 30,
-  "2xl": 40,
-  "3xl": 50,
+  md: 16,
+  lg: 20,
+  xl: 24,
+  "2xl": 32,
+  "3xl": 40,
   full: 9999,
 };
 

@@ -12,7 +12,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 interface CardProps {
-  elevation: number;
+  elevation?: number;
   onPress?: () => void;
   children?: ReactNode;
   style?: ViewStyle;
@@ -44,7 +44,7 @@ const getBackgroundColorForElevation = (
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function Card({ elevation, onPress, children, style }: CardProps) {
+export function Card({ elevation = 1, onPress, children, style }: CardProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
 
@@ -76,6 +76,7 @@ export function Card({ elevation, onPress, children, style }: CardProps) {
         styles.card,
         {
           backgroundColor: cardBackgroundColor,
+          borderColor: theme.cardBorder,
         },
         onPress && animatedStyle,
         style,
@@ -98,7 +99,8 @@ export function Card({ elevation, onPress, children, style }: CardProps) {
 const styles = StyleSheet.create({
   card: {
     padding: Spacing.xl,
-    borderRadius: BorderRadius["2xl"],
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
   },
   cardTitle: {
     marginBottom: Spacing.sm,
