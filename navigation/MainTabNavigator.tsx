@@ -30,11 +30,11 @@ export default function MainTabNavigator() {
         tabBarStyle: {
           position: "absolute",
           backgroundColor: Platform.select({
-            ios: "rgba(0, 0, 0, 0.9)",
-            android: "#000000",
+            ios: "transparent",
+            android: theme.backgroundRoot,
           }),
           borderTopWidth: 1,
-          borderTopColor: "#1A1A1A",
+          borderTopColor: theme.cardBorder,
           elevation: 0,
           height: 60,
           paddingBottom: 8,

@@ -31,6 +31,8 @@ const getBackgroundColorForElevation = (
   theme: any,
 ): string => {
   switch (elevation) {
+    case 0:
+      return theme.backgroundRoot;
     case 1:
       return theme.backgroundDefault;
     case 2:
@@ -38,7 +40,7 @@ const getBackgroundColorForElevation = (
     case 3:
       return theme.backgroundTertiary;
     default:
-      return theme.backgroundRoot;
+      return theme.backgroundDefault;
   }
 };
 

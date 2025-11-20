@@ -33,10 +33,10 @@ export default function BrowseHomeScreen() {
     navigation.setOptions({
       headerShown: true,
       headerTransparent: true,
-      headerTitle: () => <HeaderTitle title="N" />,
-      headerLeft: () => (
-        <View style={{ marginLeft: Spacing.md }}>
+      headerTitle: () => (
+        <View style={styles.headerTitleContainer}>
           <HeaderTitle title="N" />
+          <ThemedText style={styles.appName}>Novea</ThemedText>
         </View>
       ),
       headerRight: () => (
@@ -45,7 +45,7 @@ export default function BrowseHomeScreen() {
             onPress={() => navigation.navigate("Search")}
             style={({ pressed }) => [
               styles.iconButton,
-              { opacity: pressed ? 0.7 : 1 },
+              { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
             ]}
           >
             <Feather name="search" size={20} color={theme.text} />
@@ -53,19 +53,19 @@ export default function BrowseHomeScreen() {
           <Pressable
             style={({ pressed }) => [
               styles.iconButton,
-              { opacity: pressed ? 0.7 : 1, marginLeft: Spacing.sm },
+              { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1, marginLeft: Spacing.sm },
             ]}
           >
             <Feather name="bell" size={20} color={theme.text} />
           </Pressable>
           <LinearGradient
-            colors={["#A3E635", "#84CC16"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            colors={GradientColors.yellowGreen.colors}
+            start={GradientColors.yellowGreen.start}
+            end={GradientColors.yellowGreen.end}
             style={styles.coinBadge}
           >
-            <Feather name="circle" size={12} color="#000000" style={{ marginRight: 4 }} />
-            <ThemedText style={styles.coinText}>{user?.coinBalance || 0}</ThemedText>
+            <Feather name="circle" size={12} color={theme.backgroundRoot} style={{ marginRight: 4 }} />
+            <ThemedText style={[styles.coinText, { color: theme.backgroundRoot }]}>{user?.coinBalance || 0}</ThemedText>
           </LinearGradient>
         </View>
       ),
@@ -120,6 +120,15 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Spacing.lg,
   },
+  headerTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  appName: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
@@ -129,7 +138,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: BorderRadius.xs,
-    backgroundColor: "#1A1A1A",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -145,7 +153,6 @@ const styles = StyleSheet.create({
   coinText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#000000",
   },
   section: {
     marginBottom: Spacing["4xl"],
