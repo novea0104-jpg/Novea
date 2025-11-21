@@ -36,13 +36,27 @@ export default function ReaderScreen() {
 
   async function loadChapterData() {
     setIsLoading(true);
-    const [fetchedChapters, fetchedChapter] = await Promise.all([
-      getChaptersForNovel(novelId),
-      getChapter(chapterId),
-    ]);
-    setChapters(fetchedChapters);
-    setCurrentChapter(fetchedChapter);
-    setIsLoading(false);
+    try {
+      const [fetchedChapters, fetchedChapter] = await Promise.all([
+        getChaptersForNovel(novelId),
+        getChapter(chapterId),
+      ]);
+      
+      if (!fetchedChapter) {
+        console.error('Chapter not found:', chapterId);
+        setCurrentChapter(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      setChapters(fetchedChapters);
+      setCurrentChapter(fetchedChapter);
+    } catch (error) {
+      console.error('Error loading chapter:', error);
+      setCurrentChapter(null);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   if (!novel || isLoading) {
@@ -53,11 +67,26 @@ export default function ReaderScreen() {
     );
   }
 
-  if (!currentChapter) return null;
+  if (!currentChapter) {
+    return (
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: Spacing.xl }]}>
+        <Feather name="alert-circle" size={64} color={theme.warning} />
+        <ThemedText style={[Typography.h2, { marginTop: Spacing.xl, textAlign: 'center' }]}>
+          Chapter Not Found
+        </ThemedText>
+        <ThemedText style={[{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: 'center' }]}>
+          This chapter could not be loaded. Please try again later.
+        </ThemedText>
+        <Button onPress={() => navigation.goBack()} style={{ marginTop: Spacing.xl }}>
+          Go Back
+        </Button>
+      </ThemedView>
+    );
+  }
 
   const isUnlocked = currentChapter.isFree || unlockedChapters.has(chapterId);
-  const currentIndex = chapters.indexOf(currentChapter);
-  const hasNext = currentIndex < chapters.length - 1;
+  const currentIndex = chapters.findIndex(c => c.id === chapterId);
+  const hasNext = currentIndex >= 0 && currentIndex < chapters.length - 1;
   const hasPrev = currentIndex > 0;
 
   const handleUnlock = async () => {
