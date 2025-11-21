@@ -11,7 +11,7 @@ const Stack = createNativeStackNavigator<TimelineStackParamList>();
 
 export default function TimelineStackNavigator() {
   return (
-    <Stack.Navigator screenOptions={getCommonScreenOptions()}>
+    <Stack.Navigator screenOptions={getCommonScreenOptions({})}>
       <Stack.Screen
         name="TimelineHome"
         component={TimelineScreen}

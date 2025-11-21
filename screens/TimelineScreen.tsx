@@ -11,8 +11,8 @@ export default function TimelineScreen() {
   return (
     <ScreenScrollView>
       <View style={styles.container}>
-        <View style={[styles.emptyState, { backgroundColor: theme.cardBackground }]}>
-          <ThemedText style={[styles.emptyTitle, { fontSize: Typography.size.xl }]}>
+        <View style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
+          <ThemedText style={[styles.emptyTitle, Typography.h2]}>
             Linimasa
           </ThemedText>
           <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
