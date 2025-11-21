@@ -34,6 +34,23 @@ export default function ReaderScreen() {
     loadChapterData();
   }, [chapterId, novelId]);
 
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: showHeader,
+      headerTransparent: true,
+      headerLeft: () => (
+        <Pressable onPress={() => navigation.goBack()}>
+          <Feather name="x" size={24} color={theme.text} />
+        </Pressable>
+      ),
+      headerRight: () => (
+        <Pressable onPress={() => {}}>
+          <Feather name="settings" size={24} color={theme.text} />
+        </Pressable>
+      ),
+    });
+  }, [navigation, showHeader, theme]);
+
   async function loadChapterData() {
     setIsLoading(true);
     try {
@@ -99,23 +116,6 @@ export default function ReaderScreen() {
     await updateCoinBalance(-novel.coinPerChapter);
     setShowUnlockModal(false);
   };
-
-  React.useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: showHeader,
-      headerTransparent: true,
-      headerLeft: () => (
-        <Pressable onPress={() => navigation.goBack()}>
-          <Feather name="x" size={24} color={theme.text} />
-        </Pressable>
-      ),
-      headerRight: () => (
-        <Pressable onPress={() => {}}>
-          <Feather name="settings" size={24} color={theme.text} />
-        </Pressable>
-      ),
-    });
-  }, [navigation, showHeader, theme]);
 
   if (!isUnlocked) {
     return (
