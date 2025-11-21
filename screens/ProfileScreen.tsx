@@ -39,7 +39,7 @@ export default function ProfileScreen() {
     >
       <View style={styles.menuItemLeft}>
         <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-          <Feather name={icon} size={18} color={theme.text} />
+          <Feather name={icon} size={24} color={theme.text} />
         </View>
         <View>
           <ThemedText style={styles.menuItemText}>{title}</ThemedText>
@@ -104,7 +104,7 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="book-open" size={16} color={theme.text} />
+              <Feather name="book-open" size={24} color={theme.text} />
             </View>
             <ThemedText style={[Typography.h2, styles.statValue]}>
               {statsLoading ? '-' : stats.novelsRead}
@@ -115,7 +115,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statItem}>
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="file-text" size={16} color={theme.text} />
+              <Feather name="file-text" size={24} color={theme.text} />
             </View>
             <ThemedText style={[Typography.h2, styles.statValue]}>
               {statsLoading ? '-' : stats.chaptersRead}
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statItem}>
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="zap" size={16} color={theme.text} />
+              <Feather name="zap" size={24} color={theme.text} />
             </View>
             <ThemedText style={[Typography.h2, styles.statValue]}>
               {statsLoading ? '-' : stats.dayStreak}
@@ -194,7 +194,7 @@ export default function ProfileScreen() {
         >
           <View style={styles.menuItemLeft}>
             <View style={[styles.iconCircle, styles.logoutIconCircle]}>
-              <Feather name="log-out" size={18} color="#EF4444" />
+              <Feather name="log-out" size={24} color="#EF4444" />
             </View>
             <ThemedText style={[styles.menuItemText, styles.logoutText]}>
               Logout
@@ -282,9 +282,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   statIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: Spacing.sm,
@@ -324,9 +324,9 @@ const styles = StyleSheet.create({
     color: "#EF4444",
   },
   iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },

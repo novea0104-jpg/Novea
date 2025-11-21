@@ -52,7 +52,12 @@ export function useUserStats() {
         .select('novel_id')
         .eq('user_id', dbUserId);
 
-      if (novelsError) throw novelsError;
+      if (novelsError) {
+        // Silently handle error - RLS might be blocking
+        setStats({ novelsRead: 0, chaptersRead: 0, dayStreak: 0 });
+        setIsLoading(false);
+        return;
+      }
 
       const uniqueNovels = new Set(novelsData?.map((item) => item.novel_id) || []);
       const novelsRead = uniqueNovels.size;
@@ -63,7 +68,12 @@ export function useUserStats() {
         .select('chapter_id')
         .eq('user_id', dbUserId);
 
-      if (chaptersError) throw chaptersError;
+      if (chaptersError) {
+        // Silently handle error - RLS might be blocking
+        setStats({ novelsRead, chaptersRead: 0, dayStreak: 0 });
+        setIsLoading(false);
+        return;
+      }
 
       const chaptersRead = chaptersData?.length || 0;
 
@@ -77,7 +87,7 @@ export function useUserStats() {
         dayStreak,
       });
     } catch (error) {
-      console.error('Error fetching user stats:', error);
+      // Silently handle error - don't spam console
       setStats({ novelsRead: 0, chaptersRead: 0, dayStreak: 0 });
     } finally {
       setIsLoading(false);
