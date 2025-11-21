@@ -44,11 +44,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   emptyText: {
-    fontSize: Typography.size.md,
+    fontSize: Typography.body.fontSize,
     textAlign: "center",
   },
   emptySubtext: {
-    fontSize: Typography.size.sm,
+    fontSize: Typography.caption.fontSize,
     textAlign: "center",
     lineHeight: 20,
   },
