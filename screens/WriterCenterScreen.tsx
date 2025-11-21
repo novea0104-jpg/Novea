@@ -1,111 +1,296 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Pressable, Image, ActivityIndicator } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, Typography, BorderRadius } from "@/constants/theme";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/utils/supabase";
+import { Spacing, Typography, BorderRadius, GradientColors } from "@/constants/theme";
+import type { Novel } from "@/types/models";
 
 export default function WriterCenterScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
+  const navigation = useNavigation();
+  const [novels, setNovels] = useState<Novel[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalNovels: 0,
+    totalChapters: 0,
+    totalReads: 0,
+  });
+
+  useEffect(() => {
+    loadWriterData();
+  }, [user]);
+
+  async function loadWriterData() {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const { data: novelsData, error } = await supabase
+        .from('novels')
+        .select('*')
+        .eq('author_id', parseInt(user.id))
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const mappedNovels: Novel[] = (novelsData || []).map((n: any) => ({
+        id: n.id.toString(),
+        title: n.title,
+        author: n.author,
+        authorId: n.author_id?.toString() || '',
+        coverImage: n.cover_url || '',
+        genre: n.genre,
+        status: n.status === 'completed' ? 'Completed' : 'On-Going',
+        rating: n.rating || 0,
+        ratingCount: 0,
+        synopsis: n.description,
+        coinPerChapter: n.chapter_price,
+        totalChapters: n.total_chapters,
+        followers: 0,
+        lastUpdated: new Date(n.updated_at),
+      }));
+
+      setNovels(mappedNovels);
+
+      const totalChapters = novelsData?.reduce((sum: number, n: any) => sum + (n.total_chapters || 0), 0) || 0;
+      const totalReads = novelsData?.reduce((sum: number, n: any) => sum + (n.total_reads || 0), 0) || 0;
+
+      setStats({
+        totalNovels: novelsData?.length || 0,
+        totalChapters,
+        totalReads,
+      });
+    } catch (error) {
+      console.error('Error loading writer data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <ScreenScrollView>
       <View style={styles.container}>
-        <Card elevation={1} style={styles.comingSoonCard}>
-          <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-            <Feather name="edit-3" size={48} color={theme.text} />
+        <View style={styles.statsGrid}>
+          <StatCard
+            icon="book"
+            label="Total Novel"
+            value={stats.totalNovels.toString()}
+            theme={theme}
+          />
+          <StatCard
+            icon="file-text"
+            label="Total Chapter"
+            value={stats.totalChapters.toString()}
+            theme={theme}
+          />
+          <StatCard
+            icon="eye"
+            label="Total Pembaca"
+            value={stats.totalReads.toString()}
+            theme={theme}
+          />
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <ThemedText style={Typography.h2}>Novel Saya</ThemedText>
+          <Pressable
+            onPress={() => navigation.navigate('CreateNovel' as never)}
+            style={styles.createButton}
+          >
+            <LinearGradient
+              colors={GradientColors.purplePink.colors}
+              start={GradientColors.purplePink.start}
+              end={GradientColors.purplePink.end}
+              style={styles.createButtonGradient}
+            >
+              <Feather name="plus" size={20} color="#FFFFFF" />
+              <ThemedText style={styles.createButtonText}>Buat Novel</ThemedText>
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={GradientColors.purplePink.colors[0]} />
           </View>
-          
-          <ThemedText style={[Typography.h1, styles.title]}>
-            Coming Soon
-          </ThemedText>
-          
-          <ThemedText style={[styles.description, { color: theme.textSecondary }]}>
-            Pusat Penulis is under development. Here you'll be able to:
-          </ThemedText>
-          
-          <View style={styles.featureList}>
-            <FeatureItem icon="book" text="Create and manage your novels" theme={theme} />
-            <FeatureItem icon="file-text" text="Write and edit chapters" theme={theme} />
-            <FeatureItem icon="trending-up" text="Track your novel analytics" theme={theme} />
-            <FeatureItem icon="dollar-sign" text="Monitor your earnings" theme={theme} />
-            <FeatureItem icon="users" text="Engage with your readers" theme={theme} />
+        ) : novels.length === 0 ? (
+          <Card elevation={1} style={styles.emptyCard}>
+            <Feather name="book" size={48} color={theme.textMuted} />
+            <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
+              Belum ada novel. Mulai menulis sekarang!
+            </ThemedText>
+          </Card>
+        ) : (
+          <View style={styles.novelsList}>
+            {novels.map((novel) => (
+              <NovelCard
+                key={novel.id}
+                novel={novel}
+                onPress={() => (navigation as any).navigate('ManageChapters', { novelId: novel.id })}
+                theme={theme}
+              />
+            ))}
           </View>
-          
-          <ThemedText style={[styles.footer, { color: theme.textMuted }]}>
-            We're working hard to bring you the best writing experience.
-          </ThemedText>
-        </Card>
+        )}
       </View>
     </ScreenScrollView>
   );
 }
 
-function FeatureItem({ icon, text, theme }: { icon: any; text: string; theme: any }) {
+function StatCard({ icon, label, value, theme }: any) {
   return (
-    <View style={styles.featureItem}>
-      <View style={[styles.featureIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-        <Feather name={icon} size={16} color={theme.text} />
+    <Card elevation={1} style={styles.statCard}>
+      <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
+        <Feather name={icon} size={20} color={theme.text} />
       </View>
-      <ThemedText style={styles.featureText}>{text}</ThemedText>
-    </View>
+      <ThemedText style={styles.statValue}>{value}</ThemedText>
+      <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</ThemedText>
+    </Card>
+  );
+}
+
+function NovelCard({ novel, onPress, theme }: { novel: Novel; onPress: () => void; theme: any }) {
+  return (
+    <Pressable onPress={onPress}>
+      <Card elevation={1} style={styles.novelCard}>
+        <Image
+          source={{ uri: novel.coverImage || 'https://via.placeholder.com/120x180' }}
+          style={styles.novelCover}
+        />
+        <View style={styles.novelInfo}>
+          <ThemedText style={Typography.h3} numberOfLines={2}>
+            {novel.title}
+          </ThemedText>
+          <ThemedText style={[styles.novelGenre, { color: theme.textSecondary }]}>
+            {novel.genre}
+          </ThemedText>
+          <View style={styles.novelStats}>
+            <View style={styles.novelStat}>
+              <Feather name="file-text" size={14} color={theme.textSecondary} />
+              <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
+                {novel.totalChapters} chapter
+              </ThemedText>
+            </View>
+            <View style={styles.novelStat}>
+              <Feather name="trending-up" size={14} color={theme.textSecondary} />
+              <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
+                {novel.status}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+        <Feather name="chevron-right" size={24} color={theme.textMuted} />
+      </Card>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Spacing["2xl"],
+    gap: Spacing.xl,
   },
-  comingSoonCard: {
+  statsGrid: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  statCard: {
+    flex: 1,
     alignItems: "center",
-    paddingVertical: Spacing["3xl"],
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    gap: Spacing.sm,
   },
-  iconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+  statIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: Spacing["2xl"],
   },
-  title: {
-    marginBottom: Spacing.md,
+  statValue: {
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  statLabel: {
+    fontSize: 12,
     textAlign: "center",
   },
-  description: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: Spacing["2xl"],
-    lineHeight: 24,
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.md,
   },
-  featureList: {
-    width: "100%",
+  createButton: {
+    borderRadius: BorderRadius.full,
+    overflow: "hidden",
+  },
+  createButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  createButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  loadingContainer: {
+    paddingVertical: Spacing["3xl"],
+    alignItems: "center",
+  },
+  emptyCard: {
+    alignItems: "center",
+    paddingVertical: Spacing["3xl"],
     gap: Spacing.md,
-    marginBottom: Spacing["2xl"],
   },
-  featureItem: {
+  emptyText: {
+    fontSize: 15,
+    textAlign: "center",
+  },
+  novelsList: {
+    gap: Spacing.md,
+  },
+  novelCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
+    padding: Spacing.md,
   },
-  featureIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
+  novelCover: {
+    width: 80,
+    height: 120,
+    borderRadius: BorderRadius.md,
+    backgroundColor: "#333",
   },
-  featureText: {
-    fontSize: 15,
+  novelInfo: {
     flex: 1,
+    gap: Spacing.xs,
   },
-  footer: {
+  novelGenre: {
     fontSize: 13,
-    textAlign: "center",
-    fontStyle: "italic",
+  },
+  novelStats: {
+    flexDirection: "row",
+    gap: Spacing.lg,
+    marginTop: Spacing.xs,
+  },
+  novelStat: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  novelStatText: {
+    fontSize: 12,
   },
 });

@@ -284,8 +284,23 @@ That's it! The app connects directly to Supabase Cloud.
 
 **Role-Based Navigation System:**
 - **Pembaca** (default): Shows "Menjadi Penulis" button → upgrades to Penulis role
-- **Penulis**: Shows "Pusat Penulis" button → navigates to WriterCenter (coming soon)
+- **Penulis**: Shows "Pusat Penulis" button → navigates to WriterCenter with full novel management
 - **Editor/Co Admin/Super Admin**: Shows "Dashboard Admin" button → navigates to AdminDashboard (coming soon)
+
+**Writer Portal Implementation ✅ (November 21, 2025)**
+- ✅ Complete Writer Center with dashboard showing total novels, chapters, and readers
+- ✅ Create Novel Screen with professional form (title, genre, description, chapter price)
+- ✅ Novel cover upload system using Supabase Storage with image compression (800x1200, 85% quality)
+- ✅ Create Chapter Screen with word count tracking and free/paid badge system
+- ✅ Manage Chapters Screen showing all chapters with publish dates and stats
+- ✅ Novel cover storage utility (`utils/novelCoverStorage.ts`) with auto-resize and compression
+- ✅ Full navigation flow: WriterCenter → CreateNovel → ManageChapters → CreateChapter
+- ✅ Professional styling with gradient buttons, cards, and badges
+- ✅ Real-time statistics: total novels, chapters, readers per writer
+- ✅ Automatic chapter pricing: first 5 chapters free, rest paid
+- ✅ Chapter word count validation (minimum 100 words)
+- 📝 Files: `screens/WriterCenterScreen.tsx`, `screens/CreateNovelScreen.tsx`, `screens/CreateChapterScreen.tsx`, `screens/ManageChaptersScreen.tsx`, `utils/novelCoverStorage.ts`, `SUPABASE_STORAGE_SETUP.sql`
+- 📝 Requires: Supabase Storage bucket `novel-covers` (see `SUPABASE_STORAGE_SETUP.sql`)
 
 ### Future Integration Points
 - Payment Gateway (GoPay, DANA, bank transfers, credit cards)

@@ -6,6 +6,9 @@ import EditProfileScreen from "@/screens/EditProfileScreen";
 import CoinStoreScreen from "@/screens/CoinStoreScreen";
 import WriterDashboardScreen from "@/screens/WriterDashboardScreen";
 import WriterCenterScreen from "@/screens/WriterCenterScreen";
+import CreateNovelScreen from "@/screens/CreateNovelScreen";
+import ManageChaptersScreen from "@/screens/ManageChaptersScreen";
+import CreateChapterScreen from "@/screens/CreateChapterScreen";
 import AdminDashboardScreen from "@/screens/AdminDashboardScreen";
 import ManageNovelScreen from "@/screens/ManageNovelScreen";
 import EditChapterScreen from "@/screens/EditChapterScreen";
@@ -18,6 +21,9 @@ export type ProfileStackParamList = {
   CoinStore: undefined;
   WriterDashboard: undefined;
   WriterCenter: undefined;
+  CreateNovel: undefined;
+  ManageChapters: { novelId: string };
+  CreateChapter: { novelId: string; chapterNumber: number };
   AdminDashboard: undefined;
   ManageNovel: { novelId: string };
   EditChapter: { novelId: string; chapterId?: string };
@@ -54,6 +60,21 @@ export default function ProfileStackNavigator() {
         name="WriterCenter"
         component={WriterCenterScreen}
         options={{ title: "Pusat Penulis" }}
+      />
+      <Stack.Screen
+        name="CreateNovel"
+        component={CreateNovelScreen}
+        options={{ title: "Buat Novel Baru" }}
+      />
+      <Stack.Screen
+        name="ManageChapters"
+        component={ManageChaptersScreen}
+        options={{ title: "Kelola Chapter" }}
+      />
+      <Stack.Screen
+        name="CreateChapter"
+        component={CreateChapterScreen}
+        options={{ title: "Tulis Chapter" }}
       />
       <Stack.Screen
         name="AdminDashboard"
