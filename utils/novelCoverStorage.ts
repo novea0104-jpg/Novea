@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const COVER_BUCKET = 'novel-covers';
 const MAX_WIDTH = 800;
