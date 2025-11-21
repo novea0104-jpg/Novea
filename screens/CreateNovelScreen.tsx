@@ -65,7 +65,7 @@ export default function CreateNovelScreen() {
     }
 
     if (!description.trim()) {
-      Alert.alert("Error", "Deskripsi novel harus diisi!");
+      Alert.alert("Error", "Sinopsis novel harus diisi!");
       return;
     }
 
@@ -221,7 +221,7 @@ export default function CreateNovelScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Deskripsi</ThemedText>
+            <ThemedText style={styles.label}>Sinopsis</ThemedText>
             <TextInput
               style={[styles.textArea, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
               placeholder="Ceritakan tentang novel kamu..."
@@ -231,11 +231,7 @@ export default function CreateNovelScreen() {
               multiline
               numberOfLines={6}
               textAlignVertical="top"
-              maxLength={500}
             />
-            <ThemedText style={[styles.charCount, { color: theme.textMuted }]}>
-              {description.length}/500
-            </ThemedText>
           </View>
 
           <Pressable

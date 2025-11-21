@@ -27,6 +27,7 @@ export default function NovelDetailScreen() {
   
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoadingChapters, setIsLoadingChapters] = useState(true);
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
   useEffect(() => {
     loadChapters();
@@ -124,10 +125,22 @@ export default function NovelDetailScreen() {
       </View>
 
       <View style={styles.section}>
-        <ThemedText style={[Typography.h3, styles.sectionTitle]}>Synopsis</ThemedText>
+        <ThemedText style={[Typography.h3, styles.sectionTitle]}>Sinopsis</ThemedText>
         <ThemedText style={[styles.synopsis, { color: theme.textSecondary }]}>
-          {novel.synopsis}
+          {isSynopsisExpanded 
+            ? novel.synopsis 
+            : novel.synopsis.split('\n')[0]}
         </ThemedText>
+        {novel.synopsis.split('\n').length > 1 && (
+          <Pressable 
+            onPress={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+            style={styles.showMoreButton}
+          >
+            <ThemedText style={[styles.showMoreText, { color: theme.primary }]}>
+              {isSynopsisExpanded ? 'Sembunyikan' : 'Lihat Seluruhnya'}
+            </ThemedText>
+          </Pressable>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -214,6 +227,13 @@ const styles = StyleSheet.create({
   },
   synopsis: {
     lineHeight: 24,
+  },
+  showMoreButton: {
+    marginTop: Spacing.sm,
+  },
+  showMoreText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   chapterList: {
     gap: Spacing.sm,
