@@ -44,8 +44,9 @@ export default function BrowseHomeScreen() {
     navigation.setOptions({
       headerShown: true,
       headerTransparent: true,
-      headerTitle: () => (
-        <View style={styles.headerTitleContainer}>
+      headerTitle: "",
+      headerLeft: () => (
+        <View style={[styles.headerTitleContainer, { marginLeft: Spacing.md }]}>
           <HeaderTitle title="N" />
           <ThemedText style={styles.appName}>Novea</ThemedText>
         </View>
