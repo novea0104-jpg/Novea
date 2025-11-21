@@ -138,14 +138,14 @@ const styles = StyleSheet.create({
   headerTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
+    gap: 4,
   },
   logoImage: {
     width: 32,
     height: 32,
   },
   appName: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "700",
   },
   headerRight: {
