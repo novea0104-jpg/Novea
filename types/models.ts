@@ -30,6 +30,7 @@ export interface Novel {
   totalChapters: number;
   followers: number;
   isFollowing?: boolean;
+  createdAt: Date;
   lastUpdated: Date;
 }
 

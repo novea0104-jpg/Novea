@@ -90,6 +90,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         totalChapters: apiNovel.total_chapters,
         followers: apiNovel.total_reads,
         isFollowing: followingSet.has(apiNovel.id.toString()),
+        createdAt: new Date(apiNovel.created_at),
         lastUpdated: new Date(apiNovel.updated_at),
       }));
 

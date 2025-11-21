@@ -25,9 +25,20 @@ export default function BrowseHomeScreen() {
   const { novels } = useApp();
   const { user } = useAuth();
 
-  const trendingNovels = novels.slice(0, 6);
-  const newReleases = novels.slice(6, 12);
-  const editorsPick = novels.slice(12, 18);
+  // Sedang Trending: Sort by total_reads (most viewed)
+  const trendingNovels = [...novels]
+    .sort((a, b) => b.followers - a.followers) // followers = total_reads from database
+    .slice(0, 6);
+  
+  // Novel Terbaru: Sort by created_at (newest first)
+  const newReleases = [...novels]
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, 6);
+  
+  // Pilihan Editor: Sort by rating (highest rated)
+  const editorsPick = [...novels]
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+    .slice(0, 6);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -102,9 +113,9 @@ export default function BrowseHomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {renderNovelSection("Trending Now", trendingNovels, "large")}
-        {renderNovelSection("New Releases", newReleases)}
-        {renderNovelSection("Editor's Pick", editorsPick)}
+        {renderNovelSection("Sedang Trending", trendingNovels, "large")}
+        {renderNovelSection("Novel Terbaru", newReleases)}
+        {renderNovelSection("Pilihan Editor", editorsPick)}
       </ScrollView>
     </ThemedView>
   );
