@@ -16,7 +16,7 @@ interface NovelCardProps {
 export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps) {
   const { theme } = useTheme();
 
-  const coverImageSource = {
+  const placeholderImages = {
     romance: require("@/assets/images/novels/romance.png"),
     fantasy: require("@/assets/images/novels/fantasy.png"),
     thriller: require("@/assets/images/novels/thriller.png"),
@@ -24,7 +24,10 @@ export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps
     adventure: require("@/assets/images/novels/adventure.png"),
   };
 
-  const imageSource = coverImageSource[novel.genre.toLowerCase() as keyof typeof coverImageSource];
+  const placeholderImage = placeholderImages[novel.genre.toLowerCase() as keyof typeof placeholderImages];
+  const imageSource = novel.coverImage 
+    ? { uri: novel.coverImage }
+    : placeholderImage;
 
   const cardWidth = variant === "large" ? 280 : variant === "medium" ? 160 : 120;
   const cardHeight = variant === "large" ? 200 : variant === "medium" ? 220 : 180;

@@ -34,7 +34,8 @@ export default function WriterDashboardScreen() {
   };
 
   const renderNovel = ({ item }: any) => {
-    const imageSource = coverImageSource[item.genre.toLowerCase() as keyof typeof coverImageSource];
+    const placeholderImage = coverImageSource[item.genre.toLowerCase() as keyof typeof coverImageSource];
+    const imageSource = item.coverImage ? { uri: item.coverImage } : placeholderImage;
 
     return (
       <Pressable

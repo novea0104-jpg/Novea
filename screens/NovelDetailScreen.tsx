@@ -52,7 +52,8 @@ export default function NovelDetailScreen() {
     adventure: require("@/assets/images/novels/adventure.png"),
   };
 
-  const imageSource = coverImageSource[novel.genre.toLowerCase() as keyof typeof coverImageSource];
+  const placeholderImage = coverImageSource[novel.genre.toLowerCase() as keyof typeof coverImageSource];
+  const imageSource = novel.coverImage ? { uri: novel.coverImage } : placeholderImage;
 
   const renderChapter = ({ item }: any) => {
     const isUnlocked = item.isFree || unlockedChapters.has(item.id);
