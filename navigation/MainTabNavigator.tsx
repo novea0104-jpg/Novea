@@ -4,6 +4,7 @@ import { View, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BrowseStackNavigator from "@/navigation/BrowseStackNavigator";
 import LibraryStackNavigator from "@/navigation/LibraryStackNavigator";
+import TimelineStackNavigator from "@/navigation/TimelineStackNavigator";
 import NotificationsStackNavigator from "@/navigation/NotificationsStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { ThemedText } from "@/components/ThemedText";
@@ -11,12 +12,14 @@ import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
 import { BrowseIcon } from "@/components/icons/BrowseIcon";
 import { LibraryIcon } from "@/components/icons/LibraryIcon";
+import { TimelineIcon } from "@/components/icons/TimelineIcon";
 import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
 import { ProfileIcon } from "@/components/icons/ProfileIcon";
 
 export type MainTabParamList = {
   BrowseTab: undefined;
   LibraryTab: undefined;
+  TimelineTab: undefined;
   NotificationsTab: undefined;
   ProfileTab: undefined;
 };
@@ -98,7 +101,7 @@ export default function MainTabNavigator() {
         name="BrowseTab"
         component={BrowseStackNavigator}
         options={{
-          title: "Browse",
+          title: "Beranda",
           tabBarIcon: ({ color, size }) => (
             <BrowseIcon size={size} color={color} />
           ),
@@ -111,6 +114,16 @@ export default function MainTabNavigator() {
           title: "Library",
           tabBarIcon: ({ color, size }) => (
             <LibraryIcon size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="TimelineTab"
+        component={TimelineStackNavigator}
+        options={{
+          title: "Linimasa",
+          tabBarIcon: ({ color, size }) => (
+            <TimelineIcon size={size} color={color} />
           ),
         }}
       />
