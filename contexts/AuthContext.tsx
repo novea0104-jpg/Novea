@@ -81,46 +81,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signup(email: string, password: string, name: string) {
-    // Step 1: Create auth user with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (authError) throw authError;
-    if (!authData.user) throw new Error("Signup failed");
-
-    // Step 2: Create user profile in users table (uses auto-increment ID)
-    const { data: userProfile, error: profileError } = await supabase
-      .from('users')
-      .insert({
+    try {
+      // Step 1: Create auth user with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
-        name,
-        is_writer: false,
-        coin_balance: 100,
-      })
-      .select()
-      .single();
+        password,
+      });
 
-    if (profileError) {
-      // Rollback: delete auth user if profile creation fails
-      console.error("Profile creation failed, cleaning up auth user:", profileError);
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw profileError;
+      if (authError) throw authError;
+      if (!authData.user) throw new Error("Signup failed");
+
+      // Step 2: Create user profile in users table (uses auto-increment ID)
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .insert({
+          email,
+          name,
+          is_writer: false,
+          role: 'pembaca',
+          coin_balance: 100,
+        })
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error("Profile creation failed:", profileError);
+        throw new Error(`Gagal membuat profil: ${profileError.message}`);
+      }
+
+      // Step 3: Update local state
+      const newUser: User = {
+        id: userProfile.id.toString(),
+        name: userProfile.name,
+        email: userProfile.email,
+        isWriter: userProfile.is_writer,
+        role: (userProfile.role || 'pembaca') as any,
+        coinBalance: userProfile.coin_balance,
+        avatarUrl: userProfile.avatar_url || undefined,
+        bio: userProfile.bio || undefined,
+      };
+      setUser(newUser);
+    } catch (error: any) {
+      console.error("Signup error:", error);
+      throw error;
     }
-
-    // Step 3: Update local state
-    const newUser: User = {
-      id: userProfile.id.toString(),
-      name: userProfile.name,
-      email: userProfile.email,
-      isWriter: userProfile.is_writer,
-      role: (userProfile.role || 'pembaca') as any,
-      coinBalance: userProfile.coin_balance,
-      avatarUrl: userProfile.avatar_url || undefined,
-      bio: userProfile.bio || undefined,
-    };
-    setUser(newUser);
   }
 
   async function login(email: string, password: string) {
