@@ -1,6 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons } from "@expo/vector-icons";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BrowseStackNavigator from "@/navigation/BrowseStackNavigator";
@@ -60,7 +60,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
             onPress={onPress}
             style={styles.tabItem}
           >
-            <Ionicons 
+            <MaterialCommunityIcons 
               name={options.tabBarIcon({ color: iconColor, size: 24 }).props.name} 
               size={24} 
               color={iconColor} 
@@ -99,7 +99,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Browse",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="compass-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="compass-outline" size={size} color={color} />
           ),
         }}
       />
@@ -109,7 +109,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Library",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="book-outline" size={size} color={color} />
           ),
         }}
       />
@@ -119,7 +119,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Notifications",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="notifications-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="bell-outline" size={size} color={color} />
           ),
         }}
       />
@@ -129,7 +129,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="account-outline" size={size} color={color} />
           ),
         }}
       />
