@@ -33,24 +33,18 @@ export function useUserStats() {
     setIsLoading(true);
 
     try {
-      // Query by user_id matching user from database by email
-      // This aligns with RLS policies that use email matching
-      const userId = parseInt(user.id);
-
-      // First verify the user exists and get their actual database ID
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', user.email)
-        .single();
-
-      if (userError) {
-        console.error('Error fetching user ID:', userError);
+      // Get database user ID from AuthContext (already loaded from users table)
+      // user.id is the INTEGER id from our users table, NOT the Supabase Auth UUID
+      const dbUserId = parseInt(user.id);
+      
+      if (isNaN(dbUserId)) {
+        console.error('Invalid user ID:', user.id);
         setStats({ novelsRead: 0, chaptersRead: 0, dayStreak: 0 });
+        setIsLoading(false);
         return;
       }
-
-      const dbUserId = userData.id;
+      
+      console.log('Fetching stats for user ID:', dbUserId);
 
       // Get unique novels read from reading_progress
       const { data: novelsData, error: novelsError } = await supabase
