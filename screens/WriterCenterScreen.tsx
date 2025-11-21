@@ -33,13 +33,20 @@ export default function WriterCenterScreen() {
     
     setIsLoading(true);
     try {
+      console.log('Loading writer data for user ID:', user.id);
+      
       const { data: novelsData, error } = await supabase
         .from('novels')
         .select('*')
         .eq('author_id', parseInt(user.id))
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading novels:', error);
+        throw error;
+      }
+      
+      console.log('Loaded novels:', novelsData);
 
       const mappedNovels: Novel[] = (novelsData || []).map((n: any) => ({
         id: n.id.toString(),

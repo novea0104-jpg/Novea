@@ -25,7 +25,6 @@ export default function CreateNovelScreen() {
   const [genre, setGenre] = useState<Genre | "">("");
   const [description, setDescription] = useState("");
   const [coverUri, setCoverUri] = useState<string>("");
-  const [chapterPrice, setChapterPrice] = useState("10");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -96,6 +95,8 @@ export default function CreateNovelScreen() {
         setIsUploadingImage(false);
       }
 
+      console.log('Creating novel for user ID:', user.id, 'parsed:', parseInt(user.id));
+      
       const { data, error } = await supabase
         .from('novels')
         .insert({
@@ -106,12 +107,14 @@ export default function CreateNovelScreen() {
           description: description.trim(),
           cover_url: coverUrl,
           status: 'ongoing',
-          chapter_price: parseInt(chapterPrice) || 10,
+          chapter_price: 10,
           total_chapters: 0,
           free_chapters: 5,
         })
         .select()
         .single();
+      
+      console.log('Novel created:', data, 'error:', error);
 
       if (error) throw error;
 
@@ -232,22 +235,6 @@ export default function CreateNovelScreen() {
             />
             <ThemedText style={[styles.charCount, { color: theme.textMuted }]}>
               {description.length}/500
-            </ThemedText>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Harga per Chapter (Koin)</ThemedText>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              placeholder="10"
-              placeholderTextColor={theme.textMuted}
-              value={chapterPrice}
-              onChangeText={setChapterPrice}
-              keyboardType="numeric"
-              maxLength={4}
-            />
-            <ThemedText style={[styles.hint, { color: theme.textSecondary }]}>
-              5 chapter pertama gratis untuk pembaca
             </ThemedText>
           </View>
 
