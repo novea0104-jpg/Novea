@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, StyleSheet, Pressable } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Image } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
@@ -7,7 +7,6 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
-import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useApp } from "@/contexts/AppContext";
@@ -47,8 +46,12 @@ export default function BrowseHomeScreen() {
       headerTitle: "",
       headerLeft: () => (
         <View style={[styles.headerTitleContainer, { marginLeft: Spacing.md }]}>
-          <HeaderTitle title="N" />
-          <ThemedText style={styles.appName}>Novea</ThemedText>
+          <Image
+            source={require("@/assets/images/novea-logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <ThemedText style={styles.appName}>ovea</ThemedText>
         </View>
       ),
       headerRight: () => (
@@ -136,6 +139,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
+  },
+  logoImage: {
+    width: 32,
+    height: 32,
   },
   appName: {
     fontSize: 18,
