@@ -1,6 +1,5 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { View, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BrowseStackNavigator from "@/navigation/BrowseStackNavigator";
@@ -10,6 +9,10 @@ import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
+import { BrowseIcon } from "@/components/icons/BrowseIcon";
+import { LibraryIcon } from "@/components/icons/LibraryIcon";
+import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
+import { ProfileIcon } from "@/components/icons/ProfileIcon";
 
 export type MainTabParamList = {
   BrowseTab: undefined;
@@ -54,17 +57,15 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         const iconColor = isFocused ? "#A855F7" : theme.tabIconDefault;
         const textColor = isFocused ? "#A855F7" : theme.tabIconDefault;
 
+        const IconComponent = options.tabBarIcon({ color: iconColor, size: 24 });
+
         return (
           <Pressable
             key={route.key}
             onPress={onPress}
             style={styles.tabItem}
           >
-            <MaterialCommunityIcons 
-              name={options.tabBarIcon({ color: iconColor, size: 24 }).props.name} 
-              size={24} 
-              color={iconColor} 
-            />
+            {IconComponent}
             <ThemedText 
               lightColor={textColor}
               darkColor={textColor}
@@ -99,7 +100,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Browse",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="compass-outline" size={size} color={color} />
+            <BrowseIcon size={size} color={color} />
           ),
         }}
       />
@@ -109,7 +110,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Library",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="book-outline" size={size} color={color} />
+            <LibraryIcon size={size} color={color} />
           ),
         }}
       />
@@ -119,7 +120,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Notifications",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="bell-outline" size={size} color={color} />
+            <NotificationsIcon size={size} color={color} />
           ),
         }}
       />
@@ -129,7 +130,7 @@ export default function MainTabNavigator() {
         options={{
           title: "Profile",
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-outline" size={size} color={color} />
+            <ProfileIcon size={size} color={color} />
           ),
         }}
       />
