@@ -54,7 +54,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Screen Architecture
 
-**Browse Flow:** Home (carousels), Search (filters), Novel Detail (synopsis, chapters), and Reader (customizable reading experience).
+**Browse Flow:** Home (carousels), Search (filters), Novel Detail (synopsis, chapters), and Reader (customizable reading experience). Browse home screen features a custom header with the Novea gradient logo (32x32px) from `assets/images/novea-logo.png` and "ovea" text (22px bold) with a compact 4px gap.
 
 **Library Flow:** Sections for following novels and reading history.
 
