@@ -82,16 +82,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signup(email: string, password: string, name: string) {
     try {
+      console.log("🚀 Starting signup for:", email);
+      
       // Step 1: Create auth user with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        console.error("❌ Auth signup failed:", authError);
+        throw authError;
+      }
       if (!authData.user) throw new Error("Signup failed");
+      
+      console.log("✅ Auth user created:", authData.user.id);
 
       // Step 2: Create user profile in users table (uses auto-increment ID)
+      console.log("📝 Creating user profile...");
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .insert({
@@ -105,9 +113,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (profileError) {
-        console.error("Profile creation failed:", profileError);
+        console.error("❌ Profile creation failed:", profileError);
+        console.error("Error code:", profileError.code);
+        console.error("Error message:", profileError.message);
+        console.error("Error details:", profileError.details);
+        console.error("Error hint:", profileError.hint);
+        
+        // Show user-friendly error
+        if (profileError.code === '42501') {
+          throw new Error('Database permission error. Please contact support.');
+        }
         throw new Error(`Gagal membuat profil: ${profileError.message}`);
       }
+
+      console.log("✅ User profile created:", userProfile.id);
 
       // Step 3: Update local state
       const newUser: User = {
@@ -121,8 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         bio: userProfile.bio || undefined,
       };
       setUser(newUser);
+      console.log("🎉 Signup complete!");
     } catch (error: any) {
-      console.error("Signup error:", error);
+      console.error("❌ Signup error:", error);
       throw error;
     }
   }
