@@ -41,6 +41,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (novelsError) throw novelsError;
 
+      // Fetch view counts for all novels from novel_views table
+      const novelIds = (novelsData || []).map(n => n.id);
+      const viewCountsMap = new Map<number, number>();
+
+      if (novelIds.length > 0) {
+        const { data: viewsData, error: viewsError } = await supabase
+          .from('novel_views')
+          .select('novel_id')
+          .in('novel_id', novelIds);
+
+        if (!viewsError && viewsData) {
+          // Count views per novel
+          viewsData.forEach(view => {
+            const currentCount = viewCountsMap.get(view.novel_id) || 0;
+            viewCountsMap.set(view.novel_id, currentCount + 1);
+          });
+        }
+      }
+
       // Fetch user-specific data if logged in
       let followingSet = new Set<string>();
       let unlockedSet = new Set<string>();
@@ -88,7 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         synopsis: apiNovel.description,
         coinPerChapter: apiNovel.chapter_price,
         totalChapters: apiNovel.total_chapters,
-        followers: apiNovel.total_reads,
+        followers: viewCountsMap.get(apiNovel.id) || 0,
         isFollowing: followingSet.has(apiNovel.id.toString()),
         createdAt: new Date(apiNovel.created_at),
         lastUpdated: new Date(apiNovel.updated_at),

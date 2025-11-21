@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { trackNovelView } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -32,6 +33,13 @@ export default function NovelDetailScreen() {
   useEffect(() => {
     loadChapters();
   }, [novelId]);
+
+  useEffect(() => {
+    // Track novel view when screen loads
+    if (user && novel) {
+      trackNovelView(parseInt(user.id), parseInt(novelId));
+    }
+  }, [novelId, user, novel]);
 
   async function loadChapters() {
     setIsLoadingChapters(true);

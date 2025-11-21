@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, timestamp, boolean, jsonb, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Users table
@@ -85,6 +85,17 @@ export const coinTransactions = pgTable("coin_transactions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Novel Views - tracks unique user views per novel
+export const novelViews = pgTable("novel_views", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  novelId: integer("novel_id").references(() => novels.id).notNull(),
+  viewedAt: timestamp("viewed_at").defaultNow().notNull(),
+}, (table) => ({
+  // Ensure one view per user per novel
+  uniqueUserNovel: unique().on(table.userId, table.novelId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   novels: many(novels),
@@ -92,6 +103,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   unlockedChapters: many(unlockedChapters),
   followingNovels: many(followingNovels),
   coinTransactions: many(coinTransactions),
+  novelViews: many(novelViews),
 }));
 
 export const novelsRelations = relations(novels, ({ one, many }) => ({
@@ -102,6 +114,7 @@ export const novelsRelations = relations(novels, ({ one, many }) => ({
   chapters: many(chapters),
   readingProgress: many(readingProgress),
   followers: many(followingNovels),
+  views: many(novelViews),
 }));
 
 export const chaptersRelations = relations(chapters, ({ one, many }) => ({
@@ -110,4 +123,15 @@ export const chaptersRelations = relations(chapters, ({ one, many }) => ({
     references: [novels.id],
   }),
   unlockedBy: many(unlockedChapters),
+}));
+
+export const novelViewsRelations = relations(novelViews, ({ one }) => ({
+  user: one(users, {
+    fields: [novelViews.userId],
+    references: [users.id],
+  }),
+  novel: one(novels, {
+    fields: [novelViews.novelId],
+    references: [novels.id],
+  }),
 }));
