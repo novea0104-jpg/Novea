@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as FileSystem from 'expo-file-system';
 
 const COVER_BUCKET = 'novel-covers';
 const MAX_WIDTH = 800;
@@ -19,20 +20,24 @@ export async function uploadNovelCoverAsync(imageUri: string, userId: string): P
 
     console.log('Image resized:', manipResult.uri);
 
-    // Step 2: Convert to ArrayBuffer for React Native (blob() doesn't exist!)
-    const response = await fetch(manipResult.uri);
-    const arrayBuffer = await response.arrayBuffer();
+    // Step 2: Read file as base64 using Expo FileSystem (works on all platforms!)
+    const base64 = await FileSystem.readAsStringAsync(manipResult.uri, {
+      encoding: 'base64',
+    });
+
+    // Step 3: Convert base64 to ArrayBuffer for Supabase upload
+    const arrayBuffer = base64ToArrayBuffer(base64);
 
     console.log('Image converted to ArrayBuffer, size:', arrayBuffer.byteLength);
 
-    // Step 3: Generate unique filename with timestamp
+    // Step 4: Generate unique filename with timestamp
     const timestamp = Date.now();
     const fileName = `cover-${timestamp}.jpg`;
     const filePath = `${userId}/${fileName}`;
 
     console.log('Uploading to path:', filePath);
 
-    // Step 4: Upload to Supabase Storage (ArrayBuffer works on all platforms)
+    // Step 5: Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from(COVER_BUCKET)
       .upload(filePath, arrayBuffer, {
@@ -47,7 +52,7 @@ export async function uploadNovelCoverAsync(imageUri: string, userId: string): P
 
     console.log('Upload success:', data);
 
-    // Step 5: Get public URL
+    // Step 6: Get public URL
     const { data: publicUrlData } = supabase.storage
       .from(COVER_BUCKET)
       .getPublicUrl(filePath);
@@ -59,4 +64,14 @@ export async function uploadNovelCoverAsync(imageUri: string, userId: string): P
     console.error('Novel cover upload failed:', error);
     throw error;
   }
+}
+
+// Helper: Convert base64 string to ArrayBuffer
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binaryString = atob(base64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
 }
