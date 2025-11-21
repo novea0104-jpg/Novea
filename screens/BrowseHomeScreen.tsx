@@ -1,12 +1,14 @@
 import React from "react";
 import { View, ScrollView, StyleSheet, Pressable, Image } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
+import { SearchIcon } from "@/components/icons/SearchIcon";
+import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
+import { CoinIcon } from "@/components/icons/CoinIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useApp } from "@/contexts/AppContext";
@@ -63,7 +65,7 @@ export default function BrowseHomeScreen() {
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Feather name="search" size={20} color={theme.text} />
+            <SearchIcon size={20} color={theme.text} />
           </Pressable>
           <Pressable
             style={({ pressed }) => [
@@ -71,7 +73,7 @@ export default function BrowseHomeScreen() {
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1, marginLeft: Spacing.sm },
             ]}
           >
-            <Feather name="bell" size={20} color={theme.text} />
+            <NotificationsIcon size={20} color={theme.text} />
           </Pressable>
           <LinearGradient
             colors={GradientColors.yellowGreen.colors}
@@ -79,7 +81,7 @@ export default function BrowseHomeScreen() {
             end={GradientColors.yellowGreen.end}
             style={styles.coinBadge}
           >
-            <Feather name="circle" size={12} color={theme.backgroundRoot} style={{ marginRight: 4 }} />
+            <CoinIcon size={12} color={theme.backgroundRoot} />
             <ThemedText style={[styles.coinText, { color: theme.backgroundRoot }]}>{user?.coinBalance || 0}</ThemedText>
           </LinearGradient>
         </View>
