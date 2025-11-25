@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TextInput, Alert, ActivityIndicator, Switch, Pressable } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
+import { SaveIcon } from "@/components/icons/SaveIcon";
+import { SendIcon } from "@/components/icons/SendIcon";
+import { LockIcon } from "@/components/icons/LockIcon";
+import { UnlockIcon } from "@/components/icons/UnlockIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/utils/supabase";
+import { rupiahToNovoin, formatRupiah, NOVOIN_TO_RUPIAH } from "@/constants/pricing";
 import { Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 
 export default function EditChapterScreen() {
@@ -26,12 +30,14 @@ export default function EditChapterScreen() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [isFree, setIsFree] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [priceRupiah, setPriceRupiah] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isFetchingChapter, setIsFetchingChapter] = useState(false);
   const [chapterNumber, setChapterNumber] = useState(1);
 
   const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  const priceInNovoin = priceRupiah ? rupiahToNovoin(parseInt(priceRupiah.replace(/\D/g, ""), 10) || 0) : 0;
 
   useEffect(() => {
     if (isEditing) {
@@ -60,8 +66,12 @@ export default function EditChapterScreen() {
       if (data) {
         setTitle(data.title);
         setContent(data.content);
-        setIsFree(data.is_free);
+        setIsLocked(!data.is_free);
         setChapterNumber(data.chapter_number);
+        if (!data.is_free && data.price > 0) {
+          const rupiahValue = data.price * NOVOIN_TO_RUPIAH;
+          setPriceRupiah(rupiahValue.toString());
+        }
       }
     } catch (error) {
       console.error('Error loading chapter:', error);
@@ -92,6 +102,18 @@ export default function EditChapterScreen() {
     }
   }
 
+  function handlePriceChange(text: string) {
+    const numericValue = text.replace(/\D/g, "");
+    setPriceRupiah(numericValue);
+  }
+
+  function formatPriceDisplay(value: string): string {
+    if (!value) return "";
+    const num = parseInt(value, 10);
+    if (isNaN(num)) return "";
+    return num.toLocaleString("id-ID");
+  }
+
   async function handleSave() {
     if (!title.trim()) {
       Alert.alert("Error", "Judul chapter harus diisi!");
@@ -118,18 +140,16 @@ export default function EditChapterScreen() {
       return;
     }
 
+    if (isLocked && priceInNovoin <= 0) {
+      Alert.alert("Error", "Harga chapter terkunci harus lebih dari Rp 0!");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const novelData = await supabase
-        .from('novels')
-        .select('chapter_price')
-        .eq('id', novelIdNum)
-        .single();
-
-      if (novelData.error) throw novelData.error;
-
-      const chapterPrice = novelData.data.chapter_price || 10;
+      const isFree = !isLocked;
+      const chapterPrice = isLocked ? priceInNovoin : 0;
 
       if (isEditing && chapterIdNum) {
         const { error } = await supabase
@@ -139,7 +159,7 @@ export default function EditChapterScreen() {
             content: content.trim(),
             word_count: wordCount,
             is_free: isFree,
-            price: isFree ? 0 : chapterPrice,
+            price: chapterPrice,
             updated_at: new Date().toISOString(),
           })
           .eq('id', chapterIdNum);
@@ -161,7 +181,7 @@ export default function EditChapterScreen() {
             content: content.trim(),
             word_count: wordCount,
             is_free: isFree,
-            price: isFree ? 0 : chapterPrice,
+            price: chapterPrice,
           });
 
         if (error) throw error;
@@ -210,11 +230,11 @@ export default function EditChapterScreen() {
           <ThemedText style={styles.screenTitle}>
             {isEditing ? "Edit Chapter" : `Chapter ${chapterNumber}`}
           </ThemedText>
-          {novel && (
+          {novel ? (
             <ThemedText style={[styles.novelName, { color: theme.textSecondary }]}>
               {novel.title}
             </ThemedText>
-          )}
+          ) : null}
 
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Judul Chapter</ThemedText>
@@ -250,19 +270,59 @@ export default function EditChapterScreen() {
             />
           </View>
 
-          <View style={styles.switchRow}>
-            <View>
-              <ThemedText style={styles.label}>Chapter Gratis</ThemedText>
-              <ThemedText style={[styles.switchHint, { color: theme.textSecondary }]}>
-                {isFree ? "Pembaca bisa baca tanpa koin" : "Pembaca perlu koin untuk membaca"}
-              </ThemedText>
+          <View style={[styles.pricingSection, { backgroundColor: theme.backgroundSecondary }]}>
+            <View style={styles.switchRow}>
+              <View style={styles.lockInfo}>
+                {isLocked ? (
+                  <LockIcon size={20} color={theme.warning} />
+                ) : (
+                  <UnlockIcon size={20} color={theme.success} />
+                )}
+                <View>
+                  <ThemedText style={styles.label}>
+                    {isLocked ? "Chapter Terkunci" : "Chapter Gratis"}
+                  </ThemedText>
+                  <ThemedText style={[styles.switchHint, { color: theme.textSecondary }]}>
+                    {isLocked 
+                      ? "Pembaca perlu Novoin untuk membaca" 
+                      : "Pembaca bisa baca tanpa Novoin"}
+                  </ThemedText>
+                </View>
+              </View>
+              <Switch
+                value={isLocked}
+                onValueChange={setIsLocked}
+                trackColor={{ false: theme.backgroundDefault, true: theme.warning }}
+                thumbColor="#FFFFFF"
+              />
             </View>
-            <Switch
-              value={isFree}
-              onValueChange={setIsFree}
-              trackColor={{ false: theme.backgroundSecondary, true: theme.primary }}
-              thumbColor="#FFFFFF"
-            />
+
+            {isLocked ? (
+              <View style={styles.priceInputContainer}>
+                <ThemedText style={styles.label}>Harga Chapter</ThemedText>
+                <View style={styles.priceInputRow}>
+                  <ThemedText style={[styles.currencyLabel, { color: theme.textSecondary }]}>
+                    Rp
+                  </ThemedText>
+                  <TextInput
+                    value={formatPriceDisplay(priceRupiah)}
+                    onChangeText={handlePriceChange}
+                    placeholder="0"
+                    placeholderTextColor={theme.textMuted}
+                    keyboardType="numeric"
+                    style={[styles.priceInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
+                  />
+                </View>
+                <View style={styles.conversionInfo}>
+                  <ThemedText style={[styles.conversionText, { color: theme.textSecondary }]}>
+                    = {priceInNovoin} Novoin
+                  </ThemedText>
+                  <ThemedText style={[styles.rateText, { color: theme.textMuted }]}>
+                    (1 Novoin = Rp 1.000)
+                  </ThemedText>
+                </View>
+              </View>
+            ) : null}
           </View>
 
           <Pressable
@@ -280,7 +340,11 @@ export default function EditChapterScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Feather name={isEditing ? "save" : "send"} size={20} color="#FFFFFF" />
+                  {isEditing ? (
+                    <SaveIcon size={20} color="#FFFFFF" />
+                  ) : (
+                    <SendIcon size={20} color="#FFFFFF" />
+                  )}
                   <ThemedText style={styles.submitButtonText}>
                     {isEditing ? "Simpan Perubahan" : "Publish Chapter"}
                   </ThemedText>
@@ -343,15 +407,57 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 400,
   },
+  pricingSection: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.lg,
+  },
   switchRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: Spacing.sm,
+  },
+  lockInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    flex: 1,
   },
   switchHint: {
     fontSize: 12,
     marginTop: 2,
+  },
+  priceInputContainer: {
+    gap: Spacing.sm,
+  },
+  priceInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  currencyLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  priceInput: {
+    flex: 1,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  conversionInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  conversionText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  rateText: {
+    fontSize: 12,
   },
   submitButton: {
     borderRadius: BorderRadius.full,
