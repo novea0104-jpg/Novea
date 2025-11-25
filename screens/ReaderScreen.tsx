@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator, Platform } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
@@ -24,13 +26,13 @@ export default function ReaderScreen() {
   const insets = useSafeAreaInsets();
   const { novels, unlockedChapters, unlockChapter, getChaptersForNovel, getChapter } = useApp();
   const { user, updateCoinBalance } = useAuth();
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const { novelId, chapterId } = route.params as { novelId: string; chapterId: string };
   const novel = novels.find((n) => n.id === novelId);
 
   const [showHeader, setShowHeader] = useState(true);
   const [fontSize, setFontSize] = useState(18);
-  const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +45,18 @@ export default function ReaderScreen() {
     navigation.setOptions({
       headerShown: showHeader,
       headerTransparent: true,
+      headerTitle: () => (
+        <View style={styles.headerTitleContainer}>
+          <ThemedText style={styles.headerNovelTitle} numberOfLines={1}>
+            {novel?.title || ""}
+          </ThemedText>
+          {currentChapter ? (
+            <ThemedText style={[styles.headerChapterTitle, { color: theme.textSecondary }]} numberOfLines={1}>
+              {currentChapter.title}
+            </ThemedText>
+          ) : null}
+        </View>
+      ),
       headerLeft: () => (
         <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
           <XIcon size={24} color={theme.text} />
@@ -54,7 +68,7 @@ export default function ReaderScreen() {
         </Pressable>
       ),
     });
-  }, [navigation, showHeader, theme]);
+  }, [navigation, showHeader, theme, novel, currentChapter]);
 
   async function loadChapterData() {
     setIsLoading(true);
@@ -80,6 +94,16 @@ export default function ReaderScreen() {
       setIsLoading(false);
     }
   }
+
+  const toggleHeader = () => {
+    setShowHeader(prev => !prev);
+  };
+
+  const tapGesture = Gesture.Tap()
+    .maxDuration(200)
+    .onEnd(() => {
+      runOnJS(toggleHeader)();
+    });
 
   if (!novel || isLoading) {
     return (
@@ -119,7 +143,18 @@ export default function ReaderScreen() {
 
     await unlockChapter(chapterId, novel.coinPerChapter);
     await updateCoinBalance(-novel.coinPerChapter);
-    setShowUnlockModal(false);
+  };
+
+  const goToPrevChapter = () => {
+    if (hasPrev && chapters[currentIndex - 1]) {
+      navigation.setParams({ chapterId: chapters[currentIndex - 1].id } as any);
+    }
+  };
+
+  const goToNextChapter = () => {
+    if (hasNext && chapters[currentIndex + 1]) {
+      navigation.setParams({ chapterId: chapters[currentIndex + 1].id } as any);
+    }
   };
 
   if (!isUnlocked) {
@@ -146,18 +181,18 @@ export default function ReaderScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <Pressable onPress={() => setShowHeader(!showHeader)} style={styles.tapArea}>
+      <GestureDetector gesture={tapGesture}>
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={[
             styles.content,
             {
-              paddingTop: showHeader ? insets.top + 60 : insets.top + Spacing.xl,
-              paddingBottom: insets.bottom + 80,
+              paddingTop: showHeader ? insets.top + 80 : insets.top + Spacing.xl,
+              paddingBottom: insets.bottom + 100,
             },
           ]}
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={Platform.OS === 'android'}
           scrollEventThrottle={16}
           overScrollMode="never"
           bounces={Platform.OS === 'ios'}
@@ -166,38 +201,53 @@ export default function ReaderScreen() {
           <ThemedText style={[styles.chapterTitle, Typography.h3]}>
             {currentChapter.title}
           </ThemedText>
-          <ThemedText style={[styles.chapterContent, { fontSize }]}>
+          <ThemedText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8 }]}>
             {currentChapter.content}
           </ThemedText>
         </ScrollView>
-      </Pressable>
+      </GestureDetector>
 
-      <View style={[styles.footer, { bottom: insets.bottom, backgroundColor: theme.backgroundRoot }]}>
-        <Button
-          onPress={() => {
-            if (hasPrev) {
-              navigation.setParams({ chapterId: chapters[currentIndex - 1].id } as any);
-            }
-          }}
-          style={[styles.navButton, !hasPrev && styles.disabledButton]}
+      <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
+        <Pressable
+          onPress={goToPrevChapter}
           disabled={!hasPrev}
+          style={({ pressed }) => [
+            styles.navButtonWide,
+            { backgroundColor: hasPrev ? theme.primary : theme.backgroundSecondary },
+            !hasPrev && styles.disabledButton,
+            pressed && hasPrev && { opacity: 0.8 },
+          ]}
         >
-          <ChevronLeftIcon size={20} color={hasPrev ? "#FFFFFF" : theme.textMuted} />
-        </Button>
-        <ThemedText style={{ color: theme.textSecondary }}>
-          {currentChapter.chapterNumber} / {novel.totalChapters}
-        </ThemedText>
-        <Button
-          onPress={() => {
-            if (hasNext) {
-              navigation.setParams({ chapterId: chapters[currentIndex + 1].id } as any);
-            }
-          }}
-          style={[styles.navButton, !hasNext && styles.disabledButton]}
+          <ChevronLeftIcon size={18} color={hasPrev ? "#FFFFFF" : theme.textMuted} />
+          <ThemedText style={[styles.navButtonText, { color: hasPrev ? "#FFFFFF" : theme.textMuted }]}>
+            Sebelumnya
+          </ThemedText>
+        </Pressable>
+
+        <View style={styles.chapterIndicator}>
+          <ThemedText style={[styles.chapterNumber, { color: theme.textSecondary }]}>
+            {currentChapter.chapterNumber}
+          </ThemedText>
+          <ThemedText style={[styles.chapterTotal, { color: theme.textMuted }]}>
+            / {novel.totalChapters}
+          </ThemedText>
+        </View>
+
+        <Pressable
+          onPress={goToNextChapter}
           disabled={!hasNext}
+          style={({ pressed }) => [
+            styles.navButtonWide,
+            { backgroundColor: hasNext ? theme.primary : theme.backgroundSecondary },
+            !hasNext && styles.disabledButton,
+            pressed && hasNext && { opacity: 0.8 },
+          ]}
         >
-          <ChevronRightIcon size={20} color={hasNext ? "#FFFFFF" : theme.textMuted} />
-        </Button>
+          <ThemedText style={[styles.navButtonText, { color: hasNext ? "#FFFFFF" : theme.textMuted }]}>
+            Selanjutnya
+          </ThemedText>
+          <ChevronRightIcon size={18} color={hasNext ? "#FFFFFF" : theme.textMuted} />
+        </Pressable>
       </View>
     </ThemedView>
   );
@@ -210,8 +260,18 @@ const styles = StyleSheet.create({
   headerButton: {
     padding: Spacing.sm,
   },
-  tapArea: {
+  headerTitleContainer: {
+    alignItems: "center",
     flex: 1,
+    paddingHorizontal: Spacing.md,
+  },
+  headerNovelTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  headerChapterTitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
   scrollView: {
     flex: 1,
@@ -223,26 +283,51 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   chapterContent: {
-    lineHeight: 28,
+    lineHeight: 32,
   },
   footer: {
     position: "absolute",
     left: 0,
     right: 0,
+    bottom: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: "rgba(128, 128, 128, 0.2)",
+    gap: Spacing.sm,
   },
-  navButton: {
-    minWidth: 48,
+  navButtonWide: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    minHeight: 48,
+    flex: 1,
+  },
+  navButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   disabledButton: {
-    opacity: 0.3,
+    opacity: 0.5,
+  },
+  chapterIndicator: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    paddingHorizontal: Spacing.sm,
+  },
+  chapterNumber: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  chapterTotal: {
+    fontSize: 14,
   },
   lockedContainer: {
     flex: 1,
