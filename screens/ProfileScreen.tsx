@@ -110,7 +110,7 @@ export default function ProfileScreen() {
               {statsLoading ? '-' : stats.novelsRead}
             </ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
-              Books Read
+              Buku Dibaca
             </ThemedText>
           </View>
           <View style={styles.statItem}>
@@ -121,7 +121,7 @@ export default function ProfileScreen() {
               {statsLoading ? '-' : stats.chaptersRead}
             </ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
-              Chapters
+              Chapter
             </ThemedText>
           </View>
           <View style={styles.statItem}>
@@ -132,52 +132,52 @@ export default function ProfileScreen() {
               {statsLoading ? '-' : stats.dayStreak}
             </ThemedText>
             <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
-              Day Streak
+              Hari Berturut
             </ThemedText>
           </View>
         </View>
       </Card>
 
       <View style={styles.section}>
-        <ThemedText style={[Typography.h3, styles.sectionTitle]}>Account</ThemedText>
+        <ThemedText style={[Typography.h3, styles.sectionTitle]}>Akun</ThemedText>
         <MenuItem
           icon="user"
-          title="Edit Profile"
-          subtitle="Coming Soon"
-          onPress={() => {}}
+          title="Edit Profil"
+          subtitle="Ubah foto & informasi"
+          onPress={() => navigation.navigate("EditProfile")}
         />
         <MenuItem
           icon="award"
-          title="Premium Membership"
-          subtitle="Upgrade for unlimited access"
+          title="Langganan Premium"
+          subtitle="Akses tanpa batas"
           onPress={() => navigation.navigate("CoinStore")}
         />
         {isAdmin ? (
           <MenuItem
             icon="shield"
             title="Dashboard Admin"
-            subtitle="Manage platform & users"
+            subtitle="Kelola platform & pengguna"
             onPress={() => navigation.navigate("AdminDashboard")}
           />
         ) : isPenulis ? (
           <MenuItem
             icon="book"
             title="Pusat Penulis"
-            subtitle="Manage your stories"
+            subtitle="Kelola cerita kamu"
             onPress={() => navigation.navigate("WriterCenter")}
           />
         ) : (
           <MenuItem
             icon="feather"
             title="Menjadi Penulis"
-            subtitle="Share your stories with the world"
+            subtitle="Bagikan ceritamu ke dunia"
             onPress={upgradeToWriter}
           />
         )}
         <MenuItem
           icon="alert-circle"
           title="Kebijakan dan Akun"
-          subtitle="Privacy, Terms & Conditions"
+          subtitle="Privasi, Syarat & Ketentuan"
           onPress={() => {}}
         />
       </View>
