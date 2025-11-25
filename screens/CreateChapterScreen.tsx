@@ -4,7 +4,8 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
-import { Feather } from "@expo/vector-icons";
+import { InfoIcon } from "@/components/icons/InfoIcon";
+import { SendIcon } from "@/components/icons/SendIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { supabase } from "@/utils/supabase";
@@ -143,7 +144,7 @@ export default function CreateChapterScreen() {
           </View>
 
           <View style={[styles.infoBox, { backgroundColor: theme.backgroundSecondary }]}>
-            <Feather name="info" size={16} color={theme.textSecondary} />
+            <InfoIcon size={16} color={theme.textSecondary} />
             <View style={{ flex: 1 }}>
               <ThemedText style={[styles.infoText, { color: theme.textSecondary }]}>
                 {isFree 
@@ -169,7 +170,7 @@ export default function CreateChapterScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Feather name="send" size={20} color="#FFFFFF" />
+                  <SendIcon size={20} color="#FFFFFF" />
                   <ThemedText style={styles.publishButtonText}>Publish Chapter</ThemedText>
                 </>
               )}

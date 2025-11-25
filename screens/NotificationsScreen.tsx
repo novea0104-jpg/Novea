@@ -2,10 +2,12 @@ import React, { useEffect } from "react";
 import { FlatList, StyleSheet, Pressable, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { EmptyState } from "@/components/EmptyState";
+import { BookIcon } from "@/components/icons/BookIcon";
+import { GiftIcon } from "@/components/icons/GiftIcon";
+import { BellIcon } from "@/components/icons/BellIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,11 +42,11 @@ export default function NotificationsScreen() {
   const getIcon = (type: string) => {
     switch (type) {
       case "new_chapter":
-        return "book";
+        return <BookIcon size={20} color="#FFFFFF" />;
       case "promotion":
-        return "gift";
+        return <GiftIcon size={20} color="#FFFFFF" />;
       default:
-        return "bell";
+        return <BellIcon size={20} color="#FFFFFF" />;
     }
   };
 
@@ -64,7 +66,7 @@ export default function NotificationsScreen() {
       ]}
     >
       <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
-        <Feather name={getIcon(item.type) as any} size={20} color="#FFFFFF" />
+        {getIcon(item.type)}
       </View>
       <View style={styles.notificationContent}>
         <ThemedText style={styles.notificationTitle}>{item.title}</ThemedText>

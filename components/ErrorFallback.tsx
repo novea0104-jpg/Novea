@@ -8,9 +8,10 @@ import {
   Text,
   Modal,
 } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
+import { XIcon } from "@/components/icons/XIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, Fonts } from "@/constants/theme";
 
@@ -53,7 +54,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
             },
           ]}
         >
-          <Feather name="alert-circle" size={20} color={theme.text} />
+          <AlertCircleIcon size={20} color={theme.text} />
         </Pressable>
       ) : null}
 
@@ -106,7 +107,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
                     { opacity: pressed ? 0.6 : 1 },
                   ]}
                 >
-                  <Feather name="x" size={24} color={theme.text} />
+                  <XIcon size={24} color={theme.text} />
                 </Pressable>
               </View>
 

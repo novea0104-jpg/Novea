@@ -3,7 +3,14 @@ import { View, StyleSheet } from "react-native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
-import { Feather } from "@expo/vector-icons";
+import { ShieldIcon } from "@/components/icons/ShieldIcon";
+import { UsersIcon } from "@/components/icons/UsersIcon";
+import { BookIcon } from "@/components/icons/BookIcon";
+import { FileTextIcon } from "@/components/icons/FileTextIcon";
+import { BarChartIcon } from "@/components/icons/BarChartIcon";
+import { SettingsIcon } from "@/components/icons/SettingsIcon";
+import { FlagIcon } from "@/components/icons/FlagIcon";
+import { DollarIcon } from "@/components/icons/DollarIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, Typography, BorderRadius } from "@/constants/theme";
@@ -17,7 +24,7 @@ export default function AdminDashboardScreen() {
       <View style={styles.container}>
         <Card elevation={1} style={styles.comingSoonCard}>
           <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-            <Feather name="shield" size={48} color={theme.text} />
+            <ShieldIcon size={48} color={theme.text} />
           </View>
           
           <ThemedText style={[Typography.h1, styles.title]}>
@@ -33,13 +40,13 @@ export default function AdminDashboardScreen() {
           </ThemedText>
           
           <View style={styles.featureList}>
-            <FeatureItem icon="users" text="Manage all users and roles" theme={theme} />
-            <FeatureItem icon="book" text="Review and moderate novels" theme={theme} />
-            <FeatureItem icon="file-text" text="Approve/reject chapter submissions" theme={theme} />
-            <FeatureItem icon="bar-chart-2" text="View platform analytics" theme={theme} />
-            <FeatureItem icon="settings" text="Configure app settings" theme={theme} />
-            <FeatureItem icon="flag" text="Handle user reports" theme={theme} />
-            <FeatureItem icon="dollar-sign" text="Manage monetization & payouts" theme={theme} />
+            <FeatureItem IconComponent={UsersIcon} text="Manage all users and roles" theme={theme} />
+            <FeatureItem IconComponent={BookIcon} text="Review and moderate novels" theme={theme} />
+            <FeatureItem IconComponent={FileTextIcon} text="Approve/reject chapter submissions" theme={theme} />
+            <FeatureItem IconComponent={BarChartIcon} text="View platform analytics" theme={theme} />
+            <FeatureItem IconComponent={SettingsIcon} text="Configure app settings" theme={theme} />
+            <FeatureItem IconComponent={FlagIcon} text="Handle user reports" theme={theme} />
+            <FeatureItem IconComponent={DollarIcon} text="Manage monetization & payouts" theme={theme} />
           </View>
           
           <ThemedText style={[styles.footer, { color: theme.textMuted }]}>
@@ -51,11 +58,11 @@ export default function AdminDashboardScreen() {
   );
 }
 
-function FeatureItem({ icon, text, theme }: { icon: any; text: string; theme: any }) {
+function FeatureItem({ IconComponent, text, theme }: { IconComponent: React.ComponentType<{ size: number; color: string }>; text: string; theme: any }) {
   return (
     <View style={styles.featureItem}>
       <View style={[styles.featureIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-        <Feather name={icon} size={16} color={theme.text} />
+        <IconComponent size={16} color={theme.text} />
       </View>
       <ThemedText style={styles.featureText}>{text}</ThemedText>
     </View>

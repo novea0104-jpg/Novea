@@ -2,11 +2,13 @@ import React from "react";
 import { View, StyleSheet, FlatList, Pressable, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { UsersIcon } from "@/components/icons/UsersIcon";
+import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
+import { BookIcon } from "@/components/icons/BookIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useApp } from "@/contexts/AppContext";
@@ -55,7 +57,7 @@ export default function WriterDashboardScreen() {
           </ThemedText>
           <View style={styles.novelStats}>
             <View style={styles.stat}>
-              <Feather name="users" size={14} color={theme.textSecondary} />
+              <UsersIcon size={14} color={theme.textSecondary} />
               <ThemedText style={[styles.statText, { color: theme.textSecondary }]}>
                 {item.followers.toLocaleString()}
               </ThemedText>
@@ -68,7 +70,7 @@ export default function WriterDashboardScreen() {
             </View>
           </View>
         </View>
-        <Feather name="chevron-right" size={20} color={theme.textMuted} />
+        <ChevronRightIcon size={20} color={theme.textMuted} />
       </Pressable>
     );
   };
@@ -99,7 +101,7 @@ export default function WriterDashboardScreen() {
           <ThemedText style={[Typography.h2, styles.sectionTitle]}>My Novels</ThemedText>
           {myNovels.length === 0 ? (
             <View style={styles.emptyState}>
-              <Feather name="book" size={48} color={theme.textMuted} />
+              <BookIcon size={48} color={theme.textMuted} />
               <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
                 You haven't published any novels yet
               </ThemedText>

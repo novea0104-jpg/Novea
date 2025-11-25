@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, FlatList, Pressable, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { EmptyState } from "@/components/EmptyState";
+import { StarIcon } from "@/components/icons/StarIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useApp } from "@/contexts/AppContext";
@@ -94,7 +94,7 @@ export default function LibraryScreen() {
           </ThemedText>
           <View style={styles.novelMeta}>
             <View style={styles.rating}>
-              <Feather name="star" size={12} color={theme.secondary} />
+              <StarIcon size={12} color={theme.secondary} filled />
               <ThemedText style={{ fontSize: 12, color: theme.textSecondary }}>
                 {item.rating.toFixed(1)}
               </ThemedText>
@@ -132,7 +132,7 @@ export default function LibraryScreen() {
           </ThemedText>
           <View style={styles.novelMeta}>
             <View style={styles.rating}>
-              <Feather name="star" size={12} color={theme.secondary} />
+              <StarIcon size={12} color={theme.secondary} filled />
               <ThemedText style={{ fontSize: 12, color: theme.textSecondary }}>
                 {item.rating.toFixed(1)}
               </ThemedText>

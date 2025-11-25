@@ -4,7 +4,10 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navig
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
-import { Feather } from "@expo/vector-icons";
+import { PlusIcon } from "@/components/icons/PlusIcon";
+import { FileTextIcon } from "@/components/icons/FileTextIcon";
+import { TypeIcon } from "@/components/icons/TypeIcon";
+import { CalendarIcon } from "@/components/icons/CalendarIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { supabase } from "@/utils/supabase";
@@ -99,7 +102,7 @@ export default function ManageChaptersScreen() {
               end={GradientColors.purplePink.end}
               style={styles.createButtonGradient}
             >
-              <Feather name="plus" size={20} color="#FFFFFF" />
+              <PlusIcon size={20} color="#FFFFFF" />
               <ThemedText style={styles.createButtonText}>Tambah Chapter</ThemedText>
             </LinearGradient>
           </Pressable>
@@ -111,7 +114,7 @@ export default function ManageChaptersScreen() {
           </View>
         ) : chapters.length === 0 ? (
           <Card elevation={1} style={styles.emptyCard}>
-            <Feather name="file-text" size={48} color={theme.textMuted} />
+            <FileTextIcon size={48} color={theme.textMuted} />
             <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
               Belum ada chapter. Tambah chapter pertama sekarang!
             </ThemedText>
@@ -148,13 +151,13 @@ function ChapterCard({ chapter, theme }: { chapter: Chapter; theme: any }) {
 
       <View style={styles.chapterStats}>
         <View style={styles.chapterStat}>
-          <Feather name="type" size={14} color={theme.textSecondary} />
+          <TypeIcon size={14} color={theme.textSecondary} />
           <ThemedText style={[styles.chapterStatText, { color: theme.textSecondary }]}>
             {chapter.wordCount} kata
           </ThemedText>
         </View>
         <View style={styles.chapterStat}>
-          <Feather name="calendar" size={14} color={theme.textSecondary} />
+          <CalendarIcon size={14} color={theme.textSecondary} />
           <ThemedText style={[styles.chapterStatText, { color: theme.textSecondary }]}>
             {new Date(chapter.publishedAt).toLocaleDateString('id-ID', {
               day: 'numeric',

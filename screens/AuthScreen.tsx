@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { View, StyleSheet, TextInput, Alert, Pressable, ScrollView, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { MailIcon } from "@/components/icons/MailIcon";
@@ -11,6 +10,7 @@ import { EyeIcon } from "@/components/icons/EyeIcon";
 import { EyeOffIcon } from "@/components/icons/EyeOffIcon";
 import { ArrowRightIcon } from "@/components/icons/ArrowRightIcon";
 import { GiftIcon } from "@/components/icons/GiftIcon";
+import { XIcon } from "@/components/icons/XIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { Colors, Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
@@ -115,7 +115,7 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
     >
       {onClose ? (
         <Pressable onPress={onClose} style={styles.closeButton}>
-          <Feather name="x" size={24} color={theme.text} />
+          <XIcon size={24} color={theme.text} />
         </Pressable>
       ) : null}
       

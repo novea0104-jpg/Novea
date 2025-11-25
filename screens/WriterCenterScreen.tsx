@@ -10,7 +10,9 @@ import { EyeIcon } from "@/components/icons/EyeIcon";
 import { PlusIcon } from "@/components/icons/PlusIcon";
 import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
 import { TrendingUpIcon } from "@/components/icons/TrendingUpIcon";
-import { Feather } from "@expo/vector-icons";
+import { BarChartIcon } from "@/components/icons/BarChartIcon";
+import { DollarIcon } from "@/components/icons/DollarIcon";
+import { CreditCardIcon } from "@/components/icons/CreditCardIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -210,7 +212,7 @@ export default function WriterCenterScreen() {
           >
             <View style={styles.withdrawContent}>
               <View style={[styles.withdrawIconCircle, { backgroundColor: theme.success + '20' }]}>
-                <Feather name="credit-card" size={20} color={theme.success} />
+                <CreditCardIcon size={20} color={theme.success} />
               </View>
               <View style={styles.withdrawInfo}>
                 <ThemedText style={styles.withdrawTitle}>Tarik Dana (Withdraw)</ThemedText>
@@ -244,11 +246,22 @@ function StatCard({ IconComponent, label, value, theme }: { IconComponent: React
 }
 
 function DashboardCard({ icon, title, description, onPress, theme, isComingSoon }: { icon: string; title: string; description: string; onPress: () => void; theme: any; isComingSoon?: boolean }) {
+  const getIconComponent = () => {
+    switch (icon) {
+      case "bar-chart-2":
+        return <BarChartIcon size={24} color={theme.primary} />;
+      case "dollar-sign":
+        return <DollarIcon size={24} color={theme.primary} />;
+      default:
+        return <BookIcon size={24} color={theme.primary} />;
+    }
+  };
+
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
       <Card elevation={1} style={styles.dashboardCard}>
         <View style={[styles.dashboardIconCircle, { backgroundColor: theme.primary + '20' }]}>
-          <Feather name={icon as any} size={24} color={theme.primary} />
+          {getIconComponent()}
         </View>
         <ThemedText style={styles.dashboardTitle}>{title}</ThemedText>
         <ThemedText style={[styles.dashboardDescription, { color: theme.textSecondary }]} numberOfLines={2}>
