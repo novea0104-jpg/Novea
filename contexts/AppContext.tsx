@@ -14,6 +14,7 @@ interface AppContextType {
   filterNovelsByGenre: (genre: string) => Novel[];
   getChaptersForNovel: (novelId: string) => Promise<Chapter[]>;
   getChapter: (chapterId: string) => Promise<Chapter | null>;
+  refreshNovels: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -293,6 +294,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function refreshNovels(): Promise<void> {
+    await loadData();
+  }
+
   return (
     <AppContext.Provider
       value={{
@@ -306,6 +311,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         filterNovelsByGenre,
         getChaptersForNovel,
         getChapter,
+        refreshNovels,
       }}
     >
       {children}

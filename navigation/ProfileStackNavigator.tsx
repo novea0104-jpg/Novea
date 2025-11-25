@@ -12,6 +12,7 @@ import CreateChapterScreen from "@/screens/CreateChapterScreen";
 import AdminDashboardScreen from "@/screens/AdminDashboardScreen";
 import ManageNovelScreen from "@/screens/ManageNovelScreen";
 import EditChapterScreen from "@/screens/EditChapterScreen";
+import EditNovelScreen from "@/screens/EditNovelScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -27,6 +28,7 @@ export type ProfileStackParamList = {
   AdminDashboard: undefined;
   ManageNovel: { novelId: string };
   EditChapter: { novelId: string; chapterId?: string };
+  EditNovel: { novelId: string };
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -90,6 +92,11 @@ export default function ProfileStackNavigator() {
         name="EditChapter"
         component={EditChapterScreen}
         options={{ title: "Edit Chapter" }}
+      />
+      <Stack.Screen
+        name="EditNovel"
+        component={EditNovelScreen}
+        options={{ title: "Edit Novel" }}
       />
     </Stack.Navigator>
   );
