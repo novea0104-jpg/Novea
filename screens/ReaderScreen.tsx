@@ -1,10 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator, Platform } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { XIcon } from "@/components/icons/XIcon";
+import { SettingsIcon } from "@/components/icons/SettingsIcon";
+import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
+import { LockIcon } from "@/components/icons/LockIcon";
+import { ChevronLeftIcon } from "@/components/icons/ChevronLeftIcon";
+import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/contexts/AppContext";
@@ -39,13 +44,13 @@ export default function ReaderScreen() {
       headerShown: showHeader,
       headerTransparent: true,
       headerLeft: () => (
-        <Pressable onPress={() => navigation.goBack()}>
-          <Feather name="x" size={24} color={theme.text} />
+        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
+          <XIcon size={24} color={theme.text} />
         </Pressable>
       ),
       headerRight: () => (
-        <Pressable onPress={() => {}}>
-          <Feather name="settings" size={24} color={theme.text} />
+        <Pressable onPress={() => {}} style={styles.headerButton}>
+          <SettingsIcon size={24} color={theme.text} />
         </Pressable>
       ),
     });
@@ -87,15 +92,15 @@ export default function ReaderScreen() {
   if (!currentChapter) {
     return (
       <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: Spacing.xl }]}>
-        <Feather name="alert-circle" size={64} color={theme.warning} />
+        <AlertCircleIcon size={64} color={theme.warning} />
         <ThemedText style={[Typography.h2, { marginTop: Spacing.xl, textAlign: 'center' }]}>
-          Chapter Not Found
+          Chapter Tidak Ditemukan
         </ThemedText>
         <ThemedText style={[{ color: theme.textSecondary, marginTop: Spacing.md, textAlign: 'center' }]}>
-          This chapter could not be loaded. Please try again later.
+          Chapter ini tidak dapat dimuat. Silakan coba lagi nanti.
         </ThemedText>
         <Button onPress={() => navigation.goBack()} style={{ marginTop: Spacing.xl }}>
-          Go Back
+          Kembali
         </Button>
       </ThemedView>
     );
@@ -108,7 +113,7 @@ export default function ReaderScreen() {
 
   const handleUnlock = async () => {
     if (!user || user.coinBalance < novel.coinPerChapter) {
-      alert("Insufficient coins");
+      alert("Koin tidak cukup");
       return;
     }
 
@@ -121,18 +126,18 @@ export default function ReaderScreen() {
     return (
       <ThemedView style={styles.container}>
         <View style={[styles.lockedContainer, { paddingTop: insets.top }]}>
-          <Feather name="lock" size={64} color={theme.warning} />
+          <LockIcon size={64} color={theme.warning} />
           <ThemedText style={[Typography.h2, { marginTop: Spacing.xl }]}>
-            Chapter Locked
+            Chapter Terkunci
           </ThemedText>
           <ThemedText style={[styles.lockedText, { color: theme.textSecondary, marginTop: Spacing.md }]}>
-            Unlock this chapter for {novel.coinPerChapter} coins
+            Buka chapter ini dengan {novel.coinPerChapter} koin
           </ThemedText>
           <Button onPress={handleUnlock} style={styles.unlockButton}>
-            Unlock for {novel.coinPerChapter} coins
+            Buka dengan {novel.coinPerChapter} koin
           </Button>
           <ThemedText style={[styles.balance, { color: theme.textSecondary, marginTop: Spacing.lg }]}>
-            Your balance: {user?.coinBalance || 0} coins
+            Saldo kamu: {user?.coinBalance || 0} koin
           </ThemedText>
         </View>
       </ThemedView>
@@ -151,6 +156,12 @@ export default function ReaderScreen() {
               paddingBottom: insets.bottom + 80,
             },
           ]}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={Platform.OS === 'android'}
+          scrollEventThrottle={16}
+          overScrollMode="never"
+          bounces={Platform.OS === 'ios'}
+          decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
         >
           <ThemedText style={[styles.chapterTitle, Typography.h3]}>
             {currentChapter.title}
@@ -171,7 +182,7 @@ export default function ReaderScreen() {
           style={[styles.navButton, !hasPrev && styles.disabledButton]}
           disabled={!hasPrev}
         >
-          <Feather name="chevron-left" size={20} color={hasPrev ? "#FFFFFF" : theme.textMuted} />
+          <ChevronLeftIcon size={20} color={hasPrev ? "#FFFFFF" : theme.textMuted} />
         </Button>
         <ThemedText style={{ color: theme.textSecondary }}>
           {currentChapter.chapterNumber} / {novel.totalChapters}
@@ -185,7 +196,7 @@ export default function ReaderScreen() {
           style={[styles.navButton, !hasNext && styles.disabledButton]}
           disabled={!hasNext}
         >
-          <Feather name="chevron-right" size={20} color={hasNext ? "#FFFFFF" : theme.textMuted} />
+          <ChevronRightIcon size={20} color={hasNext ? "#FFFFFF" : theme.textMuted} />
         </Button>
       </View>
     </ThemedView>
@@ -195,6 +206,9 @@ export default function ReaderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerButton: {
+    padding: Spacing.sm,
   },
   tapArea: {
     flex: 1,

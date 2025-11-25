@@ -2,11 +2,15 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { StarIcon } from "@/components/icons/StarIcon";
+import { EditIcon } from "@/components/icons/EditIcon";
+import { ShareIcon } from "@/components/icons/ShareIcon";
+import { CheckCircleIcon } from "@/components/icons/CheckCircleIcon";
+import { LockIcon } from "@/components/icons/LockIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,9 +92,9 @@ export default function NovelDetailScreen() {
               <ThemedText style={styles.freeBadgeText}>FREE</ThemedText>
             </View>
           ) : isUnlocked ? (
-            <Feather name="check-circle" size={20} color={theme.success} />
+            <CheckCircleIcon size={20} color={theme.success} />
           ) : (
-            <Feather name="lock" size={20} color={theme.warning} />
+            <LockIcon size={20} color={theme.warning} />
           )}
         </View>
       </Pressable>
@@ -108,7 +112,7 @@ export default function NovelDetailScreen() {
           </ThemedText>
           <View style={styles.meta}>
             <View style={styles.rating}>
-              <Feather name="star" size={16} color={theme.secondary} />
+              <StarIcon size={16} color={theme.secondary} filled />
               <ThemedText style={{ color: theme.textSecondary }}>
                 {novel.rating.toFixed(1)} ({novel.ratingCount.toLocaleString()})
               </ThemedText>
@@ -135,7 +139,7 @@ export default function NovelDetailScreen() {
               end={GradientColors.purplePink.end}
               style={styles.editButtonGradient}
             >
-              <Feather name="edit-2" size={18} color="#FFFFFF" />
+              <EditIcon size={18} color="#FFFFFF" />
               <ThemedText style={styles.editButtonText}>Kelola Novel</ThemedText>
             </LinearGradient>
           </Pressable>
@@ -148,7 +152,7 @@ export default function NovelDetailScreen() {
           </Button>
         )}
         <Pressable style={styles.iconButton}>
-          <Feather name="share-2" size={20} color={theme.text} />
+          <ShareIcon size={20} color={theme.text} />
         </Pressable>
       </View>
 
