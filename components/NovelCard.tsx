@@ -30,8 +30,8 @@ export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps
     ? { uri: novel.coverImage }
     : placeholderImage;
 
-  const cardWidth = variant === "large" ? 140 : variant === "medium" ? 110 : 90;
-  const coverHeight = variant === "large" ? 180 : variant === "medium" ? 150 : 120;
+  const cardWidth = variant === "large" ? 120 : variant === "medium" ? 100 : 80;
+  const coverHeight = variant === "large" ? 160 : variant === "medium" ? 140 : 110;
 
   return (
     <Pressable
@@ -46,7 +46,7 @@ export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps
       </View>
       
       <View style={[styles.infoContainer, { backgroundColor: theme.backgroundDefault }]}>
-        <ThemedText style={styles.title} numberOfLines={2}>
+        <ThemedText style={styles.title} numberOfLines={1}>
           {novel.title}
         </ThemedText>
         <ThemedText style={[styles.author, { color: theme.textSecondary }]} numberOfLines={1}>
