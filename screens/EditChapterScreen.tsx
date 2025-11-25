@@ -145,6 +145,15 @@ export default function EditChapterScreen() {
       return;
     }
 
+    const priceValue = parseInt(priceRupiah.replace(/\D/g, ""), 10) || 0;
+    if (isLocked && priceValue % 1000 !== 0) {
+      Alert.alert(
+        "Harga Tidak Valid", 
+        "Harga harus kelipatan Rp 1.000.\n\nContoh: Rp 1.000, Rp 2.000, Rp 5.000, dll.\n\nHarga Rp " + priceValue.toLocaleString("id-ID") + " tidak valid karena bukan kelipatan 1.000."
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {

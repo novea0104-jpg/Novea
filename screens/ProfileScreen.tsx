@@ -92,41 +92,41 @@ export default function ProfileScreen() {
   return (
     <ScreenScrollView>
       <Card elevation={1} style={styles.profileCard}>
-        <View style={styles.avatarContainer}>
-          {user.avatarUrl ? (
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}>
-              <UserIcon size={32} color={theme.text} />
+        <View style={styles.profileHeader}>
+          <View style={styles.avatarContainer}>
+            {user.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}>
+                <UserIcon size={24} color={theme.text} />
+              </View>
+            )}
+            <View style={styles.editBadge}>
+              <CheckIcon size={10} color="#FFFFFF" />
             </View>
-          )}
-          <View style={styles.editBadge}>
-            <CheckIcon size={12} color="#FFFFFF" />
+          </View>
+
+          <View style={styles.profileInfo}>
+            <ThemedText style={styles.userName}>{user.name}</ThemedText>
+            <ThemedText style={[styles.userHandle, { color: theme.textSecondary }]}>
+              @{user.email.split("@")[0]}
+            </ThemedText>
+            <RoleBadge role={user.role} size="small" />
           </View>
         </View>
 
-        <ThemedText style={[Typography.h2, styles.userName]}>{user.name}</ThemedText>
-        <ThemedText style={[styles.userEmail, { color: theme.textSecondary }]}>
-          @{user.email.split("@")[0]}
-        </ThemedText>
-        
-        <View style={styles.badgeContainer}>
-          <RoleBadge role={user.role} size="medium" />
-        </View>
-
-        <View style={[styles.bioContainer, { borderColor: theme.backgroundSecondary }]}>
-          <ThemedText style={[styles.bioLabel, { color: theme.textMuted }]}>Bio</ThemedText>
-          <ThemedText style={[styles.bioText, { color: theme.textSecondary }]}>
-            {user.bio || "Belum ada bio. Tap Edit Profil untuk menambahkan."}
+        {user.bio ? (
+          <ThemedText style={[styles.bioText, { color: theme.textSecondary }]} numberOfLines={2}>
+            {user.bio}
           </ThemedText>
-        </View>
+        ) : null}
 
         <View style={styles.followStatsContainer}>
           <Pressable 
             style={styles.followStatItem}
             onPress={() => navigation.navigate("FollowList", { userId: user.id, type: "followers", userName: user.name })}
           >
-            <ThemedText style={[Typography.h2, styles.followStatValue]}>
+            <ThemedText style={styles.followStatValue}>
               {isLoadingStats ? '-' : followStats.followersCount}
             </ThemedText>
             <ThemedText style={[styles.followStatLabel, { color: theme.textSecondary }]}>
@@ -138,7 +138,7 @@ export default function ProfileScreen() {
             style={styles.followStatItem}
             onPress={() => navigation.navigate("FollowList", { userId: user.id, type: "following", userName: user.name })}
           >
-            <ThemedText style={[Typography.h2, styles.followStatValue]}>
+            <ThemedText style={styles.followStatValue}>
               {isLoadingStats ? '-' : followStats.followingCount}
             </ThemedText>
             <ThemedText style={[styles.followStatLabel, { color: theme.textSecondary }]}>
@@ -181,12 +181,6 @@ export default function ProfileScreen() {
           title="Edit Profil"
           subtitle="Ubah foto & informasi"
           onPress={() => navigation.navigate("EditProfile")}
-        />
-        <MenuItem
-          icon="award"
-          title="Langganan Premium"
-          subtitle="Akses tanpa batas"
-          onPress={() => navigation.navigate("CoinStore")}
         />
         {isAdmin ? (
           <MenuItem
@@ -247,86 +241,79 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   profileCard: {
+    padding: Spacing.lg,
+  },
+  profileHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing["2xl"],
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
   avatarContainer: {
     position: "relative",
-    marginBottom: Spacing.lg,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     justifyContent: "center",
     alignItems: "center",
   },
   editBadge: {
     position: "absolute",
-    right: 0,
-    bottom: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    right: -2,
+    bottom: -2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: "#14B8A6",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: "#1A1A1A",
   },
+  profileInfo: {
+    flex: 1,
+    gap: 2,
+  },
   userName: {
-    marginBottom: Spacing.xs,
+    fontSize: 18,
+    fontWeight: "700",
   },
-  userEmail: {
-    marginBottom: 2,
-    fontSize: 14,
-  },
-  badgeContainer: {
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  bioContainer: {
-    width: "100%",
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    marginBottom: Spacing.xl,
-  },
-  bioLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: Spacing.xs,
+  userHandle: {
+    fontSize: 13,
+    marginBottom: 4,
   },
   bioText: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontStyle: "italic",
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: Spacing.md,
   },
   followStatsContainer: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    width: "100%",
-    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.08)",
   },
   followStatItem: {
     flex: 1,
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: Spacing.sm,
+    justifyContent: "center",
+    gap: Spacing.xs,
   },
   followStatValue: {
-    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: "700",
   },
   followStatLabel: {
     fontSize: 13,
   },
   followStatDivider: {
     width: 1,
-    height: 40,
-    marginHorizontal: Spacing.xl,
+    height: 24,
+    marginHorizontal: Spacing.lg,
   },
   section: {
     marginTop: Spacing["2xl"],

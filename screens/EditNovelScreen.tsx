@@ -5,7 +5,8 @@ import * as ImagePicker from "expo-image-picker";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
-import { Feather } from "@expo/vector-icons";
+import { ImageIcon } from "@/components/icons/ImageIcon";
+import { SaveIcon } from "@/components/icons/SaveIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -175,7 +176,7 @@ export default function EditNovelScreen() {
                 <Image source={{ uri: displayCover }} style={styles.coverPreview} />
               ) : (
                 <View style={styles.coverPlaceholder}>
-                  <Feather name="image" size={40} color={theme.textMuted} />
+                  <ImageIcon size={40} color={theme.textMuted} />
                   <ThemedText style={[styles.coverPlaceholderText, { color: theme.textSecondary }]}>
                     Tap untuk ganti cover
                   </ThemedText>
@@ -272,7 +273,7 @@ export default function EditNovelScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <>
-                  <Feather name="save" size={20} color="#FFFFFF" />
+                  <SaveIcon size={20} color="#FFFFFF" />
                   <ThemedText style={styles.submitButtonText}>Simpan Perubahan</ThemedText>
                 </>
               )}
