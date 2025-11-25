@@ -14,11 +14,13 @@ import { CheckCircleIcon } from "@/components/icons/CheckCircleIcon";
 import { LockIcon } from "@/components/icons/LockIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
+import { HeartIcon } from "@/components/icons/HeartIcon";
+import { UsersIcon } from "@/components/icons/UsersIcon";
 import { RoleBadge, UserRole } from "@/components/RoleBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply } from "@/utils/supabase";
+import { trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -35,7 +37,7 @@ export default function NovelDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
-  const { novels, followingNovels, toggleFollow, unlockedChapters, getChaptersForNovel, refreshNovels } = useApp();
+  const { novels, followingNovels, likedNovels, toggleFollow, toggleLike, unlockedChapters, getChaptersForNovel, refreshNovels } = useApp();
   const { user } = useAuth();
   
   const { novelId } = route.params as { novelId: string };
@@ -66,6 +68,10 @@ export default function NovelDetailScreen() {
   
   // Edit review state
   const [isEditingReview, setIsEditingReview] = useState(false);
+  
+  // Like and follow counts
+  const [likeCount, setLikeCount] = useState(0);
+  const [followCount, setFollowCount] = useState(0);
 
   // Navigate to user profile
   const navigateToUserProfile = (userId: number | string) => {
@@ -87,7 +93,17 @@ export default function NovelDetailScreen() {
   useEffect(() => {
     loadChapters();
     loadReviews();
+    loadCounts();
   }, [novelId]);
+  
+  async function loadCounts() {
+    const [likes, follows] = await Promise.all([
+      getNovelLikeCount(parseInt(novelId)),
+      getNovelFollowCount(parseInt(novelId)),
+    ]);
+    setLikeCount(likes);
+    setFollowCount(follows);
+  }
 
   useEffect(() => {
     // Track novel view when screen loads
@@ -192,7 +208,26 @@ export default function NovelDetailScreen() {
   if (!novel) return null;
   
   const isFollowing = followingNovels.has(novelId);
+  const isLiked = likedNovels.has(novelId);
   const isAuthor = user?.id === novel.authorId;
+  
+  const handleToggleLike = async () => {
+    try {
+      await toggleLike(novelId);
+      setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+    } catch (error) {
+      Alert.alert("Error", "Gagal menyukai novel");
+    }
+  };
+  
+  const handleToggleFollow = async () => {
+    try {
+      await toggleFollow(novelId);
+      setFollowCount(prev => isFollowing ? prev - 1 : prev + 1);
+    } catch (error) {
+      Alert.alert("Error", "Gagal mengikuti novel");
+    }
+  };
 
   const coverImageSource = {
     romance: require("@/assets/images/novels/romance.png"),
@@ -268,7 +303,7 @@ export default function NovelDetailScreen() {
       <View style={styles.actions}>
         {isAuthor ? (
           <Pressable
-            onPress={() => (navigation.getParent() as any)?.navigate('ProfileTab', { screen: 'ManageNovel', params: { novelId } })}
+            onPress={() => navigation.navigate('ManageNovel', { novelId })}
             style={styles.editButton}
           >
             <LinearGradient
@@ -282,12 +317,26 @@ export default function NovelDetailScreen() {
             </LinearGradient>
           </Pressable>
         ) : (
-          <Button
-            onPress={() => toggleFollow(novelId)}
-            style={[styles.followButton, { backgroundColor: isFollowing ? theme.backgroundSecondary : theme.primary }]}
-          >
-            {isFollowing ? "Mengikuti" : "Ikuti"}
-          </Button>
+          <View style={styles.socialActions}>
+            <Pressable
+              onPress={handleToggleLike}
+              style={[styles.socialButton, { backgroundColor: isLiked ? theme.error + '20' : theme.backgroundSecondary }]}
+            >
+              <HeartIcon size={18} color={isLiked ? theme.error : theme.text} filled={isLiked} />
+              <ThemedText style={[styles.socialButtonText, { color: isLiked ? theme.error : theme.text }]}>
+                {likeCount.toLocaleString()}
+              </ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={handleToggleFollow}
+              style={[styles.socialButton, { backgroundColor: isFollowing ? theme.primary + '20' : theme.backgroundSecondary }]}
+            >
+              <UsersIcon size={18} color={isFollowing ? theme.primary : theme.text} />
+              <ThemedText style={[styles.socialButtonText, { color: isFollowing ? theme.primary : theme.text }]}>
+                {followCount.toLocaleString()}
+              </ThemedText>
+            </Pressable>
+          </View>
         )}
         <Pressable style={styles.iconButton}>
           <ShareIcon size={20} color={theme.text} />
@@ -901,5 +950,22 @@ const styles = StyleSheet.create({
   replyContent: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  socialActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  socialButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  socialButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

@@ -6,6 +6,10 @@ import ReaderScreen from "@/screens/ReaderScreen";
 import SearchScreen from "@/screens/SearchScreen";
 import UserProfileScreen from "@/screens/UserProfileScreen";
 import FollowListScreen from "@/screens/FollowListScreen";
+import ManageNovelScreen from "@/screens/ManageNovelScreen";
+import EditNovelScreen from "@/screens/EditNovelScreen";
+import EditChapterScreen from "@/screens/EditChapterScreen";
+import CreateChapterScreen from "@/screens/CreateChapterScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -16,6 +20,10 @@ export type BrowseStackParamList = {
   Search: undefined;
   UserProfile: { userId: string };
   FollowList: { userId: string; type: "followers" | "following"; userName: string };
+  ManageNovel: { novelId: string };
+  EditNovel: { novelId: string };
+  EditChapter: { novelId: string; chapterId?: string };
+  CreateChapter: { novelId: string };
 };
 
 const Stack = createNativeStackNavigator<BrowseStackParamList>();
@@ -54,6 +62,26 @@ export default function BrowseStackNavigator() {
         name="FollowList"
         component={FollowListScreen}
         options={{ title: "Pengikut" }}
+      />
+      <Stack.Screen
+        name="ManageNovel"
+        component={ManageNovelScreen}
+        options={{ title: "Kelola Novel" }}
+      />
+      <Stack.Screen
+        name="EditNovel"
+        component={EditNovelScreen}
+        options={{ title: "Edit Novel" }}
+      />
+      <Stack.Screen
+        name="EditChapter"
+        component={EditChapterScreen}
+        options={{ title: "Edit Chapter" }}
+      />
+      <Stack.Screen
+        name="CreateChapter"
+        component={CreateChapterScreen}
+        options={{ title: "Tulis Chapter" }}
       />
     </Stack.Navigator>
   );

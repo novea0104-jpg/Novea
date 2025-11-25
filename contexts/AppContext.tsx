@@ -6,9 +6,11 @@ import { useAuth } from "@/contexts/AuthContext";
 interface AppContextType {
   novels: Novel[];
   followingNovels: Set<string>;
+  likedNovels: Set<string>;
   unlockedChapters: Set<string>;
   isLoading: boolean;
   toggleFollow: (novelId: string) => Promise<void>;
+  toggleLike: (novelId: string) => Promise<void>;
   unlockChapter: (chapterId: string, cost: number) => Promise<boolean>;
   searchNovels: (query: string) => Novel[];
   filterNovelsByGenre: (genre: string) => Novel[];
@@ -23,6 +25,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { user, updateCoinBalance } = useAuth();
   const [novels, setNovels] = useState<Novel[]>([]);
   const [followingNovels, setFollowingNovels] = useState<Set<string>>(new Set());
+  const [likedNovels, setLikedNovels] = useState<Set<string>>(new Set());
   const [unlockedChapters, setUnlockedChapters] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
@@ -79,6 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Fetch user-specific data if logged in
       let followingSet = new Set<string>();
+      let likedSet = new Set<string>();
       let unlockedSet = new Set<string>();
 
       if (user) {
@@ -92,6 +96,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
           followingSet = new Set(followingData.map(f => f.novel_id.toString()));
         }
 
+        // Fetch liked novels
+        const { data: likedData, error: likedError } = await supabase
+          .from('novel_likes')
+          .select('novel_id')
+          .eq('user_id', parseInt(user.id));
+
+        if (!likedError && likedData) {
+          likedSet = new Set(likedData.map(l => l.novel_id.toString()));
+        }
+
         // Fetch unlocked chapters
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_chapters')
@@ -103,10 +117,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         setFollowingNovels(followingSet);
+        setLikedNovels(likedSet);
         setUnlockedChapters(unlockedSet);
       } else {
         // Clear user-specific data when logged out
         setFollowingNovels(new Set());
+        setLikedNovels(new Set());
         setUnlockedChapters(new Set());
       }
 
@@ -179,6 +195,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
           : novel
       )
     );
+  }
+
+  async function toggleLike(novelId: string) {
+    if (!user) {
+      throw new Error("Must be logged in to like novels");
+    }
+
+    const isCurrentlyLiked = likedNovels.has(novelId);
+    const newLiked = new Set(likedNovels);
+
+    if (isCurrentlyLiked) {
+      // Unlike: Delete from novel_likes
+      const { error } = await supabase
+        .from('novel_likes')
+        .delete()
+        .eq('user_id', parseInt(user.id))
+        .eq('novel_id', parseInt(novelId));
+
+      if (error) throw error;
+      newLiked.delete(novelId);
+    } else {
+      // Like: Insert into novel_likes
+      const { error } = await supabase
+        .from('novel_likes')
+        .insert({
+          user_id: parseInt(user.id),
+          novel_id: parseInt(novelId),
+        });
+
+      if (error) throw error;
+      newLiked.add(novelId);
+    }
+
+    setLikedNovels(newLiked);
   }
 
   async function unlockChapter(chapterId: string, cost: number): Promise<boolean> {
@@ -319,9 +369,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         novels,
         followingNovels,
+        likedNovels,
         unlockedChapters,
         isLoading,
         toggleFollow,
+        toggleLike,
         unlockChapter,
         searchNovels,
         filterNovelsByGenre,

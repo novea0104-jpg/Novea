@@ -110,6 +110,17 @@ export const novelReviews = pgTable("novel_reviews", {
   uniqueUserNovelReview: unique().on(table.userId, table.novelId),
 }));
 
+// Novel Likes - tracks user likes per novel
+export const novelLikes = pgTable("novel_likes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  novelId: integer("novel_id").references(() => novels.id).notNull(),
+  likedAt: timestamp("liked_at").defaultNow().notNull(),
+}, (table) => ({
+  // One like per user per novel
+  uniqueUserNovelLike: unique().on(table.userId, table.novelId),
+}));
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   novels: many(novels),
@@ -119,6 +130,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   coinTransactions: many(coinTransactions),
   novelViews: many(novelViews),
   novelReviews: many(novelReviews),
+  novelLikes: many(novelLikes),
 }));
 
 export const novelsRelations = relations(novels, ({ one, many }) => ({
@@ -131,6 +143,7 @@ export const novelsRelations = relations(novels, ({ one, many }) => ({
   followers: many(followingNovels),
   views: many(novelViews),
   reviews: many(novelReviews),
+  likes: many(novelLikes),
 }));
 
 export const chaptersRelations = relations(chapters, ({ one, many }) => ({
@@ -159,6 +172,17 @@ export const novelReviewsRelations = relations(novelReviews, ({ one }) => ({
   }),
   novel: one(novels, {
     fields: [novelReviews.novelId],
+    references: [novels.id],
+  }),
+}));
+
+export const novelLikesRelations = relations(novelLikes, ({ one }) => ({
+  user: one(users, {
+    fields: [novelLikes.userId],
+    references: [users.id],
+  }),
+  novel: one(novels, {
+    fields: [novelLikes.novelId],
     references: [novels.id],
   }),
 }));

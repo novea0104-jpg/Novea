@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, ActivityIndicator } from "react-native";
 import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -12,10 +11,7 @@ import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/utils/supabase";
-import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
-
-type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
 interface Chapter {
   id: number;
@@ -28,7 +24,7 @@ interface Chapter {
 
 export default function ManageNovelScreen() {
   const route = useRoute();
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const { novels } = useApp();
 
