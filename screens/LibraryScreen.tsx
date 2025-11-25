@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, FlatList, Pressable, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useApp } from "@/contexts/AppContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { LibraryStackParamList } from "@/navigation/LibraryStackNavigator";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { Novel } from "@/types/models";
@@ -20,7 +21,24 @@ export default function LibraryScreen() {
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
   const { novels, followingNovels, readingHistory } = useApp();
+  const { user, showAuthPrompt } = useAuth();
   const [activeTab, setActiveTab] = useState<"following" | "history">("following");
+
+  useEffect(() => {
+    if (!user) {
+      showAuthPrompt("Masuk untuk melihat koleksi novelmu");
+    }
+  }, [user]);
+
+  if (!user) {
+    return (
+      <EmptyState
+        type="library"
+        title="Masuk Diperlukan"
+        message="Silakan masuk untuk melihat koleksi novel yang kamu ikuti dan riwayat bacamu"
+      />
+    );
+  }
 
   const followingNovelsList = novels.filter((n) => followingNovels.has(n.id));
   

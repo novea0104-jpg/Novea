@@ -9,12 +9,15 @@ import NotificationsStackNavigator from "@/navigation/NotificationsStackNavigato
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
+import { useAuth } from "@/contexts/AuthContext";
 import { Spacing } from "@/constants/theme";
 import { BrowseIcon } from "@/components/icons/BrowseIcon";
 import { LibraryIcon } from "@/components/icons/LibraryIcon";
 import { TimelineIcon } from "@/components/icons/TimelineIcon";
 import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
 import { ProfileIcon } from "@/components/icons/ProfileIcon";
+
+const PROTECTED_TABS = ["LibraryTab", "NotificationsTab", "ProfileTab"];
 
 export type MainTabParamList = {
   BrowseTab: undefined;
@@ -28,7 +31,14 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function CustomTabBar({ state, descriptors, navigation }: any) {
   const { theme } = useTheme();
+  const { user, requireAuth } = useAuth();
   const insets = useSafeAreaInsets();
+
+  const AUTH_MESSAGES: { [key: string]: string } = {
+    LibraryTab: "Masuk untuk melihat koleksi novel kamu",
+    NotificationsTab: "Masuk untuk melihat notifikasi",
+    ProfileTab: "Masuk untuk mengakses profil kamu",
+  };
 
   return (
     <View 
@@ -46,6 +56,11 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         const isFocused = state.index === index;
 
         const onPress = () => {
+          if (!user && PROTECTED_TABS.includes(route.name)) {
+            requireAuth(AUTH_MESSAGES[route.name]);
+            return;
+          }
+
           const event = navigation.emit({
             type: "tabPress",
             target: route.key,

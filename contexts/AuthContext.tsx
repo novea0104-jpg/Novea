@@ -5,12 +5,17 @@ import { User } from "@/types/models";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isAuthPromptVisible: boolean;
+  authPromptMessage: string;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
   updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
+  requireAuth: (message?: string) => boolean;
+  showAuthPrompt: (message?: string) => void;
+  hideAuthPrompt: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +23,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthPromptVisible, setIsAuthPromptVisible] = useState(false);
+  const [authPromptMessage, setAuthPromptMessage] = useState("Masuk untuk melanjutkan");
 
   useEffect(() => {
     loadUser();
@@ -26,6 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         await loadUserProfile(session.user.email!);
+        // Auto-dismiss auth prompt when user signs in
+        setIsAuthPromptVisible(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
@@ -267,17 +276,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
   }
 
+  function requireAuth(message?: string): boolean {
+    if (user) return true;
+    showAuthPrompt(message);
+    return false;
+  }
+
+  function showAuthPrompt(message?: string) {
+    setAuthPromptMessage(message || "Masuk untuk melanjutkan");
+    setIsAuthPromptVisible(true);
+  }
+
+  function hideAuthPrompt() {
+    setIsAuthPromptVisible(false);
+  }
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
+        isAuthPromptVisible,
+        authPromptMessage,
         login,
         signup,
         logout,
         upgradeToWriter,
         updateCoinBalance,
         updateProfile,
+        requireAuth,
+        showAuthPrompt,
+        hideAuthPrompt,
       }}
     >
       {children}

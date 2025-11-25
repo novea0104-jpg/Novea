@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { View, StyleSheet, Pressable, Image } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
+import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { RoleBadge } from "@/components/RoleBadge";
@@ -29,9 +30,15 @@ type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
-  const { user, logout, upgradeToWriter } = useAuth();
+  const { user, logout, upgradeToWriter, showAuthPrompt } = useAuth();
   const [followStats, setFollowStats] = useState<FollowStats>({ followersCount: 0, followingCount: 0 });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  useEffect(() => {
+    if (!user) {
+      showAuthPrompt("Masuk untuk melihat profilmu");
+    }
+  }, [user]);
 
   const loadFollowStats = useCallback(async () => {
     if (user) {
@@ -48,7 +55,21 @@ export default function ProfileScreen() {
     }, [loadFollowStats])
   );
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ alignItems: 'center', gap: 16, padding: 24 }}>
+          <UserIcon size={64} color={theme.textMuted} />
+          <ThemedText style={{ fontSize: 18, fontWeight: '600', textAlign: 'center' }}>
+            Masuk Diperlukan
+          </ThemedText>
+          <ThemedText style={{ fontSize: 14, color: theme.textSecondary, textAlign: 'center' }}>
+            Silakan masuk untuk mengakses profil, pengaturan, dan saldo Novoin kamu
+          </ThemedText>
+        </View>
+      </ThemedView>
+    );
+  }
 
   // Determine which role-based button to show
   const isAdmin = user.role === 'editor' || user.role === 'co_admin' || user.role === 'super_admin';

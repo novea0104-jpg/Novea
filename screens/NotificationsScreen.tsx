@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { FlatList, StyleSheet, Pressable, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -8,6 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
+import { useAuth } from "@/contexts/AuthContext";
 import { NotificationsStackParamList } from "@/navigation/NotificationsStackNavigator";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import { mockNotifications } from "@/utils/mockData";
@@ -18,6 +19,23 @@ export default function NotificationsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
+  const { user, showAuthPrompt } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      showAuthPrompt("Masuk untuk melihat notifikasi");
+    }
+  }, [user]);
+
+  if (!user) {
+    return (
+      <EmptyState
+        type="notifications"
+        title="Masuk Diperlukan"
+        message="Silakan masuk untuk melihat notifikasi dan update terbaru dari novel favoritmu"
+      />
+    );
+  }
 
   const getIcon = (type: string) => {
     switch (type) {

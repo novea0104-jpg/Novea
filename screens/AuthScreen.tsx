@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, StyleSheet, TextInput, Alert, Pressable, ScrollView, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { MailIcon } from "@/components/icons/MailIcon";
@@ -14,7 +15,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { Colors, Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 
-export default function AuthScreen() {
+interface AuthScreenProps {
+  onClose?: () => void;
+}
+
+export default function AuthScreen({ onClose }: AuthScreenProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -71,12 +76,13 @@ export default function AuthScreen() {
     try {
       if (isLogin) {
         await login(email.trim(), password);
+        onClose?.();
       } else {
         await signup(email.trim(), password, name.trim());
         Alert.alert(
           "Berhasil",
           "Akun berhasil dibuat! Selamat datang di Novea.",
-          [{ text: "OK" }]
+          [{ text: "OK", onPress: () => onClose?.() }]
         );
       }
     } catch (error: any) {
@@ -107,6 +113,12 @@ export default function AuthScreen() {
       style={{ backgroundColor: theme.backgroundRoot }}
       keyboardShouldPersistTaps="handled"
     >
+      {onClose ? (
+        <Pressable onPress={onClose} style={styles.closeButton}>
+          <Feather name="x" size={24} color={theme.text} />
+        </Pressable>
+      ) : null}
+      
       {/* Logo Section */}
       <View style={styles.logoContainer}>
         <Image
@@ -439,5 +451,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
     paddingBottom: Spacing.xl,
+  },
+  closeButton: {
+    position: "absolute",
+    top: Spacing.xl,
+    right: Spacing.lg,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
 });

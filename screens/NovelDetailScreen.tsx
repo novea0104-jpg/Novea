@@ -38,7 +38,7 @@ export default function NovelDetailScreen() {
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const { novels, followingNovels, likedNovels, toggleFollow, toggleLike, unlockedChapters, getChaptersForNovel, refreshNovels } = useApp();
-  const { user } = useAuth();
+  const { user, requireAuth } = useAuth();
   
   const { novelId } = route.params as { novelId: string };
   const novel = novels.find((n) => n.id === novelId);
@@ -150,6 +150,7 @@ export default function NovelDetailScreen() {
   }
 
   async function handleSubmitReply() {
+    if (!requireAuth("Masuk untuk membalas ulasan")) return;
     if (!user || !replyingToReviewId || !replyText.trim()) return;
 
     setIsSubmittingReply(true);
@@ -170,10 +171,9 @@ export default function NovelDetailScreen() {
   }
 
   async function handleSubmitReview() {
-    if (!user) {
-      Alert.alert("Masuk Diperlukan", "Silakan masuk untuk memberikan ulasan.");
-      return;
-    }
+    if (!requireAuth("Masuk untuk memberikan ulasan")) return;
+    if (!user) return;
+    
     if (userRating === 0) {
       Alert.alert("Rating Diperlukan", "Silakan pilih rating bintang.");
       return;
@@ -212,6 +212,8 @@ export default function NovelDetailScreen() {
   const isAuthor = user?.id === novel.authorId;
   
   const handleToggleLike = async () => {
+    if (!requireAuth("Masuk untuk menyukai novel ini")) return;
+    
     try {
       await toggleLike(novelId);
       setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
@@ -221,6 +223,8 @@ export default function NovelDetailScreen() {
   };
   
   const handleToggleFollow = async () => {
+    if (!requireAuth("Masuk untuk mengikuti novel ini")) return;
+    
     try {
       await toggleFollow(novelId);
       setFollowCount(prev => isFollowing ? prev - 1 : prev + 1);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Image, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Image, ActivityIndicator, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -10,11 +10,12 @@ import { EyeIcon } from "@/components/icons/EyeIcon";
 import { PlusIcon } from "@/components/icons/PlusIcon";
 import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
 import { TrendingUpIcon } from "@/components/icons/TrendingUpIcon";
+import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/utils/supabase";
-import { Spacing, Typography, BorderRadius, GradientColors } from "@/constants/theme";
+import { Spacing, Typography, BorderRadius, GradientColors, Colors } from "@/constants/theme";
 import type { Novel } from "@/types/models";
 
 export default function WriterCenterScreen() {
@@ -176,6 +177,55 @@ export default function WriterCenterScreen() {
             ))}
           </View>
         )}
+
+        <View style={styles.dashboardSection}>
+          <ThemedText style={Typography.h2}>Dashboard Penulis</ThemedText>
+          
+          <View style={styles.dashboardGrid}>
+            <DashboardCard
+              icon="bar-chart-2"
+              title="Analitik"
+              description="Lihat statistik dan trafik novelmu"
+              onPress={() => Alert.alert("Coming Soon", "Fitur analitik akan segera hadir!")}
+              theme={theme}
+              isComingSoon
+            />
+            
+            <DashboardCard
+              icon="dollar-sign"
+              title="Pendapatan"
+              description="Kelola penghasilan dari novelmu"
+              onPress={() => Alert.alert("Coming Soon", "Fitur pendapatan akan segera hadir!")}
+              theme={theme}
+              isComingSoon
+            />
+          </View>
+          
+          <Pressable
+            onPress={() => Alert.alert("Coming Soon", "Fitur penarikan dana akan segera hadir!")}
+            style={({ pressed }) => [
+              styles.withdrawButton,
+              { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View style={styles.withdrawContent}>
+              <View style={[styles.withdrawIconCircle, { backgroundColor: theme.success + '20' }]}>
+                <Feather name="credit-card" size={20} color={theme.success} />
+              </View>
+              <View style={styles.withdrawInfo}>
+                <ThemedText style={styles.withdrawTitle}>Tarik Dana (Withdraw)</ThemedText>
+                <ThemedText style={[styles.withdrawDescription, { color: theme.textSecondary }]}>
+                  Tarik pendapatan ke rekening bankmu
+                </ThemedText>
+              </View>
+              <View style={[styles.comingSoonBadge, { backgroundColor: theme.warning + '20' }]}>
+                <ThemedText style={[styles.comingSoonText, { color: theme.warning }]}>
+                  Soon
+                </ThemedText>
+              </View>
+            </View>
+          </Pressable>
+        </View>
       </View>
     </ScreenScrollView>
   );
@@ -190,6 +240,29 @@ function StatCard({ IconComponent, label, value, theme }: { IconComponent: React
       <ThemedText style={styles.statValue}>{value}</ThemedText>
       <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</ThemedText>
     </Card>
+  );
+}
+
+function DashboardCard({ icon, title, description, onPress, theme, isComingSoon }: { icon: string; title: string; description: string; onPress: () => void; theme: any; isComingSoon?: boolean }) {
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
+      <Card elevation={1} style={styles.dashboardCard}>
+        <View style={[styles.dashboardIconCircle, { backgroundColor: theme.primary + '20' }]}>
+          <Feather name={icon as any} size={24} color={theme.primary} />
+        </View>
+        <ThemedText style={styles.dashboardTitle}>{title}</ThemedText>
+        <ThemedText style={[styles.dashboardDescription, { color: theme.textSecondary }]} numberOfLines={2}>
+          {description}
+        </ThemedText>
+        {isComingSoon ? (
+          <View style={[styles.comingSoonBadgeSmall, { backgroundColor: theme.warning + '20' }]}>
+            <ThemedText style={[styles.comingSoonTextSmall, { color: theme.warning }]}>
+              Coming Soon
+            </ThemedText>
+          </View>
+        ) : null}
+      </Card>
+    </Pressable>
   );
 }
 
@@ -328,5 +401,86 @@ const styles = StyleSheet.create({
   },
   novelStatText: {
     fontSize: 12,
+  },
+  dashboardSection: {
+    marginTop: Spacing.lg,
+    gap: Spacing.md,
+  },
+  dashboardGrid: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  dashboardCard: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
+    minWidth: 140,
+  },
+  dashboardIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.xs,
+  },
+  dashboardTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  dashboardDescription: {
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 16,
+  },
+  comingSoonBadgeSmall: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    marginTop: Spacing.xs,
+  },
+  comingSoonTextSmall: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  withdrawButton: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  withdrawContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  withdrawIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  withdrawInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  withdrawTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  withdrawDescription: {
+    fontSize: 12,
+  },
+  comingSoonBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+  },
+  comingSoonText: {
+    fontSize: 11,
+    fontWeight: "600",
   },
 });
