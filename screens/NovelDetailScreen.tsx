@@ -13,10 +13,11 @@ import { ShareIcon } from "@/components/icons/ShareIcon";
 import { CheckCircleIcon } from "@/components/icons/CheckCircleIcon";
 import { LockIcon } from "@/components/icons/LockIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
+import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats } from "@/utils/supabase";
+import { trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -44,10 +45,17 @@ export default function NovelDetailScreen() {
   const [userComment, setUserComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [showAllReviews, setShowAllReviews] = useState(false);
+  const [hasExistingReview, setHasExistingReview] = useState(false);
   const [ratingStats, setRatingStats] = useState<{ averageRating: number; totalReviews: number }>({
     averageRating: 0,
     totalReviews: 0,
   });
+  
+  // Reply state
+  const [reviewReplies, setReviewReplies] = useState<Map<number, ReviewReply[]>>(new Map());
+  const [replyingToReviewId, setReplyingToReviewId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
   React.useLayoutEffect(() => {
     if (novel) {
@@ -81,6 +89,9 @@ export default function NovelDetailScreen() {
         if (existingReview) {
           setUserRating(existingReview.rating);
           setUserComment(existingReview.comment || "");
+          setHasExistingReview(true);
+        } else {
+          setHasExistingReview(false);
         }
       }
     }
@@ -96,13 +107,35 @@ export default function NovelDetailScreen() {
 
   async function loadReviews() {
     setIsLoadingReviews(true);
-    const [fetchedReviews, stats] = await Promise.all([
+    const [fetchedReviews, stats, repliesMap] = await Promise.all([
       getNovelReviews(parseInt(novelId)),
       getNovelRatingStats(parseInt(novelId)),
+      getReviewRepliesForNovel(parseInt(novelId)),
     ]);
     setReviews(fetchedReviews);
     setRatingStats(stats);
+    setReviewReplies(repliesMap);
     setIsLoadingReviews(false);
+  }
+
+  async function handleSubmitReply() {
+    if (!user || !replyingToReviewId || !replyText.trim()) return;
+
+    setIsSubmittingReply(true);
+    const result = await submitReviewReply(
+      replyingToReviewId,
+      parseInt(user.id),
+      replyText.trim()
+    );
+    setIsSubmittingReply(false);
+
+    if (result.success) {
+      setReplyText("");
+      setReplyingToReviewId(null);
+      loadReviews(); // Refresh to show new reply
+    } else {
+      Alert.alert("Gagal", result.error || "Gagal mengirim balasan.");
+    }
   }
 
   async function handleSubmitReview() {
@@ -314,7 +347,7 @@ export default function NovelDetailScreen() {
         {user && !isAuthor ? (
           <Card elevation={1} style={styles.writeReviewCard}>
             <ThemedText style={[Typography.body, styles.writeReviewTitle]}>
-              Tulis Ulasan
+              {hasExistingReview ? "Edit Ulasan" : "Tulis Ulasan"}
             </ThemedText>
             <View style={styles.starSelector}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -329,7 +362,7 @@ export default function NovelDetailScreen() {
             </View>
             <TextInput
               style={[styles.commentInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              placeholder="Tulis komentar (opsional)..."
+              placeholder={hasExistingReview ? "Edit komentar kamu..." : "Tulis komentar (opsional)..."}
               placeholderTextColor={theme.textMuted}
               value={userComment}
               onChangeText={setUserComment}
@@ -342,7 +375,7 @@ export default function NovelDetailScreen() {
               style={styles.submitButton}
               disabled={isSubmittingReview || userRating === 0}
             >
-              {isSubmittingReview ? "Menyimpan..." : "Kirim Ulasan"}
+              {isSubmittingReview ? "Menyimpan..." : (hasExistingReview ? "Update Ulasan" : "Kirim Ulasan")}
             </Button>
           </Card>
         ) : null}
@@ -360,42 +393,107 @@ export default function NovelDetailScreen() {
           </Card>
         ) : (
           <>
-            {(showAllReviews ? reviews : reviews.slice(0, 3)).map((review) => (
-              <Card key={review.id} elevation={1} style={styles.reviewCard}>
-                <View style={styles.reviewHeader}>
-                  <View style={styles.reviewUser}>
-                    {review.userAvatar ? (
-                      <Image source={{ uri: review.userAvatar }} style={styles.reviewAvatar} />
-                    ) : (
-                      <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSecondary }]}>
-                        <UserIcon size={16} color={theme.textMuted} />
+            {(showAllReviews ? reviews : reviews.slice(0, 3)).map((review) => {
+              const replies = reviewReplies.get(review.id) || [];
+              const isReplying = replyingToReviewId === review.id;
+              
+              return (
+                <Card key={review.id} elevation={1} style={styles.reviewCard}>
+                  <View style={styles.reviewHeader}>
+                    <View style={styles.reviewUser}>
+                      {review.userAvatar ? (
+                        <Image source={{ uri: review.userAvatar }} style={styles.reviewAvatar} />
+                      ) : (
+                        <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSecondary }]}>
+                          <UserIcon size={16} color={theme.textMuted} />
+                        </View>
+                      )}
+                      <View>
+                        <ThemedText style={styles.reviewUserName}>{review.userName}</ThemedText>
+                        <ThemedText style={[styles.reviewDate, { color: theme.textMuted }]}>
+                          {formatDate(review.createdAt)}
+                        </ThemedText>
                       </View>
-                    )}
-                    <View>
-                      <ThemedText style={styles.reviewUserName}>{review.userName}</ThemedText>
-                      <ThemedText style={[styles.reviewDate, { color: theme.textMuted }]}>
-                        {formatDate(review.createdAt)}
-                      </ThemedText>
+                    </View>
+                    <View style={styles.reviewRating}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <StarIcon
+                          key={star}
+                          size={12}
+                          color={star <= review.rating ? theme.secondary : theme.backgroundSecondary}
+                          filled={star <= review.rating}
+                        />
+                      ))}
                     </View>
                   </View>
-                  <View style={styles.reviewRating}>
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <StarIcon
-                        key={star}
-                        size={12}
-                        color={star <= review.rating ? theme.secondary : theme.backgroundSecondary}
-                        filled={star <= review.rating}
+                  {review.comment ? (
+                    <ThemedText style={[styles.reviewComment, { color: theme.textSecondary }]}>
+                      {review.comment}
+                    </ThemedText>
+                  ) : null}
+                  
+                  {/* Reply button */}
+                  {user ? (
+                    <Pressable 
+                      onPress={() => setReplyingToReviewId(isReplying ? null : review.id)}
+                      style={styles.replyButton}
+                    >
+                      <MessageCircleIcon size={14} color={theme.primary} />
+                      <ThemedText style={[styles.replyButtonText, { color: theme.primary }]}>
+                        {isReplying ? 'Batal' : 'Balas'}
+                      </ThemedText>
+                    </Pressable>
+                  ) : null}
+                  
+                  {/* Reply input */}
+                  {isReplying ? (
+                    <View style={styles.replyInputContainer}>
+                      <TextInput
+                        style={[styles.replyInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                        placeholder="Tulis balasan..."
+                        placeholderTextColor={theme.textMuted}
+                        value={replyText}
+                        onChangeText={setReplyText}
+                        multiline
                       />
-                    ))}
-                  </View>
-                </View>
-                {review.comment ? (
-                  <ThemedText style={[styles.reviewComment, { color: theme.textSecondary }]}>
-                    {review.comment}
-                  </ThemedText>
-                ) : null}
-              </Card>
-            ))}
+                      <Button
+                        onPress={handleSubmitReply}
+                        style={styles.replySubmitButton}
+                        disabled={isSubmittingReply || !replyText.trim()}
+                      >
+                        {isSubmittingReply ? "..." : "Kirim"}
+                      </Button>
+                    </View>
+                  ) : null}
+                  
+                  {/* Replies list */}
+                  {replies.length > 0 ? (
+                    <View style={styles.repliesContainer}>
+                      {replies.map((reply) => (
+                        <View key={reply.id} style={[styles.replyItem, { borderLeftColor: theme.backgroundSecondary }]}>
+                          <View style={styles.replyHeader}>
+                            {reply.userAvatar ? (
+                              <Image source={{ uri: reply.userAvatar }} style={styles.replyAvatar} />
+                            ) : (
+                              <View style={[styles.replyAvatar, { backgroundColor: theme.backgroundSecondary }]}>
+                                <UserIcon size={12} color={theme.textMuted} />
+                              </View>
+                            )}
+                            <ThemedText style={styles.replyUserName}>{reply.userName}</ThemedText>
+                            <ThemedText style={[styles.replyDate, { color: theme.textMuted }]}>
+                              {formatDate(reply.createdAt)}
+                            </ThemedText>
+                          </View>
+                          <ThemedText style={[styles.replyContent, { color: theme.textSecondary }]}>
+                            {reply.content}
+                          </ThemedText>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </Card>
+              );
+            })}
             {reviews.length > 3 ? (
               <Pressable onPress={() => setShowAllReviews(!showAllReviews)} style={styles.showMoreButton}>
                 <ThemedText style={[styles.showMoreText, { color: theme.primary }]}>
@@ -624,5 +722,64 @@ const styles = StyleSheet.create({
   reviewComment: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  replyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  replyButtonText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  replyInputContainer: {
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  replyInput: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    fontSize: 14,
+    minHeight: 60,
+    textAlignVertical: "top",
+  },
+  replySubmitButton: {
+    alignSelf: "flex-end",
+  },
+  repliesContainer: {
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  replyItem: {
+    paddingLeft: Spacing.md,
+    borderLeftWidth: 2,
+    marginLeft: Spacing.xs,
+  },
+  replyHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginBottom: 4,
+  },
+  replyAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  replyUserName: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  replyDate: {
+    fontSize: 10,
+    marginLeft: 4,
+  },
+  replyContent: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

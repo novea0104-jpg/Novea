@@ -209,6 +209,18 @@ export interface NovelReview {
   updatedAt: string;
   userName?: string;
   userAvatar?: string;
+  replies?: ReviewReply[];
+}
+
+// Review reply types
+export interface ReviewReply {
+  id: number;
+  reviewId: number;
+  userId: number;
+  content: string;
+  createdAt: string;
+  userName?: string;
+  userAvatar?: string;
 }
 
 // Get reviews for a novel
@@ -420,5 +432,113 @@ export async function getNovelRatingStats(novelId: number): Promise<{
   } catch (error) {
     console.error('Error in getNovelRatingStats:', error);
     return { averageRating: 0, totalReviews: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+  }
+}
+
+// Get replies for all reviews of a novel (batch fetch to avoid N+1)
+export async function getReviewRepliesForNovel(novelId: number): Promise<Map<number, ReviewReply[]>> {
+  try {
+    const { data, error } = await supabase
+      .from('review_replies')
+      .select(`
+        *,
+        users:user_id (name, avatar_url),
+        novel_reviews!inner (novel_id)
+      `)
+      .eq('novel_reviews.novel_id', novelId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error getting review replies:', error);
+      return new Map();
+    }
+
+    const repliesMap = new Map<number, ReviewReply[]>();
+    
+    (data || []).forEach((reply: any) => {
+      const reviewReply: ReviewReply = {
+        id: reply.id,
+        reviewId: reply.review_id,
+        userId: reply.user_id,
+        content: reply.content,
+        createdAt: reply.created_at,
+        userName: reply.users?.name || 'Pengguna',
+        userAvatar: reply.users?.avatar_url,
+      };
+      
+      const existing = repliesMap.get(reply.review_id) || [];
+      existing.push(reviewReply);
+      repliesMap.set(reply.review_id, existing);
+    });
+
+    return repliesMap;
+  } catch (error) {
+    console.error('Error in getReviewRepliesForNovel:', error);
+    return new Map();
+  }
+}
+
+// Submit a reply to a review
+export async function submitReviewReply(
+  reviewId: number,
+  userId: number,
+  content: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('review_replies')
+      .insert({
+        review_id: reviewId,
+        user_id: userId,
+        content: content.trim(),
+      });
+
+    if (error) {
+      console.error('Error submitting reply:', error);
+      return { success: false, error: 'Gagal mengirim balasan' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in submitReviewReply:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Delete a reply (only owner can delete)
+export async function deleteReviewReply(
+  replyId: number,
+  userId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // First check if user owns this reply
+    const { data: reply, error: checkError } = await supabase
+      .from('review_replies')
+      .select('user_id')
+      .eq('id', replyId)
+      .single();
+
+    if (checkError || !reply) {
+      return { success: false, error: 'Balasan tidak ditemukan' };
+    }
+
+    if (reply.user_id !== userId) {
+      return { success: false, error: 'Kamu tidak bisa menghapus balasan orang lain' };
+    }
+
+    const { error } = await supabase
+      .from('review_replies')
+      .delete()
+      .eq('id', replyId);
+
+    if (error) {
+      console.error('Error deleting reply:', error);
+      return { success: false, error: 'Gagal menghapus balasan' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in deleteReviewReply:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
   }
 }
