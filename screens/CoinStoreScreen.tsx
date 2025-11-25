@@ -1,57 +1,62 @@
 import React from "react";
-import { View, StyleSheet, FlatList, Pressable, Image } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { View, StyleSheet, FlatList, Pressable, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { CoinIcon } from "@/components/icons/CoinIcon";
+import { StarIcon } from "@/components/icons/StarIcon";
+import { GiftIcon } from "@/components/icons/GiftIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatRupiah, COIN_PACKAGES, NOVOIN_TO_RUPIAH } from "@/constants/pricing";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
-import { coinPackages } from "@/utils/mockData";
 
 export default function CoinStoreScreen() {
   const { theme } = useTheme();
   const { user, updateCoinBalance } = useAuth();
 
-  const handlePurchase = async (packageItem: any) => {
+  const handlePurchase = async (packageItem: typeof COIN_PACKAGES[0]) => {
     const totalCoins = packageItem.coins + packageItem.bonus;
     await updateCoinBalance(totalCoins);
-    alert(`Successfully purchased ${totalCoins} coins!`);
+    alert(`Berhasil membeli ${totalCoins} Novoin!`);
   };
 
-  const renderPackage = ({ item }: any) => (
+  const renderPackage = ({ item }: { item: typeof COIN_PACKAGES[0] }) => {
+    const cardStyle: ViewStyle = StyleSheet.flatten([
+      styles.packageCard,
+      item.isPopular && { borderWidth: 2, borderColor: theme.primary },
+    ]);
+
+    return (
     <Card 
       elevation={1}
       onPress={() => handlePurchase(item)}
-      style={[
-        styles.packageCard,
-        item.isPopular && { borderWidth: 2, borderColor: theme.primary },
-      ]}
+      style={cardStyle}
     >
-      {item.isPopular && (
+      {item.isPopular ? (
         <LinearGradient
           colors={GradientColors.purplePink.colors}
           start={GradientColors.purplePink.start}
           end={GradientColors.purplePink.end}
           style={styles.popularBadge}
         >
-          <Feather name="star" size={10} color="#FFFFFF" />
-          <ThemedText style={styles.popularText}>POPULAR</ThemedText>
+          <StarIcon size={10} color="#FFFFFF" />
+          <ThemedText style={styles.popularText}>POPULER</ThemedText>
         </LinearGradient>
-      )}
-      <Feather name="circle" size={48} color={theme.secondary} />
+      ) : null}
+      <CoinIcon size={48} color={theme.secondary} />
       <ThemedText style={[Typography.h1, { color: theme.text, marginVertical: Spacing.sm, fontWeight: "800" }]}>
         {item.coins}
       </ThemedText>
-      {item.bonus > 0 && (
+      {item.bonus > 0 ? (
         <View style={[styles.bonusBadge, { backgroundColor: theme.success }]}>
           <ThemedText style={styles.bonusText}>+{item.bonus} BONUS</ThemedText>
         </View>
-      )}
-      <ThemedText style={[styles.price, { color: theme.textSecondary, marginTop: Spacing.md, fontSize: 18, fontWeight: "700" }]}>
-        Rp {(item.price / 100).toLocaleString()}
+      ) : null}
+      <ThemedText style={[styles.price, { color: theme.textSecondary, marginTop: Spacing.md, fontSize: 16, fontWeight: "700" }]}>
+        {formatRupiah(item.priceRupiah)}
       </ThemedText>
       <LinearGradient
         colors={GradientColors.yellowGreen.colors}
@@ -60,11 +65,12 @@ export default function CoinStoreScreen() {
         style={[styles.buyButton, { marginTop: Spacing.md }]}
       >
         <Pressable onPress={() => handlePurchase(item)} style={styles.buyButtonInner}>
-          <ThemedText style={styles.buyButtonText}>Buy Now</ThemedText>
+          <ThemedText style={styles.buyButtonText}>Beli Sekarang</ThemedText>
         </Pressable>
       </LinearGradient>
     </Card>
   );
+  };
 
   return (
     <ScreenScrollView>
@@ -75,20 +81,29 @@ export default function CoinStoreScreen() {
         style={styles.balanceCard}
       >
         <ThemedText style={[styles.balanceLabel, { color: "#000000" }]}>
-          Current Balance
+          Saldo Novoin Kamu
         </ThemedText>
         <View style={styles.balanceRow}>
-          <Feather name="circle" size={32} color="#000000" />
+          <CoinIcon size={32} color="#000000" />
           <ThemedText style={[Typography.h1, { color: "#000000", fontWeight: "800" }]}>
             {user?.coinBalance || 0}
           </ThemedText>
         </View>
+        <ThemedText style={[styles.balanceValue, { color: "#000000" }]}>
+          = {formatRupiah((user?.coinBalance || 0) * NOVOIN_TO_RUPIAH)}
+        </ThemedText>
       </LinearGradient>
 
-      <ThemedText style={[Typography.h2, styles.sectionTitle, { fontWeight: "700" }]}>Coin Packages</ThemedText>
+      <View style={styles.infoCard}>
+        <ThemedText style={[styles.infoText, { color: theme.textSecondary }]}>
+          1 Novoin = Rp 1.000
+        </ThemedText>
+      </View>
+
+      <ThemedText style={[Typography.h2, styles.sectionTitle, { fontWeight: "700" }]}>Paket Novoin</ThemedText>
       
       <FlatList
-        data={coinPackages}
+        data={COIN_PACKAGES}
         renderItem={renderPackage}
         keyExtractor={(item) => item.id}
         numColumns={2}
@@ -98,17 +113,17 @@ export default function CoinStoreScreen() {
       />
 
       <ThemedText style={[Typography.h3, styles.sectionTitle, { marginTop: Spacing.xl }]}>
-        Get Free Coins
+        Dapatkan Novoin Gratis
       </ThemedText>
       <View style={[styles.freeCoinsCard, { backgroundColor: theme.backgroundDefault }]}>
-        <Feather name="gift" size={24} color={theme.secondary} />
+        <GiftIcon size={24} color={theme.secondary} />
         <View style={styles.freeCoinsContent}>
-          <ThemedText style={styles.freeCoinsTitle}>Daily Login Reward</ThemedText>
+          <ThemedText style={styles.freeCoinsTitle}>Hadiah Login Harian</ThemedText>
           <ThemedText style={[styles.freeCoinsText, { color: theme.textSecondary }]}>
-            Get 10 coins every day
+            Dapatkan 5 Novoin setiap hari
           </ThemedText>
         </View>
-        <Button style={styles.claimButton}>Claim</Button>
+        <Button style={styles.claimButton}>Klaim</Button>
       </View>
     </ScreenScrollView>
   );
@@ -119,7 +134,7 @@ const styles = StyleSheet.create({
     padding: Spacing["2xl"],
     borderRadius: BorderRadius.md,
     alignItems: "center",
-    marginBottom: Spacing["2xl"],
+    marginBottom: Spacing.lg,
   },
   balanceLabel: {
     fontSize: 14,
@@ -131,9 +146,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.md,
   },
-  balanceIcon: {
-    width: 32,
-    height: 32,
+  balanceValue: {
+    fontSize: 14,
+    marginTop: Spacing.xs,
+    opacity: 0.8,
+  },
+  infoCard: {
+    alignItems: "center",
+    marginBottom: Spacing.xl,
+  },
+  infoText: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   sectionTitle: {
     marginBottom: Spacing.xl,
@@ -168,11 +192,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     color: "#FFFFFF",
-  },
-  packageIcon: {
-    width: 64,
-    height: 64,
-    marginTop: Spacing.md,
   },
   bonusBadge: {
     paddingHorizontal: Spacing.sm,
