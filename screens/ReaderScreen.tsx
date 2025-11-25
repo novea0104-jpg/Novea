@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { runOnJS } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
@@ -99,11 +97,37 @@ export default function ReaderScreen() {
     setShowHeader(prev => !prev);
   };
 
-  const tapGesture = Gesture.Tap()
-    .maxDuration(200)
-    .onEnd(() => {
-      runOnJS(toggleHeader)();
-    });
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const isScrollingRef = useRef(false);
+
+  const handleTouchStart = (e: any) => {
+    const touch = e.nativeEvent;
+    touchStartRef.current = {
+      x: touch.pageX,
+      y: touch.pageY,
+      time: Date.now(),
+    };
+    isScrollingRef.current = false;
+  };
+
+  const handleTouchEnd = (e: any) => {
+    if (!touchStartRef.current || isScrollingRef.current) return;
+
+    const touch = e.nativeEvent;
+    const deltaX = Math.abs(touch.pageX - touchStartRef.current.x);
+    const deltaY = Math.abs(touch.pageY - touchStartRef.current.y);
+    const deltaTime = Date.now() - touchStartRef.current.time;
+
+    if (deltaX < 10 && deltaY < 10 && deltaTime < 200) {
+      toggleHeader();
+    }
+
+    touchStartRef.current = null;
+  };
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    isScrollingRef.current = true;
+  };
 
   if (!novel || isLoading) {
     return (
@@ -181,31 +205,32 @@ export default function ReaderScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <GestureDetector gesture={tapGesture}>
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.scrollView}
-          contentContainerStyle={[
-            styles.content,
-            {
-              paddingTop: showHeader ? insets.top + 80 : insets.top + Spacing.xl,
-              paddingBottom: insets.bottom + 100,
-            },
-          ]}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          overScrollMode="never"
-          bounces={Platform.OS === 'ios'}
-          decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
-        >
-          <ThemedText style={[styles.chapterTitle, Typography.h3]}>
-            {currentChapter.title}
-          </ThemedText>
-          <ThemedText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8 }]}>
-            {currentChapter.content}
-          </ThemedText>
-        </ScrollView>
-      </GestureDetector>
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: showHeader ? insets.top + 80 : insets.top + Spacing.xl,
+            paddingBottom: insets.bottom + 100,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        overScrollMode="never"
+        bounces={Platform.OS === 'ios'}
+        decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onScroll={handleScroll}
+      >
+        <ThemedText style={[styles.chapterTitle, Typography.h3]}>
+          {currentChapter.title}
+        </ThemedText>
+        <ThemedText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8 }]}>
+          {currentChapter.content}
+        </ThemedText>
+      </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
         <Pressable
