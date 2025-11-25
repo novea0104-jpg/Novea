@@ -32,7 +32,7 @@ export default function EditProfileScreen() {
         : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (!permissionResult.granted) {
-        Alert.alert('Permission Required', `Please allow ${useCamera ? 'camera' : 'photo library'} access to change your avatar.`);
+        Alert.alert('Izin Diperlukan', `Mohon izinkan akses ${useCamera ? 'kamera' : 'galeri foto'} untuk mengganti avatar.`);
         return;
       }
 
@@ -55,25 +55,25 @@ export default function EditProfileScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
+      Alert.alert('Error', 'Gagal memilih gambar. Silakan coba lagi.');
     }
   };
 
   const showImagePickerOptions = () => {
     Alert.alert(
-      'Change Avatar',
-      'Choose a photo from:',
+      'Ganti Avatar',
+      'Pilih foto dari:',
       [
         {
-          text: 'Camera',
+          text: 'Kamera',
           onPress: () => pickImage(true),
         },
         {
-          text: 'Photo Library',
+          text: 'Galeri Foto',
           onPress: () => pickImage(false),
         },
         {
-          text: 'Cancel',
+          text: 'Batal',
           style: 'cancel',
         },
       ],
@@ -110,12 +110,12 @@ export default function EditProfileScreen() {
         avatarUrl: finalAvatarUrl,
       });
 
-      Alert.alert('Success', 'Profile updated successfully!', [
+      Alert.alert('Berhasil', 'Profil berhasil diperbarui!', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      Alert.alert('Error', 'Gagal memperbarui profil. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
       setIsUploadingImage(false);
@@ -125,7 +125,7 @@ export default function EditProfileScreen() {
   return (
     <ScreenKeyboardAwareScrollView>
       <Card elevation={1} style={styles.card}>
-        <ThemedText style={[Typography.h2, styles.sectionTitle]}>Profile Photo</ThemedText>
+        <ThemedText style={[Typography.h2, styles.sectionTitle]}>Foto Profil</ThemedText>
         
         <View style={styles.avatarSection}>
           <Pressable
@@ -156,21 +156,21 @@ export default function EditProfileScreen() {
           
           {isUploadingImage ? (
             <ThemedText style={[styles.uploadingText, { color: theme.textSecondary }]}>
-              Uploading image...
+              Mengunggah gambar...
             </ThemedText>
           ) : null}
         </View>
       </Card>
 
       <Card elevation={1} style={styles.card}>
-        <ThemedText style={[Typography.h2, styles.sectionTitle]}>Personal Information</ThemedText>
+        <ThemedText style={[Typography.h2, styles.sectionTitle]}>Informasi Pribadi</ThemedText>
         
         <View style={styles.inputGroup}>
-          <ThemedText style={[styles.label, { color: theme.text }]}>Name</ThemedText>
+          <ThemedText style={[styles.label, { color: theme.text }]}>Nama</ThemedText>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="Enter your name"
+            placeholder="Masukkan nama kamu"
             placeholderTextColor={theme.textMuted}
             style={[
               styles.input,
@@ -188,7 +188,7 @@ export default function EditProfileScreen() {
           <TextInput
             value={bio}
             onChangeText={setBio}
-            placeholder="Tell us about yourself..."
+            placeholder="Ceritakan tentang dirimu..."
             placeholderTextColor={theme.textMuted}
             multiline
             numberOfLines={4}
@@ -220,7 +220,7 @@ export default function EditProfileScreen() {
             ]}
           />
           <ThemedText style={[styles.helperText, { color: theme.textMuted }]}>
-            Email cannot be changed
+            Email tidak dapat diubah
           </ThemedText>
         </View>
       </Card>
@@ -245,7 +245,7 @@ export default function EditProfileScreen() {
             ) : (
               <>
                 <Feather name="check" size={20} color="#000000" />
-                <ThemedText style={styles.saveButtonText}>Save Changes</ThemedText>
+                <ThemedText style={styles.saveButtonText}>Simpan Perubahan</ThemedText>
               </>
             )}
           </Pressable>
@@ -259,7 +259,7 @@ export default function EditProfileScreen() {
             { opacity: pressed || isLoading ? 0.7 : 1, backgroundColor: theme.backgroundSecondary },
           ]}
         >
-          <ThemedText style={[styles.cancelButtonText, { color: theme.text }]}>Cancel</ThemedText>
+          <ThemedText style={[styles.cancelButtonText, { color: theme.text }]}>Batal</ThemedText>
         </Pressable>
       </View>
     </ScreenKeyboardAwareScrollView>
