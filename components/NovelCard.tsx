@@ -30,8 +30,8 @@ export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps
     ? { uri: novel.coverImage }
     : placeholderImage;
 
-  const cardWidth = variant === "large" ? 120 : variant === "medium" ? 100 : 80;
-  const coverHeight = variant === "large" ? 160 : variant === "medium" ? 140 : 110;
+  const cardWidth = variant === "large" ? 100 : variant === "medium" ? 85 : 70;
+  const coverHeight = variant === "large" ? 140 : variant === "medium" ? 120 : 100;
 
   return (
     <Pressable

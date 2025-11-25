@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   section: {
-    marginBottom: Spacing["4xl"],
+    marginBottom: Spacing.xl,
   },
   sectionTitle: {
     marginBottom: Spacing.md,
