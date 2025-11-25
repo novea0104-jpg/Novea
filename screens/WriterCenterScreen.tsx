@@ -63,6 +63,7 @@ export default function WriterCenterScreen() {
         totalChapters: n.total_chapters,
         followers: 0,
         lastUpdated: new Date(n.updated_at),
+        createdAt: new Date(n.created_at),
       }));
 
       setNovels(mappedNovels);
@@ -141,7 +142,7 @@ export default function WriterCenterScreen() {
               <NovelCard
                 key={novel.id}
                 novel={novel}
-                onPress={() => (navigation as any).navigate('ManageChapters', { novelId: novel.id })}
+                onPress={() => (navigation as any).navigate('ManageNovel', { novelId: novel.id })}
                 theme={theme}
               />
             ))}

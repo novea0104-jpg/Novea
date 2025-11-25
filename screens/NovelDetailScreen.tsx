@@ -3,6 +3,7 @@ import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator } from 
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
@@ -11,7 +12,7 @@ import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { trackNovelView } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
-import { Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
 
 type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
@@ -51,6 +52,7 @@ export default function NovelDetailScreen() {
   if (!novel) return null;
   
   const isFollowing = followingNovels.has(novelId);
+  const isAuthor = user?.id === novel.authorId;
 
   const coverImageSource = {
     romance: require("@/assets/images/novels/romance.png"),
@@ -122,12 +124,29 @@ export default function NovelDetailScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Button
-          onPress={() => toggleFollow(novelId)}
-          style={[styles.followButton, { backgroundColor: isFollowing ? theme.backgroundSecondary : theme.primary }]}
-        >
-          {isFollowing ? "Following" : "Follow"}
-        </Button>
+        {isAuthor ? (
+          <Pressable
+            onPress={() => (navigation.getParent() as any)?.navigate('ProfileTab', { screen: 'ManageNovel', params: { novelId } })}
+            style={styles.editButton}
+          >
+            <LinearGradient
+              colors={GradientColors.purplePink.colors}
+              start={GradientColors.purplePink.start}
+              end={GradientColors.purplePink.end}
+              style={styles.editButtonGradient}
+            >
+              <Feather name="edit-2" size={18} color="#FFFFFF" />
+              <ThemedText style={styles.editButtonText}>Kelola Novel</ThemedText>
+            </LinearGradient>
+          </Pressable>
+        ) : (
+          <Button
+            onPress={() => toggleFollow(novelId)}
+            style={[styles.followButton, { backgroundColor: isFollowing ? theme.backgroundSecondary : theme.primary }]}
+          >
+            {isFollowing ? "Mengikuti" : "Ikuti"}
+          </Button>
+        )}
         <Pressable style={styles.iconButton}>
           <Feather name="share-2" size={20} color={theme.text} />
         </Pressable>
@@ -221,6 +240,22 @@ const styles = StyleSheet.create({
   },
   followButton: {
     flex: 1,
+  },
+  editButton: {
+    flex: 1,
+  },
+  editButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.sm,
+  },
+  editButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
   iconButton: {
     width: 52,
