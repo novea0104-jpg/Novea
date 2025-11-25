@@ -91,7 +91,7 @@ export default function BrowseHomeScreen() {
 
   const renderNovelSection = (title: string, novels: Novel[], variant: "large" | "medium" = "medium") => (
     <View style={styles.section}>
-      <ThemedText style={[styles.sectionTitle, Typography.h2]}>{title}</ThemedText>
+      <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -179,8 +179,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing["4xl"],
   },
   sectionTitle: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
     fontWeight: "700",
+    fontSize: 16,
   },
   carousel: {
     paddingRight: Spacing.lg,

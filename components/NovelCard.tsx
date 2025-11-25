@@ -1,7 +1,9 @@
 import React from "react";
 import { View, Pressable, StyleSheet, Image } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
+import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
+import { EyeIcon } from "@/components/icons/EyeIcon";
+import { StarIcon } from "@/components/icons/StarIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { Novel } from "@/types/models";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -28,8 +30,8 @@ export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps
     ? { uri: novel.coverImage }
     : placeholderImage;
 
-  const cardWidth = variant === "large" ? 200 : variant === "medium" ? 130 : 100;
-  const coverHeight = variant === "large" ? 180 : variant === "medium" ? 190 : 150;
+  const cardWidth = variant === "large" ? 140 : variant === "medium" ? 110 : 90;
+  const coverHeight = variant === "large" ? 180 : variant === "medium" ? 150 : 120;
 
   return (
     <Pressable
@@ -53,21 +55,21 @@ export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps
         
         <View style={styles.metadataRow}>
           <View style={styles.metadataItem}>
-            <Feather name="book-open" size={11} color={theme.textSecondary} />
+            <BookOpenIcon size={10} color={theme.textSecondary} />
             <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
               {novel.totalChapters}
             </ThemedText>
           </View>
           
           <View style={styles.metadataItem}>
-            <Feather name="eye" size={11} color={theme.textSecondary} />
+            <EyeIcon size={10} color={theme.textSecondary} />
             <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
               {novel.followers > 1000 ? `${(novel.followers / 1000).toFixed(1)}k` : novel.followers}
             </ThemedText>
           </View>
           
           <View style={styles.metadataItem}>
-            <Feather name="star" size={11} color="#FCD34D" />
+            <StarIcon size={10} color="#FCD34D" filled />
             <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
               {novel.rating.toFixed(1)}
             </ThemedText>

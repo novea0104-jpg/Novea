@@ -2,13 +2,24 @@ import React from "react";
 import { View, StyleSheet, Pressable, Image, Switch } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { RoleBadge } from "@/components/RoleBadge";
+import { UserIcon } from "@/components/icons/UserIcon";
+import { CheckIcon } from "@/components/icons/CheckIcon";
+import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
+import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
+import { FileTextIcon } from "@/components/icons/FileTextIcon";
+import { ZapIcon } from "@/components/icons/ZapIcon";
+import { AwardIcon } from "@/components/icons/AwardIcon";
+import { ShieldIcon } from "@/components/icons/ShieldIcon";
+import { BookIcon } from "@/components/icons/BookIcon";
+import { FeatherIcon } from "@/components/icons/FeatherIcon";
+import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
+import { LogOutIcon } from "@/components/icons/LogOutIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserStats } from "@/hooks/useUserStats";
@@ -29,6 +40,15 @@ export default function ProfileScreen() {
   const isPenulis = user.role === 'penulis';
   const isPembaca = user.role === 'pembaca';
 
+  const iconMap: Record<string, React.ReactNode> = {
+    user: <UserIcon size={20} color={theme.text} />,
+    award: <AwardIcon size={20} color={theme.text} />,
+    shield: <ShieldIcon size={20} color={theme.text} />,
+    book: <BookIcon size={20} color={theme.text} />,
+    feather: <FeatherIcon size={20} color={theme.text} />,
+    "alert-circle": <AlertCircleIcon size={20} color={theme.text} />,
+  };
+
   const MenuItem = ({ icon, title, subtitle, onPress }: any) => (
     <Pressable
       onPress={onPress}
@@ -39,7 +59,7 @@ export default function ProfileScreen() {
     >
       <View style={styles.menuItemLeft}>
         <View style={[styles.iconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-          <Feather name={icon} size={24} color={theme.text} />
+          {iconMap[icon]}
         </View>
         <View>
           <ThemedText style={styles.menuItemText}>{title}</ThemedText>
@@ -50,7 +70,7 @@ export default function ProfileScreen() {
           ) : null}
         </View>
       </View>
-      <Feather name="chevron-right" size={20} color={theme.textMuted} />
+      <ChevronRightIcon size={18} color={theme.textMuted} />
     </Pressable>
   );
 
@@ -62,11 +82,11 @@ export default function ProfileScreen() {
             <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="user" size={32} color={theme.text} />
+              <UserIcon size={32} color={theme.text} />
             </View>
           )}
           <View style={styles.editBadge}>
-            <Feather name="check" size={12} color="#FFFFFF" />
+            <CheckIcon size={12} color="#FFFFFF" />
           </View>
         </View>
 
@@ -96,7 +116,7 @@ export default function ProfileScreen() {
               { opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Feather name="award" size={16} color="#000000" />
+            <AwardIcon size={16} color="#000000" />
             <ThemedText style={styles.premiumButtonText}>Upgrade to Premium</ThemedText>
           </Pressable>
         </LinearGradient>
@@ -104,7 +124,7 @@ export default function ProfileScreen() {
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="book-open" size={24} color={theme.text} />
+              <BookOpenIcon size={22} color={theme.text} />
             </View>
             <ThemedText style={[Typography.h2, styles.statValue]}>
               {statsLoading ? '-' : stats.novelsRead}
@@ -115,7 +135,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statItem}>
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="file-text" size={24} color={theme.text} />
+              <FileTextIcon size={22} color={theme.text} />
             </View>
             <ThemedText style={[Typography.h2, styles.statValue]}>
               {statsLoading ? '-' : stats.chaptersRead}
@@ -126,7 +146,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statItem}>
             <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <Feather name="zap" size={24} color={theme.text} />
+              <ZapIcon size={22} color={theme.text} />
             </View>
             <ThemedText style={[Typography.h2, styles.statValue]}>
               {statsLoading ? '-' : stats.dayStreak}
@@ -194,13 +214,13 @@ export default function ProfileScreen() {
         >
           <View style={styles.menuItemLeft}>
             <View style={[styles.iconCircle, styles.logoutIconCircle]}>
-              <Feather name="log-out" size={24} color="#EF4444" />
+              <LogOutIcon size={20} color="#EF4444" />
             </View>
             <ThemedText style={[styles.menuItemText, styles.logoutText]}>
-              Logout
+              Keluar
             </ThemedText>
           </View>
-          <Feather name="chevron-right" size={20} color={theme.textMuted} />
+          <ChevronRightIcon size={18} color={theme.textMuted} />
         </Pressable>
       </View>
 
