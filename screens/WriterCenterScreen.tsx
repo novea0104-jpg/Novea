@@ -53,6 +53,30 @@ export default function WriterCenterScreen() {
       
       console.log('Loaded novels:', novelsData);
 
+      // Get novel IDs for view count query
+      const novelIds = (novelsData || []).map((n: any) => n.id);
+      
+      // Fetch view counts from novel_views table
+      let totalReads = 0;
+      const viewCountsMap = new Map<number, number>();
+      
+      if (novelIds.length > 0) {
+        const { data: viewsData, error: viewsError } = await supabase
+          .from('novel_views')
+          .select('novel_id')
+          .in('novel_id', novelIds);
+
+        if (!viewsError && viewsData) {
+          // Count views per novel
+          viewsData.forEach((view: any) => {
+            const currentCount = viewCountsMap.get(view.novel_id) || 0;
+            viewCountsMap.set(view.novel_id, currentCount + 1);
+          });
+          // Sum all views for total
+          totalReads = viewsData.length;
+        }
+      }
+
       const mappedNovels: Novel[] = (novelsData || []).map((n: any) => ({
         id: n.id.toString(),
         title: n.title,
@@ -66,7 +90,7 @@ export default function WriterCenterScreen() {
         synopsis: n.description,
         coinPerChapter: n.chapter_price,
         totalChapters: n.total_chapters,
-        followers: 0,
+        followers: viewCountsMap.get(n.id) || 0,
         lastUpdated: new Date(n.updated_at),
         createdAt: new Date(n.created_at),
       }));
@@ -74,7 +98,6 @@ export default function WriterCenterScreen() {
       setNovels(mappedNovels);
 
       const totalChapters = novelsData?.reduce((sum: number, n: any) => sum + (n.total_chapters || 0), 0) || 0;
-      const totalReads = novelsData?.reduce((sum: number, n: any) => sum + (n.total_reads || 0), 0) || 0;
 
       setStats({
         totalNovels: novelsData?.length || 0,
