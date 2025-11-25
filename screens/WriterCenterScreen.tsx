@@ -4,7 +4,12 @@ import { useNavigation } from "@react-navigation/native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
-import { Feather } from "@expo/vector-icons";
+import { BookIcon } from "@/components/icons/BookIcon";
+import { FileTextIcon } from "@/components/icons/FileTextIcon";
+import { EyeIcon } from "@/components/icons/EyeIcon";
+import { PlusIcon } from "@/components/icons/PlusIcon";
+import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
+import { TrendingUpIcon } from "@/components/icons/TrendingUpIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,19 +93,19 @@ export default function WriterCenterScreen() {
       <View style={styles.container}>
         <View style={styles.statsGrid}>
           <StatCard
-            icon="book"
+            IconComponent={BookIcon}
             label="Total Novel"
             value={stats.totalNovels.toString()}
             theme={theme}
           />
           <StatCard
-            icon="file-text"
+            IconComponent={FileTextIcon}
             label="Total Chapter"
             value={stats.totalChapters.toString()}
             theme={theme}
           />
           <StatCard
-            icon="eye"
+            IconComponent={EyeIcon}
             label="Total Pembaca"
             value={stats.totalReads.toString()}
             theme={theme}
@@ -119,7 +124,7 @@ export default function WriterCenterScreen() {
               end={GradientColors.purplePink.end}
               style={styles.createButtonGradient}
             >
-              <Feather name="plus" size={20} color="#FFFFFF" />
+              <PlusIcon size={20} color="#FFFFFF" />
               <ThemedText style={styles.createButtonText}>Buat Novel</ThemedText>
             </LinearGradient>
           </Pressable>
@@ -131,7 +136,7 @@ export default function WriterCenterScreen() {
           </View>
         ) : novels.length === 0 ? (
           <Card elevation={1} style={styles.emptyCard}>
-            <Feather name="book" size={48} color={theme.textMuted} />
+            <BookIcon size={48} color={theme.textMuted} />
             <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
               Belum ada novel. Mulai menulis sekarang!
             </ThemedText>
@@ -153,11 +158,11 @@ export default function WriterCenterScreen() {
   );
 }
 
-function StatCard({ icon, label, value, theme }: any) {
+function StatCard({ IconComponent, label, value, theme }: { IconComponent: React.ComponentType<{ size: number; color: string }>; label: string; value: string; theme: any }) {
   return (
     <Card elevation={1} style={styles.statCard}>
       <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-        <Feather name={icon} size={20} color={theme.text} />
+        <IconComponent size={20} color={theme.text} />
       </View>
       <ThemedText style={styles.statValue}>{value}</ThemedText>
       <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</ThemedText>
@@ -182,20 +187,20 @@ function NovelCard({ novel, onPress, theme }: { novel: Novel; onPress: () => voi
           </ThemedText>
           <View style={styles.novelStats}>
             <View style={styles.novelStat}>
-              <Feather name="file-text" size={14} color={theme.textSecondary} />
+              <FileTextIcon size={14} color={theme.textSecondary} />
               <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
                 {novel.totalChapters} chapter
               </ThemedText>
             </View>
             <View style={styles.novelStat}>
-              <Feather name="trending-up" size={14} color={theme.textSecondary} />
+              <TrendingUpIcon size={14} color={theme.textSecondary} />
               <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
                 {novel.status}
               </ThemedText>
             </View>
           </View>
         </View>
-        <Feather name="chevron-right" size={24} color={theme.textMuted} />
+        <ChevronRightIcon size={24} color={theme.textMuted} />
       </Card>
     </Pressable>
   );

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, TextInput, Image, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ScreenKeyboardAwareScrollView } from '@/components/ScreenKeyboardAwareScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { Card } from '@/components/Card';
+import { UserIcon } from '@/components/icons/UserIcon';
+import { CameraIcon } from '@/components/icons/CameraIcon';
+import { CheckIcon } from '@/components/icons/CheckIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadAvatarAsync } from '@/utils/avatarStorage';
@@ -139,7 +141,7 @@ export default function EditProfileScreen() {
               <Image source={{ uri: avatarUri }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatarPlaceholder, { backgroundColor: theme.backgroundSecondary }]}>
-                <Feather name="user" size={48} color={theme.text} />
+                <UserIcon size={48} color={theme.text} />
               </View>
             )}
             <View style={styles.cameraIcon}>
@@ -149,7 +151,7 @@ export default function EditProfileScreen() {
                 end={{ x: 1, y: 0 }}
                 style={styles.cameraIconGradient}
               >
-                <Feather name="camera" size={16} color="#FFFFFF" />
+                <CameraIcon size={16} color="#FFFFFF" />
               </LinearGradient>
             </View>
           </Pressable>
@@ -244,7 +246,7 @@ export default function EditProfileScreen() {
               <ActivityIndicator color="#000000" />
             ) : (
               <>
-                <Feather name="check" size={20} color="#000000" />
+                <CheckIcon size={20} color="#000000" />
                 <ThemedText style={styles.saveButtonText}>Simpan Perubahan</ThemedText>
               </>
             )}

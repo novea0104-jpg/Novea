@@ -1,6 +1,8 @@
 import React from "react";
 import { Pressable, StyleSheet, Platform } from "react-native";
-import { Feather } from "@expo/vector-icons";
+import { PlusIcon } from "@/components/icons/PlusIcon";
+import { Edit2Icon } from "@/components/icons/Edit2Icon";
+import { BookIcon } from "@/components/icons/BookIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -8,13 +10,21 @@ import { Spacing } from "@/constants/theme";
 
 interface FloatingActionButtonProps {
   onPress: () => void;
-  icon?: string;
+  icon?: "plus" | "edit" | "book";
 }
+
+const IconComponents = {
+  plus: PlusIcon,
+  edit: Edit2Icon,
+  book: BookIcon,
+};
 
 export function FloatingActionButton({ onPress, icon = "plus" }: FloatingActionButtonProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+
+  const IconComponent = IconComponents[icon] || PlusIcon;
 
   return (
     <Pressable
@@ -28,7 +38,7 @@ export function FloatingActionButton({ onPress, icon = "plus" }: FloatingActionB
         },
       ]}
     >
-      <Feather name={icon as any} size={24} color="#FFFFFF" />
+      <IconComponent size={24} color="#FFFFFF" />
     </Pressable>
   );
 }

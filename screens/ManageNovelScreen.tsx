@@ -2,11 +2,13 @@ import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, ActivityIndicator } from "react-native";
 import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { Edit2Icon } from "@/components/icons/Edit2Icon";
+import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
+import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/utils/supabase";
@@ -90,7 +92,7 @@ export default function ManageNovelScreen() {
           {item.word_count.toLocaleString()} kata
         </ThemedText>
       </View>
-      <Feather name="chevron-right" size={20} color={theme.textMuted} />
+      <ChevronRightIcon size={20} color={theme.textMuted} />
     </Pressable>
   );
 
@@ -116,7 +118,7 @@ export default function ManageNovelScreen() {
             end={GradientColors.purplePink.end}
             style={styles.editButtonGradient}
           >
-            <Feather name="edit-2" size={16} color="#FFFFFF" />
+            <Edit2Icon size={16} color="#FFFFFF" />
             <ThemedText style={styles.editButtonText}>Edit Novel</ThemedText>
           </LinearGradient>
         </Pressable>
@@ -128,7 +130,7 @@ export default function ManageNovelScreen() {
         </View>
       ) : chapters.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Feather name="book-open" size={48} color={theme.textMuted} />
+          <BookOpenIcon size={48} color={theme.textMuted} />
           <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
             Belum ada chapter
           </ThemedText>
