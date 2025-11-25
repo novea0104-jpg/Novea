@@ -8,7 +8,7 @@ export const users = pgTable("users", {
   password: varchar("password", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   isWriter: boolean("is_writer").default(false).notNull(),
-  coinBalance: integer("coin_balance").default(100).notNull(),
+  coinBalance: integer("coin_balance").default(10).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

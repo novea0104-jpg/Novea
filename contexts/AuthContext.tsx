@@ -107,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name,
           is_writer: false,
           role: 'pembaca',
-          coin_balance: 100,
+          coin_balance: 10,
         })
         .select()
         .single();

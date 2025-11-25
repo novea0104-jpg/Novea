@@ -301,7 +301,7 @@ export default function AuthScreen() {
             <View style={styles.infoBox}>
               <GiftIcon size={16} color={GradientColors.yellowGreen.colors[0]} />
               <ThemedText style={[styles.infoText, { color: theme.textSecondary }]}>
-                Dapatkan 100 koin gratis saat mendaftar!
+                Dapatkan 10 koin gratis saat mendaftar!
               </ThemedText>
             </View>
           )}
