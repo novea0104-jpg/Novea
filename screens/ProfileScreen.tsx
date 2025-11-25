@@ -16,10 +16,13 @@ import { BookIcon } from "@/components/icons/BookIcon";
 import { FeatherIcon } from "@/components/icons/FeatherIcon";
 import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
 import { LogOutIcon } from "@/components/icons/LogOutIcon";
+import { CoinIcon } from "@/components/icons/CoinIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserFollowStats, FollowStats } from "@/utils/supabase";
+import { formatRupiah, NOVOIN_TO_RUPIAH } from "@/constants/pricing";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { LinearGradient } from "expo-linear-gradient";
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -144,6 +147,32 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
       </Card>
+
+      <Pressable 
+        onPress={() => navigation.navigate("CoinStore")}
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <LinearGradient
+          colors={["#FFD700", "#FFA500"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.coinBalanceCard}
+        >
+          <View style={styles.coinBalanceLeft}>
+            <CoinIcon size={28} color="#000000" />
+            <View>
+              <ThemedText style={styles.coinBalanceLabel}>Saldo Novoin</ThemedText>
+              <ThemedText style={styles.coinBalanceValue}>
+                {user?.coinBalance || 0} Novoin
+              </ThemedText>
+            </View>
+          </View>
+          <View style={styles.coinBalanceRight}>
+            <ThemedText style={styles.coinBalanceAction}>Beli Novoin</ThemedText>
+            <ChevronRightIcon size={18} color="#000000" />
+          </View>
+        </LinearGradient>
+      </Pressable>
 
       <View style={styles.section}>
         <ThemedText style={[Typography.h3, styles.sectionTitle]}>Akun</ThemedText>
@@ -358,5 +387,39 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: Spacing["3xl"],
+  },
+  coinBalanceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: BorderRadius.lg,
+    marginTop: Spacing.lg,
+  },
+  coinBalanceLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  coinBalanceLabel: {
+    fontSize: 12,
+    color: "#000000",
+    opacity: 0.7,
+  },
+  coinBalanceValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#000000",
+  },
+  coinBalanceRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  coinBalanceAction: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000000",
   },
 });
