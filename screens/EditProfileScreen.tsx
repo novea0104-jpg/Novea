@@ -55,7 +55,7 @@ export default function EditProfileScreen() {
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Gagal memilih gambar. Silakan coba lagi.');
+      Alert.alert('Gagal', 'Gagal memilih gambar. Silakan coba lagi.');
     }
   };
 
@@ -115,7 +115,7 @@ export default function EditProfileScreen() {
       ]);
     } catch (error) {
       console.error('Error saving profile:', error);
-      Alert.alert('Error', 'Gagal memperbarui profil. Silakan coba lagi.');
+      Alert.alert('Gagal', 'Gagal memperbarui profil. Silakan coba lagi.');
     } finally {
       setIsLoading(false);
       setIsUploadingImage(false);
