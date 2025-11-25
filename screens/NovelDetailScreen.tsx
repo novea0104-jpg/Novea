@@ -323,18 +323,28 @@ export default function NovelDetailScreen() {
               style={[styles.socialButton, { backgroundColor: isLiked ? theme.error + '20' : theme.backgroundSecondary }]}
             >
               <HeartIcon size={18} color={isLiked ? theme.error : theme.text} filled={isLiked} />
-              <ThemedText style={[styles.socialButtonText, { color: isLiked ? theme.error : theme.text }]}>
-                {likeCount.toLocaleString()}
-              </ThemedText>
+              <View style={styles.socialButtonContent}>
+                <ThemedText style={[styles.socialButtonCount, { color: isLiked ? theme.error : theme.text }]}>
+                  {likeCount.toLocaleString()}
+                </ThemedText>
+                <ThemedText style={[styles.socialButtonLabel, { color: isLiked ? theme.error : theme.textSecondary }]}>
+                  {isLiked ? 'Disukai' : 'Suka'}
+                </ThemedText>
+              </View>
             </Pressable>
             <Pressable
               onPress={handleToggleFollow}
               style={[styles.socialButton, { backgroundColor: isFollowing ? theme.primary + '20' : theme.backgroundSecondary }]}
             >
               <UsersIcon size={18} color={isFollowing ? theme.primary : theme.text} />
-              <ThemedText style={[styles.socialButtonText, { color: isFollowing ? theme.primary : theme.text }]}>
-                {followCount.toLocaleString()}
-              </ThemedText>
+              <View style={styles.socialButtonContent}>
+                <ThemedText style={[styles.socialButtonCount, { color: isFollowing ? theme.primary : theme.text }]}>
+                  {followCount.toLocaleString()}
+                </ThemedText>
+                <ThemedText style={[styles.socialButtonLabel, { color: isFollowing ? theme.primary : theme.textSecondary }]}>
+                  {isFollowing ? 'Mengikuti' : 'Ikuti'}
+                </ThemedText>
+              </View>
             </Pressable>
           </View>
         )}
@@ -959,13 +969,20 @@ const styles = StyleSheet.create({
   socialButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
+    flex: 1,
   },
-  socialButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
+  socialButtonContent: {
+    flexDirection: "column",
+  },
+  socialButtonCount: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  socialButtonLabel: {
+    fontSize: 11,
   },
 });

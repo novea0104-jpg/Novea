@@ -3,10 +3,16 @@ import { Novel, Chapter } from "@/types/models";
 import { supabase } from "@/utils/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface ReadingHistoryItem {
+  novelId: string;
+  lastReadAt: Date;
+}
+
 interface AppContextType {
   novels: Novel[];
   followingNovels: Set<string>;
   likedNovels: Set<string>;
+  readingHistory: ReadingHistoryItem[];
   unlockedChapters: Set<string>;
   isLoading: boolean;
   toggleFollow: (novelId: string) => Promise<void>;
@@ -26,6 +32,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [novels, setNovels] = useState<Novel[]>([]);
   const [followingNovels, setFollowingNovels] = useState<Set<string>>(new Set());
   const [likedNovels, setLikedNovels] = useState<Set<string>>(new Set());
+  const [readingHistory, setReadingHistory] = useState<ReadingHistoryItem[]>([]);
   const [unlockedChapters, setUnlockedChapters] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
@@ -84,6 +91,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       let followingSet = new Set<string>();
       let likedSet = new Set<string>();
       let unlockedSet = new Set<string>();
+      let historyList: ReadingHistoryItem[] = [];
 
       if (user) {
         // Fetch following novels
@@ -106,6 +114,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
           likedSet = new Set(likedData.map(l => l.novel_id.toString()));
         }
 
+        // Fetch reading history (novels user has read)
+        const { data: historyData, error: historyError } = await supabase
+          .from('reading_progress')
+          .select('novel_id, last_read_at')
+          .eq('user_id', parseInt(user.id))
+          .order('last_read_at', { ascending: false });
+
+        if (!historyError && historyData) {
+          // Get unique novels with latest read time
+          const uniqueNovels = new Map<string, Date>();
+          historyData.forEach(h => {
+            const novelId = h.novel_id.toString();
+            if (!uniqueNovels.has(novelId)) {
+              uniqueNovels.set(novelId, new Date(h.last_read_at));
+            }
+          });
+          historyList = Array.from(uniqueNovels.entries()).map(([novelId, lastReadAt]) => ({
+            novelId,
+            lastReadAt,
+          }));
+        }
+
         // Fetch unlocked chapters
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_chapters')
@@ -118,11 +148,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         setFollowingNovels(followingSet);
         setLikedNovels(likedSet);
+        setReadingHistory(historyList);
         setUnlockedChapters(unlockedSet);
       } else {
         // Clear user-specific data when logged out
         setFollowingNovels(new Set());
         setLikedNovels(new Set());
+        setReadingHistory([]);
         setUnlockedChapters(new Set());
       }
 
@@ -370,6 +402,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         novels,
         followingNovels,
         likedNovels,
+        readingHistory,
         unlockedChapters,
         isLoading,
         toggleFollow,

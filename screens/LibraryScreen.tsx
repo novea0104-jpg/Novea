@@ -19,10 +19,18 @@ export default function LibraryScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
-  const { novels, followingNovels } = useApp();
+  const { novels, followingNovels, readingHistory } = useApp();
   const [activeTab, setActiveTab] = useState<"following" | "history">("following");
 
   const followingNovelsList = novels.filter((n) => followingNovels.has(n.id));
+  
+  const historyNovelsList = readingHistory
+    .filter(h => !followingNovels.has(h.novelId))
+    .map(h => {
+      const novel = novels.find(n => n.id === h.novelId);
+      return novel ? { ...novel, lastReadAt: h.lastReadAt } : null;
+    })
+    .filter((n): n is Novel & { lastReadAt: Date } => n !== null);
 
   const coverImageSource = {
     romance: require("@/assets/images/novels/romance.png"),
@@ -32,7 +40,21 @@ export default function LibraryScreen() {
     adventure: require("@/assets/images/novels/adventure.png"),
   };
 
-  const renderNovel = ({ item }: { item: Novel }) => {
+  const formatLastRead = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return "Baru saja";
+    if (minutes < 60) return `${minutes} menit lalu`;
+    if (hours < 24) return `${hours} jam lalu`;
+    if (days < 7) return `${days} hari lalu`;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  };
+
+  const renderFollowingNovel = ({ item }: { item: Novel }) => {
     const placeholderImage = coverImageSource[item.genre.toLowerCase() as keyof typeof coverImageSource];
     const imageSource = item.coverImage ? { uri: item.coverImage } : placeholderImage;
 
@@ -59,6 +81,47 @@ export default function LibraryScreen() {
                 {item.rating.toFixed(1)}
               </ThemedText>
             </View>
+            <View style={[styles.followingBadge, { backgroundColor: theme.primary + '20' }]}>
+              <ThemedText style={[styles.followingText, { color: theme.primary }]}>
+                Mengikuti
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+      </Pressable>
+    );
+  };
+
+  const renderHistoryNovel = ({ item }: { item: Novel & { lastReadAt: Date } }) => {
+    const placeholderImage = coverImageSource[item.genre.toLowerCase() as keyof typeof coverImageSource];
+    const imageSource = item.coverImage ? { uri: item.coverImage } : placeholderImage;
+
+    return (
+      <Pressable
+        onPress={() => navigation.navigate("NovelDetail", { novelId: item.id })}
+        style={({ pressed }) => [
+          styles.novelCard,
+          { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Image source={imageSource} style={styles.novelCover} resizeMode="cover" />
+        <View style={styles.novelInfo}>
+          <ThemedText style={styles.novelTitle} numberOfLines={2}>
+            {item.title}
+          </ThemedText>
+          <ThemedText style={[styles.novelAuthor, { color: theme.textSecondary }]} numberOfLines={1}>
+            {item.author}
+          </ThemedText>
+          <View style={styles.novelMeta}>
+            <View style={styles.rating}>
+              <Feather name="star" size={12} color={theme.secondary} />
+              <ThemedText style={{ fontSize: 12, color: theme.textSecondary }}>
+                {item.rating.toFixed(1)}
+              </ThemedText>
+            </View>
+            <ThemedText style={[styles.lastReadText, { color: theme.textSecondary }]}>
+              {formatLastRead(item.lastReadAt)}
+            </ThemedText>
           </View>
         </View>
       </Pressable>
@@ -81,7 +144,7 @@ export default function LibraryScreen() {
               { color: activeTab === "following" ? theme.primary : theme.textSecondary },
             ]}
           >
-            Following
+            Mengikuti ({followingNovelsList.length})
           </ThemedText>
         </Pressable>
         <Pressable
@@ -97,34 +160,47 @@ export default function LibraryScreen() {
               { color: activeTab === "history" ? theme.primary : theme.textSecondary },
             ]}
           >
-            History
+            Riwayat ({historyNovelsList.length})
           </ThemedText>
         </Pressable>
       </View>
 
-      {activeTab === "following" && followingNovelsList.length === 0 ? (
-        <EmptyState
-          type="library"
-          title="No Following Novels"
-          message="Start following novels to see them here"
-        />
-      ) : activeTab === "history" ? (
-        <EmptyState
-          type="library"
-          title="No Reading History"
-          message="Your reading history will appear here"
-        />
+      {activeTab === "following" ? (
+        followingNovelsList.length === 0 ? (
+          <EmptyState
+            type="library"
+            title="Belum Ada Novel Diikuti"
+            message="Mulai ikuti novel favoritmu untuk melihatnya di sini"
+          />
+        ) : (
+          <FlatList
+            data={followingNovelsList}
+            renderItem={renderFollowingNovel}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={[
+              styles.list,
+              { paddingBottom: screenInsets.paddingBottom },
+            ]}
+          />
+        )
       ) : (
-        <FlatList
-          data={followingNovelsList}
-          renderItem={renderNovel}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: screenInsets.paddingBottom },
-          ]}
-          showsVerticalScrollIndicator={false}
-        />
+        historyNovelsList.length === 0 ? (
+          <EmptyState
+            type="library"
+            title="Belum Ada Riwayat Baca"
+            message="Novel yang kamu baca akan muncul di sini"
+          />
+        ) : (
+          <FlatList
+            data={historyNovelsList}
+            renderItem={renderHistoryNovel}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={[
+              styles.list,
+              { paddingBottom: screenInsets.paddingBottom },
+            ]}
+          />
+        )
       )}
     </ThemedView>
   );
@@ -136,8 +212,7 @@ const styles = StyleSheet.create({
   },
   tabs: {
     flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(128, 128, 128, 0.2)",
+    paddingHorizontal: Spacing.lg,
   },
   tab: {
     flex: 1,
@@ -145,7 +220,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
   },
   list: {
@@ -154,35 +229,49 @@ const styles = StyleSheet.create({
   },
   novelCard: {
     flexDirection: "row",
-    padding: Spacing.md,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    padding: Spacing.sm,
     gap: Spacing.md,
   },
   novelCover: {
-    width: 80,
-    height: 120,
-    borderRadius: BorderRadius.xs,
+    width: 70,
+    height: 100,
+    borderRadius: BorderRadius.sm,
   },
   novelInfo: {
     flex: 1,
     justifyContent: "center",
+    gap: 4,
   },
   novelTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    marginBottom: Spacing.xs,
   },
   novelAuthor: {
-    fontSize: 14,
-    marginBottom: Spacing.sm,
+    fontSize: 13,
   },
   novelMeta: {
     flexDirection: "row",
     alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: 4,
   },
   rating: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.xs,
+    gap: 4,
+  },
+  followingBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  followingText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  lastReadText: {
+    fontSize: 11,
   },
 });
