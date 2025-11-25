@@ -19,7 +19,7 @@ function toUserRole(role?: string): UserRole {
 
 export default function FollowListScreen() {
   const route = useRoute();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const { user: currentUser } = useAuth();
   
@@ -86,13 +86,20 @@ export default function FollowListScreen() {
     setLoadingFollow(null);
   };
 
+  const handleUserPress = (userId: number) => {
+    navigation.navigate("UserProfile", { userId: userId.toString() });
+  };
+
   const renderUser = ({ item }: { item: FollowUser }) => {
     const isCurrentUser = currentUser && parseInt(currentUser.id) === item.id;
     const isFollowingUser = followingStatus[item.id];
     
     return (
       <Card elevation={1} style={styles.userCard}>
-        <View style={styles.userInfo}>
+        <Pressable 
+          style={styles.userInfo}
+          onPress={() => handleUserPress(item.id)}
+        >
           {item.avatarUrl ? (
             <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
           ) : (
@@ -106,7 +113,7 @@ export default function FollowListScreen() {
               <RoleBadge role={toUserRole(item.role)} size="small" />
             </View>
           </View>
-        </View>
+        </Pressable>
         
         {currentUser && !isCurrentUser ? (
           <Pressable

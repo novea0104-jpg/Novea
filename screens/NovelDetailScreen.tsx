@@ -33,7 +33,7 @@ function toUserRole(role?: string): UserRole {
 
 export default function NovelDetailScreen() {
   const route = useRoute();
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<any>();
   const { theme } = useTheme();
   const { novels, followingNovels, toggleFollow, unlockedChapters, getChaptersForNovel, refreshNovels } = useApp();
   const { user } = useAuth();
@@ -66,6 +66,11 @@ export default function NovelDetailScreen() {
   
   // Edit review state
   const [isEditingReview, setIsEditingReview] = useState(false);
+
+  // Navigate to user profile
+  const navigateToUserProfile = (userId: number | string) => {
+    navigation.navigate("UserProfile", { userId: userId.toString() });
+  };
 
   React.useLayoutEffect(() => {
     if (novel) {
@@ -238,9 +243,11 @@ export default function NovelDetailScreen() {
         <Image source={imageSource} style={styles.cover} resizeMode="cover" />
         <View style={styles.headerInfo}>
           <ThemedText style={[Typography.h1, styles.title]}>{novel.title}</ThemedText>
-          <ThemedText style={[styles.author, { color: theme.textSecondary }]}>
-            by {novel.author}
-          </ThemedText>
+          <Pressable onPress={() => novel.authorId && navigateToUserProfile(novel.authorId)}>
+            <ThemedText style={[styles.author, { color: theme.textSecondary }]}>
+              by <ThemedText style={[styles.authorName, { color: theme.primary }]}>{novel.author}</ThemedText>
+            </ThemedText>
+          </Pressable>
           <View style={styles.meta}>
             <View style={styles.rating}>
               <StarIcon size={16} color={theme.secondary} filled />
@@ -467,7 +474,9 @@ export default function NovelDetailScreen() {
                       )}
                       <View style={{ flex: 1 }}>
                         <View style={styles.reviewUserNameRow}>
-                          <ThemedText style={styles.reviewUserName}>{review.userName}</ThemedText>
+                          <Pressable onPress={() => navigateToUserProfile(review.userId)}>
+                            <ThemedText style={[styles.reviewUserName, { color: theme.primary }]}>{review.userName}</ThemedText>
+                          </Pressable>
                           <RoleBadge role={toUserRole(review.userRole)} size="small" />
                         </View>
                         <ThemedText style={[styles.reviewDate, { color: theme.textMuted }]}>
@@ -539,7 +548,9 @@ export default function NovelDetailScreen() {
                                 <UserIcon size={12} color={theme.textMuted} />
                               </View>
                             )}
-                            <ThemedText style={styles.replyUserName}>{reply.userName}</ThemedText>
+                            <Pressable onPress={() => navigateToUserProfile(reply.userId)}>
+                              <ThemedText style={[styles.replyUserName, { color: theme.primary }]}>{reply.userName}</ThemedText>
+                            </Pressable>
                             <RoleBadge role={toUserRole(reply.userRole)} size="small" />
                             <ThemedText style={[styles.replyDate, { color: theme.textMuted }]}>
                               {formatDate(reply.createdAt)}
@@ -587,6 +598,10 @@ const styles = StyleSheet.create({
   },
   author: {
     fontSize: 16,
+  },
+  authorName: {
+    fontSize: 16,
+    fontWeight: "500",
   },
   meta: {
     flexDirection: "row",

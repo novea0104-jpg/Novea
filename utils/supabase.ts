@@ -547,6 +547,88 @@ export async function deleteReviewReply(
   }
 }
 
+// ==================== PUBLIC USER PROFILE ====================
+
+export interface PublicUserProfile {
+  id: number;
+  name: string;
+  email: string;
+  bio: string | null;
+  avatarUrl: string | null;
+  role: string;
+  createdAt: string;
+}
+
+export interface UserNovel {
+  id: number;
+  title: string;
+  coverUrl: string | null;
+  genre: string;
+  status: string;
+  rating: number;
+  totalChapters: number;
+  totalReads: number;
+}
+
+// Get public user profile by ID
+export async function getUserById(userId: number): Promise<PublicUserProfile | null> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, bio, avatar_url, role, created_at')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      console.error('Error getting user by ID:', error);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      email: data.email,
+      bio: data.bio,
+      avatarUrl: data.avatar_url,
+      role: data.role || 'Pembaca',
+      createdAt: data.created_at,
+    };
+  } catch (error) {
+    console.error('Error in getUserById:', error);
+    return null;
+  }
+}
+
+// Get novels by author (user) ID
+export async function getUserNovels(userId: number): Promise<UserNovel[]> {
+  try {
+    const { data, error } = await supabase
+      .from('novels')
+      .select('id, title, cover_url, genre, status, rating, total_chapters, total_reads')
+      .eq('author_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting user novels:', error);
+      return [];
+    }
+
+    return (data || []).map((novel: any) => ({
+      id: novel.id,
+      title: novel.title,
+      coverUrl: novel.cover_url,
+      genre: novel.genre,
+      status: novel.status,
+      rating: novel.rating || 0,
+      totalChapters: novel.total_chapters || 0,
+      totalReads: novel.total_reads || 0,
+    }));
+  } catch (error) {
+    console.error('Error in getUserNovels:', error);
+    return [];
+  }
+}
+
 // ==================== USER FOLLOW SYSTEM ====================
 
 export interface FollowStats {

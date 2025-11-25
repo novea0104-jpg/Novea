@@ -4,6 +4,8 @@ import BrowseHomeScreen from "@/screens/BrowseHomeScreen";
 import NovelDetailScreen from "@/screens/NovelDetailScreen";
 import ReaderScreen from "@/screens/ReaderScreen";
 import SearchScreen from "@/screens/SearchScreen";
+import UserProfileScreen from "@/screens/UserProfileScreen";
+import FollowListScreen from "@/screens/FollowListScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -12,6 +14,8 @@ export type BrowseStackParamList = {
   NovelDetail: { novelId: string };
   Reader: { novelId: string; chapterId: string };
   Search: undefined;
+  UserProfile: { userId: string };
+  FollowList: { userId: string; type: "followers" | "following"; userName: string };
 };
 
 const Stack = createNativeStackNavigator<BrowseStackParamList>();
@@ -40,6 +44,16 @@ export default function BrowseStackNavigator() {
         name="Search"
         component={SearchScreen}
         options={{ title: "Search", presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ title: "Profil" }}
+      />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
+        options={{ title: "Pengikut" }}
       />
     </Stack.Navigator>
   );
