@@ -25,6 +25,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
+    "base64-arraybuffer": "^1.0.2",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "drizzle-kit": "^0.31.7",
