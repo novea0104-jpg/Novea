@@ -1,9 +1,15 @@
 import React, { useState } from "react";
-import { View, StyleSheet, TextInput, Alert, Pressable, ScrollView } from "react-native";
+import { View, StyleSheet, TextInput, Alert, Pressable, ScrollView, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
+import { UserIcon } from "@/components/icons/UserIcon";
+import { MailIcon } from "@/components/icons/MailIcon";
+import { LockIcon } from "@/components/icons/LockIcon";
+import { EyeIcon } from "@/components/icons/EyeIcon";
+import { EyeOffIcon } from "@/components/icons/EyeOffIcon";
+import { ArrowRightIcon } from "@/components/icons/ArrowRightIcon";
+import { GiftIcon } from "@/components/icons/GiftIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { Colors, Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
@@ -29,33 +35,33 @@ export default function AuthScreen() {
   const handleSubmit = async () => {
     // Validation
     if (!email.trim()) {
-      Alert.alert("Error", "Email is required");
+      Alert.alert("Kesalahan", "Email harus diisi");
       return;
     }
 
     if (!validateEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address");
+      Alert.alert("Kesalahan", "Masukkan alamat email yang valid");
       return;
     }
 
     if (!password.trim()) {
-      Alert.alert("Error", "Password is required");
+      Alert.alert("Kesalahan", "Kata sandi harus diisi");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters");
+      Alert.alert("Kesalahan", "Kata sandi minimal 6 karakter");
       return;
     }
 
     if (!isLogin) {
       if (!name.trim()) {
-        Alert.alert("Error", "Name is required");
+        Alert.alert("Kesalahan", "Nama harus diisi");
         return;
       }
 
       if (password !== confirmPassword) {
-        Alert.alert("Error", "Passwords do not match");
+        Alert.alert("Kesalahan", "Kata sandi tidak cocok");
         return;
       }
     }
@@ -68,13 +74,13 @@ export default function AuthScreen() {
       } else {
         await signup(email.trim(), password, name.trim());
         Alert.alert(
-          "Success",
-          "Account created successfully! Welcome to Novea.",
+          "Berhasil",
+          "Akun berhasil dibuat! Selamat datang di Novea.",
           [{ text: "OK" }]
         );
       }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Something went wrong");
+      Alert.alert("Kesalahan", error.message || "Terjadi kesalahan");
     } finally {
       setIsLoading(false);
     }
@@ -103,17 +109,14 @@ export default function AuthScreen() {
     >
       {/* Logo Section */}
       <View style={styles.logoContainer}>
-        <LinearGradient
-          colors={GradientColors.purplePink.colors}
-          start={GradientColors.purplePink.start}
-          end={GradientColors.purplePink.end}
-          style={styles.logoGradient}
-        >
-          <Feather name="book-open" size={40} color="#FFFFFF" />
-        </LinearGradient>
+        <Image
+          source={require("@/assets/images/novea-logo.png")}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
         <ThemedText style={styles.appName}>Novea</ThemedText>
         <ThemedText style={[styles.tagline, { color: theme.textSecondary }]}>
-          Your Digital Novel Companion
+          Teman Baca Novel Digitalmu
         </ThemedText>
       </View>
 
@@ -136,12 +139,12 @@ export default function AuthScreen() {
                 style={styles.modeButtonGradient}
               >
                 <ThemedText style={styles.modeButtonTextActive}>
-                  Login
+                  Masuk
                 </ThemedText>
               </LinearGradient>
             ) : (
               <ThemedText style={[styles.modeButtonText, { color: theme.textSecondary }]}>
-                Login
+                Masuk
               </ThemedText>
             )}
           </Pressable>
@@ -161,12 +164,12 @@ export default function AuthScreen() {
                 style={styles.modeButtonGradient}
               >
                 <ThemedText style={styles.modeButtonTextActive}>
-                  Sign Up
+                  Daftar
                 </ThemedText>
               </LinearGradient>
             ) : (
               <ThemedText style={[styles.modeButtonText, { color: theme.textSecondary }]}>
-                Sign Up
+                Daftar
               </ThemedText>
             )}
           </Pressable>
@@ -176,12 +179,14 @@ export default function AuthScreen() {
         <View style={styles.form}>
           {!isLogin && (
             <View style={styles.inputContainer}>
-              <ThemedText style={styles.label}>Full Name</ThemedText>
+              <ThemedText style={styles.label}>Nama Lengkap</ThemedText>
               <View style={[styles.inputWrapper, { backgroundColor: theme.backgroundRoot, borderColor: theme.cardBorder }]}>
-                <Feather name="user" size={20} color={theme.textSecondary} style={styles.inputIcon} />
+                <View style={styles.inputIcon}>
+                  <UserIcon size={20} color={theme.textSecondary} />
+                </View>
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
-                  placeholder="Enter your name"
+                  placeholder="Masukkan nama kamu"
                   placeholderTextColor={theme.textMuted}
                   value={name}
                   onChangeText={setName}
@@ -195,10 +200,12 @@ export default function AuthScreen() {
           <View style={styles.inputContainer}>
             <ThemedText style={styles.label}>Email</ThemedText>
             <View style={[styles.inputWrapper, { backgroundColor: theme.backgroundRoot, borderColor: theme.cardBorder }]}>
-              <Feather name="mail" size={20} color={theme.textSecondary} style={styles.inputIcon} />
+              <View style={styles.inputIcon}>
+                <MailIcon size={20} color={theme.textSecondary} />
+              </View>
               <TextInput
                 style={[styles.input, { color: theme.text }]}
-                placeholder="Enter your email"
+                placeholder="Masukkan email kamu"
                 placeholderTextColor={theme.textMuted}
                 value={email}
                 onChangeText={setEmail}
@@ -211,12 +218,14 @@ export default function AuthScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <ThemedText style={styles.label}>Password</ThemedText>
+            <ThemedText style={styles.label}>Kata Sandi</ThemedText>
             <View style={[styles.inputWrapper, { backgroundColor: theme.backgroundRoot, borderColor: theme.cardBorder }]}>
-              <Feather name="lock" size={20} color={theme.textSecondary} style={styles.inputIcon} />
+              <View style={styles.inputIcon}>
+                <LockIcon size={20} color={theme.textSecondary} />
+              </View>
               <TextInput
                 style={[styles.input, { color: theme.text }]}
-                placeholder="Enter your password"
+                placeholder="Masukkan kata sandi"
                 placeholderTextColor={theme.textMuted}
                 value={password}
                 onChangeText={setPassword}
@@ -225,24 +234,26 @@ export default function AuthScreen() {
                 autoCorrect={false}
                 editable={!isLoading}
               />
-              <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-                <Feather 
-                  name={showPassword ? "eye" : "eye-off"} 
-                  size={20} 
-                  color={theme.textSecondary} 
-                />
+              <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                {showPassword ? (
+                  <EyeIcon size={20} color={theme.textSecondary} />
+                ) : (
+                  <EyeOffIcon size={20} color={theme.textSecondary} />
+                )}
               </Pressable>
             </View>
           </View>
 
           {!isLogin && (
             <View style={styles.inputContainer}>
-              <ThemedText style={styles.label}>Confirm Password</ThemedText>
+              <ThemedText style={styles.label}>Konfirmasi Kata Sandi</ThemedText>
               <View style={[styles.inputWrapper, { backgroundColor: theme.backgroundRoot, borderColor: theme.cardBorder }]}>
-                <Feather name="lock" size={20} color={theme.textSecondary} style={styles.inputIcon} />
+                <View style={styles.inputIcon}>
+                  <LockIcon size={20} color={theme.textSecondary} />
+                </View>
                 <TextInput
                   style={[styles.input, { color: theme.text }]}
-                  placeholder="Confirm your password"
+                  placeholder="Konfirmasi kata sandi"
                   placeholderTextColor={theme.textMuted}
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
@@ -272,14 +283,14 @@ export default function AuthScreen() {
             >
               {isLoading ? (
                 <ThemedText style={styles.submitButtonText}>
-                  Please wait...
+                  Tunggu sebentar...
                 </ThemedText>
               ) : (
                 <>
                   <ThemedText style={styles.submitButtonText}>
-                    {isLogin ? "Login" : "Create Account"}
+                    {isLogin ? "Masuk" : "Buat Akun"}
                   </ThemedText>
-                  <Feather name="arrow-right" size={20} color="#FFFFFF" />
+                  <ArrowRightIcon size={20} color="#FFFFFF" />
                 </>
               )}
             </LinearGradient>
@@ -288,9 +299,9 @@ export default function AuthScreen() {
           {/* Additional Info */}
           {!isLogin && (
             <View style={styles.infoBox}>
-              <Feather name="gift" size={16} color={GradientColors.yellowGreen.colors[0]} />
+              <GiftIcon size={16} color={GradientColors.yellowGreen.colors[0]} />
               <ThemedText style={[styles.infoText, { color: theme.textSecondary }]}>
-                Get 100 free coins when you sign up!
+                Dapatkan 100 koin gratis saat mendaftar!
               </ThemedText>
             </View>
           )}
@@ -299,7 +310,7 @@ export default function AuthScreen() {
 
       {/* Footer */}
       <ThemedText style={[styles.footer, { color: theme.textMuted }]}>
-        By continuing, you agree to Novea's Terms of Service and Privacy Policy
+        Dengan melanjutkan, kamu menyetujui Ketentuan Layanan dan Kebijakan Privasi Novea
       </ThemedText>
     </ScrollView>
   );
@@ -315,12 +326,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: Spacing["3xl"],
   },
-  logoGradient: {
+  logoImage: {
     width: 80,
     height: 80,
     borderRadius: BorderRadius.xl,
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: Spacing.lg,
   },
   appName: {
@@ -388,7 +397,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
   },
-  eyeIcon: {
+  eyeButton: {
     padding: Spacing.xs,
   },
   submitButton: {
