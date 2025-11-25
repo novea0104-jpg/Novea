@@ -14,6 +14,7 @@ import { CheckCircleIcon } from "@/components/icons/CheckCircleIcon";
 import { LockIcon } from "@/components/icons/LockIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
+import { RoleBadge, UserRole } from "@/components/RoleBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,6 +24,12 @@ import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/t
 import { Chapter } from "@/types/models";
 
 type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
+
+function toUserRole(role?: string): UserRole {
+  const normalizedRole = (role || 'Pembaca').toLowerCase().replace(' ', '_');
+  const validRoles: UserRole[] = ['pembaca', 'penulis', 'editor', 'co_admin', 'super_admin'];
+  return validRoles.includes(normalizedRole as UserRole) ? normalizedRole as UserRole : 'pembaca';
+}
 
 export default function NovelDetailScreen() {
   const route = useRoute();
@@ -408,8 +415,11 @@ export default function NovelDetailScreen() {
                           <UserIcon size={16} color={theme.textMuted} />
                         </View>
                       )}
-                      <View>
-                        <ThemedText style={styles.reviewUserName}>{review.userName}</ThemedText>
+                      <View style={{ flex: 1 }}>
+                        <View style={styles.reviewUserNameRow}>
+                          <ThemedText style={styles.reviewUserName}>{review.userName}</ThemedText>
+                          <RoleBadge role={toUserRole(review.userRole)} size="small" />
+                        </View>
                         <ThemedText style={[styles.reviewDate, { color: theme.textMuted }]}>
                           {formatDate(review.createdAt)}
                         </ThemedText>
@@ -480,6 +490,7 @@ export default function NovelDetailScreen() {
                               </View>
                             )}
                             <ThemedText style={styles.replyUserName}>{reply.userName}</ThemedText>
+                            <RoleBadge role={toUserRole(reply.userRole)} size="small" />
                             <ThemedText style={[styles.replyDate, { color: theme.textMuted }]}>
                               {formatDate(reply.createdAt)}
                             </ThemedText>
@@ -711,6 +722,12 @@ const styles = StyleSheet.create({
   reviewUserName: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  reviewUserNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
   },
   reviewDate: {
     fontSize: 11,

@@ -209,6 +209,7 @@ export interface NovelReview {
   updatedAt: string;
   userName?: string;
   userAvatar?: string;
+  userRole?: string;
   replies?: ReviewReply[];
 }
 
@@ -221,6 +222,7 @@ export interface ReviewReply {
   createdAt: string;
   userName?: string;
   userAvatar?: string;
+  userRole?: string;
 }
 
 // Get reviews for a novel
@@ -230,7 +232,7 @@ export async function getNovelReviews(novelId: number): Promise<NovelReview[]> {
       .from('novel_reviews')
       .select(`
         *,
-        users:user_id (name, avatar_url)
+        users:user_id (name, avatar_url, role)
       `)
       .eq('novel_id', novelId)
       .order('created_at', { ascending: false });
@@ -250,6 +252,7 @@ export async function getNovelReviews(novelId: number): Promise<NovelReview[]> {
       updatedAt: review.updated_at,
       userName: review.users?.name || 'Pengguna',
       userAvatar: review.users?.avatar_url,
+      userRole: review.users?.role || 'Pembaca',
     }));
   } catch (error) {
     console.error('Error in getNovelReviews:', error);
@@ -442,7 +445,7 @@ export async function getReviewRepliesForNovel(novelId: number): Promise<Map<num
       .from('review_replies')
       .select(`
         *,
-        users:user_id (name, avatar_url),
+        users:user_id (name, avatar_url, role),
         novel_reviews!inner (novel_id)
       `)
       .eq('novel_reviews.novel_id', novelId)
@@ -464,6 +467,7 @@ export async function getReviewRepliesForNovel(novelId: number): Promise<Map<num
         createdAt: reply.created_at,
         userName: reply.users?.name || 'Pengguna',
         userAvatar: reply.users?.avatar_url,
+        userRole: reply.users?.role || 'Pembaca',
       };
       
       const existing = repliesMap.get(reply.review_id) || [];
