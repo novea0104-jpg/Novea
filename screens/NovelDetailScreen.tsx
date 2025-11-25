@@ -35,6 +35,18 @@ export default function NovelDetailScreen() {
   const [isLoadingChapters, setIsLoadingChapters] = useState(true);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
+  React.useLayoutEffect(() => {
+    if (novel) {
+      navigation.setOptions({
+        headerTitle: () => (
+          <ThemedText style={{ fontSize: 16, fontWeight: '700' }} numberOfLines={1}>
+            {novel.title}
+          </ThemedText>
+        ),
+      });
+    }
+  }, [navigation, novel]);
+
   useEffect(() => {
     loadChapters();
   }, [novelId]);
