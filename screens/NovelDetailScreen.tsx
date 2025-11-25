@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator, TextInput, Alert } from "react-native";
+import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
 import { StarIcon } from "@/components/icons/StarIcon";
 import { EditIcon } from "@/components/icons/EditIcon";
 import { ShareIcon } from "@/components/icons/ShareIcon";
 import { CheckCircleIcon } from "@/components/icons/CheckCircleIcon";
 import { LockIcon } from "@/components/icons/LockIcon";
+import { UserIcon } from "@/components/icons/UserIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { trackNovelView } from "@/utils/supabase";
+import { trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -34,6 +36,18 @@ export default function NovelDetailScreen() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoadingChapters, setIsLoadingChapters] = useState(true);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+  
+  // Reviews state
+  const [reviews, setReviews] = useState<NovelReview[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true);
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [ratingStats, setRatingStats] = useState<{ averageRating: number; totalReviews: number }>({
+    averageRating: 0,
+    totalReviews: 0,
+  });
 
   React.useLayoutEffect(() => {
     if (novel) {
@@ -49,6 +63,7 @@ export default function NovelDetailScreen() {
 
   useEffect(() => {
     loadChapters();
+    loadReviews();
   }, [novelId]);
 
   useEffect(() => {
@@ -58,12 +73,70 @@ export default function NovelDetailScreen() {
     }
   }, [novelId, user, novel]);
 
+  // Load user's existing review
+  useEffect(() => {
+    async function loadUserReview() {
+      if (user && novelId) {
+        const existingReview = await getUserReview(parseInt(user.id), parseInt(novelId));
+        if (existingReview) {
+          setUserRating(existingReview.rating);
+          setUserComment(existingReview.comment || "");
+        }
+      }
+    }
+    loadUserReview();
+  }, [user, novelId]);
+
   async function loadChapters() {
     setIsLoadingChapters(true);
     const fetchedChapters = await getChaptersForNovel(novelId);
     setChapters(fetchedChapters);
     setIsLoadingChapters(false);
   }
+
+  async function loadReviews() {
+    setIsLoadingReviews(true);
+    const [fetchedReviews, stats] = await Promise.all([
+      getNovelReviews(parseInt(novelId)),
+      getNovelRatingStats(parseInt(novelId)),
+    ]);
+    setReviews(fetchedReviews);
+    setRatingStats(stats);
+    setIsLoadingReviews(false);
+  }
+
+  async function handleSubmitReview() {
+    if (!user) {
+      Alert.alert("Masuk Diperlukan", "Silakan masuk untuk memberikan ulasan.");
+      return;
+    }
+    if (userRating === 0) {
+      Alert.alert("Rating Diperlukan", "Silakan pilih rating bintang.");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    const result = await submitReview(
+      parseInt(user.id),
+      parseInt(novelId),
+      userRating,
+      userComment.trim() || undefined
+    );
+
+    setIsSubmittingReview(false);
+
+    if (result.success) {
+      Alert.alert("Berhasil", "Ulasan kamu telah disimpan!");
+      loadReviews();
+    } else {
+      Alert.alert("Gagal", result.error || "Gagal menyimpan ulasan.");
+    }
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
   
   if (!novel) return null;
   
@@ -205,6 +278,133 @@ export default function NovelDetailScreen() {
           />
         )}
       </View>
+
+      {/* Reviews Section */}
+      <View style={styles.section}>
+        <ThemedText style={[Typography.h3, styles.sectionTitle]}>
+          Ulasan & Rating ({ratingStats.totalReviews})
+        </ThemedText>
+
+        {/* Rating Summary */}
+        <Card elevation={1} style={styles.ratingSummary}>
+          <View style={styles.ratingOverview}>
+            <View style={styles.ratingBig}>
+              <ThemedText style={[Typography.h1, styles.ratingNumber]}>
+                {ratingStats.averageRating.toFixed(1)}
+              </ThemedText>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <StarIcon
+                    key={star}
+                    size={16}
+                    color={star <= Math.round(ratingStats.averageRating) ? theme.secondary : theme.backgroundSecondary}
+                    filled={star <= Math.round(ratingStats.averageRating)}
+                  />
+                ))}
+              </View>
+              <ThemedText style={[styles.totalReviews, { color: theme.textMuted }]}>
+                {ratingStats.totalReviews} ulasan
+              </ThemedText>
+            </View>
+          </View>
+        </Card>
+
+        {/* Write Review */}
+        {user && !isAuthor ? (
+          <Card elevation={1} style={styles.writeReviewCard}>
+            <ThemedText style={[Typography.body, styles.writeReviewTitle]}>
+              Tulis Ulasan
+            </ThemedText>
+            <View style={styles.starSelector}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Pressable key={star} onPress={() => setUserRating(star)} style={styles.starButton}>
+                  <StarIcon
+                    size={32}
+                    color={star <= userRating ? theme.secondary : theme.backgroundSecondary}
+                    filled={star <= userRating}
+                  />
+                </Pressable>
+              ))}
+            </View>
+            <TextInput
+              style={[styles.commentInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              placeholder="Tulis komentar (opsional)..."
+              placeholderTextColor={theme.textMuted}
+              value={userComment}
+              onChangeText={setUserComment}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+            <Button
+              onPress={handleSubmitReview}
+              style={styles.submitButton}
+              disabled={isSubmittingReview || userRating === 0}
+            >
+              {isSubmittingReview ? "Menyimpan..." : "Kirim Ulasan"}
+            </Button>
+          </Card>
+        ) : null}
+
+        {/* Reviews List */}
+        {isLoadingReviews ? (
+          <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={theme.primary} />
+          </View>
+        ) : reviews.length === 0 ? (
+          <Card elevation={1} style={styles.emptyReviews}>
+            <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
+              Belum ada ulasan. Jadilah yang pertama memberikan ulasan!
+            </ThemedText>
+          </Card>
+        ) : (
+          <>
+            {(showAllReviews ? reviews : reviews.slice(0, 3)).map((review) => (
+              <Card key={review.id} elevation={1} style={styles.reviewCard}>
+                <View style={styles.reviewHeader}>
+                  <View style={styles.reviewUser}>
+                    {review.userAvatar ? (
+                      <Image source={{ uri: review.userAvatar }} style={styles.reviewAvatar} />
+                    ) : (
+                      <View style={[styles.reviewAvatar, { backgroundColor: theme.backgroundSecondary }]}>
+                        <UserIcon size={16} color={theme.textMuted} />
+                      </View>
+                    )}
+                    <View>
+                      <ThemedText style={styles.reviewUserName}>{review.userName}</ThemedText>
+                      <ThemedText style={[styles.reviewDate, { color: theme.textMuted }]}>
+                        {formatDate(review.createdAt)}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <View style={styles.reviewRating}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <StarIcon
+                        key={star}
+                        size={12}
+                        color={star <= review.rating ? theme.secondary : theme.backgroundSecondary}
+                        filled={star <= review.rating}
+                      />
+                    ))}
+                  </View>
+                </View>
+                {review.comment ? (
+                  <ThemedText style={[styles.reviewComment, { color: theme.textSecondary }]}>
+                    {review.comment}
+                  </ThemedText>
+                ) : null}
+              </Card>
+            ))}
+            {reviews.length > 3 ? (
+              <Pressable onPress={() => setShowAllReviews(!showAllReviews)} style={styles.showMoreButton}>
+                <ThemedText style={[styles.showMoreText, { color: theme.primary }]}>
+                  {showAllReviews ? 'Sembunyikan' : `Lihat Semua (${reviews.length})`}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </>
+        )}
+      </View>
     </ScreenScrollView>
   );
 }
@@ -328,5 +528,100 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  // Review styles
+  ratingSummary: {
+    marginBottom: Spacing.md,
+  },
+  ratingOverview: {
+    alignItems: "center",
+    paddingVertical: Spacing.md,
+  },
+  ratingBig: {
+    alignItems: "center",
+  },
+  ratingNumber: {
+    fontSize: 48,
+    fontWeight: "700",
+  },
+  starsRow: {
+    flexDirection: "row",
+    gap: 4,
+    marginTop: Spacing.xs,
+  },
+  totalReviews: {
+    fontSize: 13,
+    marginTop: Spacing.xs,
+  },
+  writeReviewCard: {
+    marginBottom: Spacing.md,
+  },
+  writeReviewTitle: {
+    fontWeight: "600",
+    marginBottom: Spacing.md,
+  },
+  starSelector: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  starButton: {
+    padding: Spacing.xs,
+  },
+  commentInput: {
+    borderRadius: BorderRadius.sm,
+    padding: Spacing.md,
+    fontSize: 14,
+    minHeight: 80,
+    marginBottom: Spacing.md,
+  },
+  submitButton: {
+    marginTop: Spacing.xs,
+  },
+  emptyReviews: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl,
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+  reviewCard: {
+    marginBottom: Spacing.sm,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: Spacing.sm,
+  },
+  reviewUser: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  reviewAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  reviewUserName: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  reviewDate: {
+    fontSize: 11,
+  },
+  reviewRating: {
+    flexDirection: "row",
+    gap: 2,
+  },
+  reviewComment: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

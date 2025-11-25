@@ -1,8 +1,7 @@
 import React from "react";
-import { View, StyleSheet, Pressable, Image, Switch } from "react-native";
+import { View, StyleSheet, Pressable, Image } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { LinearGradient } from "expo-linear-gradient";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -23,7 +22,7 @@ import { LogOutIcon } from "@/components/icons/LogOutIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserStats } from "@/hooks/useUserStats";
-import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
+import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 
@@ -98,28 +97,13 @@ export default function ProfileScreen() {
         <View style={styles.badgeContainer}>
           <RoleBadge role={user.role} size="medium" />
         </View>
-        
-        <ThemedText style={[styles.checkMark, { color: theme.textSecondary }]}>
-          ✓ Terverifikasi
-        </ThemedText>
 
-        <LinearGradient
-          colors={["#FACC15", "#84CC16"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.premiumButton}
-        >
-          <Pressable
-            onPress={() => navigation.navigate("CoinStore")}
-            style={({ pressed }) => [
-              styles.premiumButtonInner,
-              { opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <AwardIcon size={16} color="#000000" />
-            <ThemedText style={styles.premiumButtonText}>Upgrade to Premium</ThemedText>
-          </Pressable>
-        </LinearGradient>
+        <View style={[styles.bioContainer, { borderColor: theme.backgroundSecondary }]}>
+          <ThemedText style={[styles.bioLabel, { color: theme.textMuted }]}>Bio</ThemedText>
+          <ThemedText style={[styles.bioText, { color: theme.textSecondary }]}>
+            {user.bio || "Belum ada bio. Tap Edit Profil untuk menambahkan."}
+          </ThemedText>
+        </View>
 
         <View style={styles.statsContainer}>
           <View style={styles.statItem}>
@@ -267,29 +251,27 @@ const styles = StyleSheet.create({
   },
   badgeContainer: {
     marginTop: Spacing.sm,
-    marginBottom: Spacing.xs,
-  },
-  checkMark: {
-    fontSize: 12,
     marginBottom: Spacing.lg,
   },
-  premiumButton: {
-    borderRadius: BorderRadius.xs,
-    overflow: "hidden",
-    marginBottom: Spacing["2xl"],
-  },
-  premiumButtonInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  bioContainer: {
+    width: "100%",
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing["2xl"],
-    gap: Spacing.sm,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    marginBottom: Spacing.xl,
   },
-  premiumButtonText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#000000",
+  bioLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: Spacing.xs,
+  },
+  bioText: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontStyle: "italic",
   },
   statsContainer: {
     flexDirection: "row",

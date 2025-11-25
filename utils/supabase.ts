@@ -173,6 +173,252 @@ export interface Database {
           novel_id: number;
         };
       };
+      novel_reviews: {
+        Row: {
+          id: number;
+          user_id: number;
+          novel_id: number;
+          rating: number;
+          comment: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: number;
+          novel_id: number;
+          rating: number;
+          comment?: string | null;
+        };
+        Update: {
+          rating?: number;
+          comment?: string | null;
+        };
+      };
     };
   };
+}
+
+// Review types
+export interface NovelReview {
+  id: number;
+  userId: number;
+  novelId: number;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  updatedAt: string;
+  userName?: string;
+  userAvatar?: string;
+}
+
+// Get reviews for a novel
+export async function getNovelReviews(novelId: number): Promise<NovelReview[]> {
+  try {
+    const { data, error } = await supabase
+      .from('novel_reviews')
+      .select(`
+        *,
+        users:user_id (name, avatar_url)
+      `)
+      .eq('novel_id', novelId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting novel reviews:', error);
+      return [];
+    }
+
+    return (data || []).map((review: any) => ({
+      id: review.id,
+      userId: review.user_id,
+      novelId: review.novel_id,
+      rating: review.rating,
+      comment: review.comment,
+      createdAt: review.created_at,
+      updatedAt: review.updated_at,
+      userName: review.users?.name || 'Pengguna',
+      userAvatar: review.users?.avatar_url,
+    }));
+  } catch (error) {
+    console.error('Error in getNovelReviews:', error);
+    return [];
+  }
+}
+
+// Get user's review for a novel
+export async function getUserReview(userId: number, novelId: number): Promise<NovelReview | null> {
+  try {
+    const { data, error } = await supabase
+      .from('novel_reviews')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('novel_id', novelId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null; // No rows returned
+      console.error('Error getting user review:', error);
+      return null;
+    }
+
+    return data ? {
+      id: data.id,
+      userId: data.user_id,
+      novelId: data.novel_id,
+      rating: data.rating,
+      comment: data.comment,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    } : null;
+  } catch (error) {
+    console.error('Error in getUserReview:', error);
+    return null;
+  }
+}
+
+// Submit or update a review
+export async function submitReview(
+  userId: number,
+  novelId: number,
+  rating: number,
+  comment?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Check if user already has a review
+    const existingReview = await getUserReview(userId, novelId);
+
+    if (existingReview) {
+      // Update existing review
+      const { error } = await supabase
+        .from('novel_reviews')
+        .update({
+          rating,
+          comment: comment || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingReview.id);
+
+      if (error) {
+        console.error('Error updating review:', error);
+        return { success: false, error: 'Gagal mengupdate ulasan' };
+      }
+    } else {
+      // Insert new review
+      const { error } = await supabase
+        .from('novel_reviews')
+        .insert({
+          user_id: userId,
+          novel_id: novelId,
+          rating,
+          comment: comment || null,
+        });
+
+      if (error) {
+        console.error('Error inserting review:', error);
+        return { success: false, error: 'Gagal menyimpan ulasan' };
+      }
+    }
+
+    // Update novel's average rating
+    await updateNovelAverageRating(novelId);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in submitReview:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Delete a review
+export async function deleteReview(reviewId: number, novelId: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('novel_reviews')
+      .delete()
+      .eq('id', reviewId);
+
+    if (error) {
+      console.error('Error deleting review:', error);
+      return false;
+    }
+
+    // Update novel's average rating
+    await updateNovelAverageRating(novelId);
+
+    return true;
+  } catch (error) {
+    console.error('Error in deleteReview:', error);
+    return false;
+  }
+}
+
+// Update novel's average rating
+async function updateNovelAverageRating(novelId: number): Promise<void> {
+  try {
+    const { data, error } = await supabase
+      .from('novel_reviews')
+      .select('rating')
+      .eq('novel_id', novelId);
+
+    if (error) {
+      console.error('Error getting ratings:', error);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      // No reviews, set rating to 0
+      await supabase
+        .from('novels')
+        .update({ rating: 0 })
+        .eq('id', novelId);
+      return;
+    }
+
+    const avgRating = data.reduce((sum, r) => sum + r.rating, 0) / data.length;
+    const roundedRating = Math.round(avgRating * 10) / 10;
+
+    await supabase
+      .from('novels')
+      .update({ rating: roundedRating })
+      .eq('id', novelId);
+  } catch (error) {
+    console.error('Error updating novel rating:', error);
+  }
+}
+
+// Get rating stats for a novel
+export async function getNovelRatingStats(novelId: number): Promise<{
+  averageRating: number;
+  totalReviews: number;
+  distribution: { [key: number]: number };
+}> {
+  try {
+    const { data, error } = await supabase
+      .from('novel_reviews')
+      .select('rating')
+      .eq('novel_id', novelId);
+
+    if (error || !data) {
+      return { averageRating: 0, totalReviews: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+    }
+
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    let sum = 0;
+
+    data.forEach(r => {
+      sum += r.rating;
+      distribution[r.rating as 1 | 2 | 3 | 4 | 5]++;
+    });
+
+    const averageRating = data.length > 0 ? Math.round((sum / data.length) * 10) / 10 : 0;
+
+    return {
+      averageRating,
+      totalReviews: data.length,
+      distribution,
+    };
+  } catch (error) {
+    console.error('Error in getNovelRatingStats:', error);
+    return { averageRating: 0, totalReviews: 0, distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+  }
 }

@@ -1,8 +1,12 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Feather } from '@expo/vector-icons';
 import { ThemedText } from './ThemedText';
+import { BookOpenIcon } from './icons/BookOpenIcon';
+import { FeatherIcon } from './icons/FeatherIcon';
+import { EditIcon } from './icons/EditIcon';
+import { ShieldIcon } from './icons/ShieldIcon';
+import { AwardIcon } from './icons/AwardIcon';
 import { BorderRadius } from '@/constants/theme';
 
 export type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
@@ -15,27 +19,22 @@ interface RoleBadgeProps {
 const ROLE_CONFIG = {
   pembaca: {
     label: 'Pembaca',
-    icon: 'book-open' as const,
     gradient: ['#10B981', '#059669'] as const,
   },
   penulis: {
     label: 'Penulis',
-    icon: 'feather' as const,
     gradient: ['#A855F7', '#EC4899'] as const,
   },
   editor: {
     label: 'Editor',
-    icon: 'edit-3' as const,
     gradient: ['#FACC15', '#F59E0B'] as const,
   },
   co_admin: {
     label: 'Co Admin',
-    icon: 'shield' as const,
     gradient: ['#F59E0B', '#FB923C'] as const,
   },
   super_admin: {
     label: 'Super Admin',
-    icon: 'award' as const,
     gradient: ['#EF4444', '#DC2626'] as const,
   },
 };
@@ -64,8 +63,27 @@ const SIZE_CONFIG = {
   },
 };
 
+const RoleIcon = ({ role, size }: { role: UserRole; size: number }) => {
+  const iconColor = "#FFFFFF";
+  switch (role) {
+    case 'pembaca':
+      return <BookOpenIcon size={size} color={iconColor} />;
+    case 'penulis':
+      return <FeatherIcon size={size} color={iconColor} />;
+    case 'editor':
+      return <EditIcon size={size} color={iconColor} />;
+    case 'co_admin':
+      return <ShieldIcon size={size} color={iconColor} />;
+    case 'super_admin':
+      return <AwardIcon size={size} color={iconColor} />;
+    default:
+      return <BookOpenIcon size={size} color={iconColor} />;
+  }
+};
+
 export function RoleBadge({ role, size = 'medium' }: RoleBadgeProps) {
-  const config = ROLE_CONFIG[role];
+  const safeRole = role && ROLE_CONFIG[role] ? role : 'pembaca';
+  const config = ROLE_CONFIG[safeRole];
   const sizeConfig = SIZE_CONFIG[size];
 
   return (
@@ -81,7 +99,7 @@ export function RoleBadge({ role, size = 'medium' }: RoleBadgeProps) {
         },
       ]}
     >
-      <Feather name={config.icon} size={sizeConfig.iconSize} color="#FFFFFF" />
+      <RoleIcon role={safeRole} size={sizeConfig.iconSize} />
       <ThemedText
         lightColor="#FFFFFF"
         darkColor="#FFFFFF"
