@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, Pressable, Image } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
@@ -10,9 +10,6 @@ import { RoleBadge } from "@/components/RoleBadge";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { CheckIcon } from "@/components/icons/CheckIcon";
 import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
-import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
-import { FileTextIcon } from "@/components/icons/FileTextIcon";
-import { ZapIcon } from "@/components/icons/ZapIcon";
 import { AwardIcon } from "@/components/icons/AwardIcon";
 import { ShieldIcon } from "@/components/icons/ShieldIcon";
 import { BookIcon } from "@/components/icons/BookIcon";
@@ -21,7 +18,7 @@ import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
 import { LogOutIcon } from "@/components/icons/LogOutIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserStats } from "@/hooks/useUserStats";
+import { getUserFollowStats, FollowStats } from "@/utils/supabase";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
@@ -30,7 +27,23 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const { user, logout, upgradeToWriter } = useAuth();
-  const { stats, isLoading: statsLoading } = useUserStats();
+  const [followStats, setFollowStats] = useState<FollowStats>({ followersCount: 0, followingCount: 0 });
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
+
+  const loadFollowStats = useCallback(async () => {
+    if (user) {
+      setIsLoadingStats(true);
+      const stats = await getUserFollowStats(parseInt(user.id));
+      setFollowStats(stats);
+      setIsLoadingStats(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFollowStats();
+    }, [loadFollowStats])
+  );
 
   if (!user) return null;
 
@@ -105,40 +118,30 @@ export default function ProfileScreen() {
           </ThemedText>
         </View>
 
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <BookOpenIcon size={22} color={theme.text} />
-            </View>
-            <ThemedText style={[Typography.h2, styles.statValue]}>
-              {statsLoading ? '-' : stats.novelsRead}
+        <View style={styles.followStatsContainer}>
+          <Pressable 
+            style={styles.followStatItem}
+            onPress={() => navigation.navigate("FollowList", { userId: user.id, type: "followers", userName: user.name })}
+          >
+            <ThemedText style={[Typography.h2, styles.followStatValue]}>
+              {isLoadingStats ? '-' : followStats.followersCount}
             </ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
-              Buku Dibaca
+            <ThemedText style={[styles.followStatLabel, { color: theme.textSecondary }]}>
+              Pengikut
             </ThemedText>
-          </View>
-          <View style={styles.statItem}>
-            <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <FileTextIcon size={22} color={theme.text} />
-            </View>
-            <ThemedText style={[Typography.h2, styles.statValue]}>
-              {statsLoading ? '-' : stats.chaptersRead}
+          </Pressable>
+          <View style={[styles.followStatDivider, { backgroundColor: theme.backgroundSecondary }]} />
+          <Pressable 
+            style={styles.followStatItem}
+            onPress={() => navigation.navigate("FollowList", { userId: user.id, type: "following", userName: user.name })}
+          >
+            <ThemedText style={[Typography.h2, styles.followStatValue]}>
+              {isLoadingStats ? '-' : followStats.followingCount}
             </ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
-              Chapter
+            <ThemedText style={[styles.followStatLabel, { color: theme.textSecondary }]}>
+              Mengikuti
             </ThemedText>
-          </View>
-          <View style={styles.statItem}>
-            <View style={[styles.statIconCircle, { backgroundColor: theme.backgroundSecondary }]}>
-              <ZapIcon size={22} color={theme.text} />
-            </View>
-            <ThemedText style={[Typography.h2, styles.statValue]}>
-              {statsLoading ? '-' : stats.dayStreak}
-            </ThemedText>
-            <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>
-              Hari Berturut
-            </ThemedText>
-          </View>
+          </Pressable>
         </View>
       </Card>
 
@@ -273,30 +276,28 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontStyle: "italic",
   },
-  statsContainer: {
+  followStatsContainer: {
     flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    gap: Spacing.md,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: Spacing.sm,
+    width: "100%",
+    paddingHorizontal: Spacing.xl,
   },
-  statValue: {
+  followStatItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
+  },
+  followStatValue: {
     marginBottom: 2,
   },
-  statLabel: {
-    fontSize: 12,
-    textAlign: "center",
+  followStatLabel: {
+    fontSize: 13,
+  },
+  followStatDivider: {
+    width: 1,
+    height: 40,
+    marginHorizontal: Spacing.xl,
   },
   section: {
     marginTop: Spacing["2xl"],

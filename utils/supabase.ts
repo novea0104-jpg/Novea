@@ -546,3 +546,167 @@ export async function deleteReviewReply(
     return { success: false, error: 'Terjadi kesalahan' };
   }
 }
+
+// ==================== USER FOLLOW SYSTEM ====================
+
+export interface FollowStats {
+  followersCount: number;
+  followingCount: number;
+}
+
+export interface FollowUser {
+  id: number;
+  name: string;
+  avatarUrl: string | null;
+  role: string;
+}
+
+// Get follow stats for a user
+export async function getUserFollowStats(userId: number): Promise<FollowStats> {
+  try {
+    const [followersResult, followingResult] = await Promise.all([
+      supabase
+        .from('user_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', userId),
+      supabase
+        .from('user_follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('follower_id', userId),
+    ]);
+
+    return {
+      followersCount: followersResult.count || 0,
+      followingCount: followingResult.count || 0,
+    };
+  } catch (error) {
+    console.error('Error in getUserFollowStats:', error);
+    return { followersCount: 0, followingCount: 0 };
+  }
+}
+
+// Check if current user follows target user
+export async function isFollowing(followerId: number, followingId: number): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select('id')
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId)
+      .single();
+
+    return !error && !!data;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Follow a user
+export async function followUser(
+  followerId: number,
+  followingId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (followerId === followingId) {
+      return { success: false, error: 'Kamu tidak bisa follow diri sendiri' };
+    }
+
+    const { error } = await supabase
+      .from('user_follows')
+      .insert({
+        follower_id: followerId,
+        following_id: followingId,
+      });
+
+    if (error) {
+      if (error.message.includes('duplicate')) {
+        return { success: true }; // Already following
+      }
+      console.error('Error following user:', error);
+      return { success: false, error: 'Gagal follow pengguna' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in followUser:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Unfollow a user
+export async function unfollowUser(
+  followerId: number,
+  followingId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('user_follows')
+      .delete()
+      .eq('follower_id', followerId)
+      .eq('following_id', followingId);
+
+    if (error) {
+      console.error('Error unfollowing user:', error);
+      return { success: false, error: 'Gagal unfollow pengguna' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in unfollowUser:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Get followers list
+export async function getFollowers(userId: number): Promise<FollowUser[]> {
+  try {
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select(`
+        follower:follower_id (id, name, avatar_url, role)
+      `)
+      .eq('following_id', userId);
+
+    if (error) {
+      console.error('Error getting followers:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => ({
+      id: item.follower.id,
+      name: item.follower.name,
+      avatarUrl: item.follower.avatar_url,
+      role: item.follower.role || 'Pembaca',
+    }));
+  } catch (error) {
+    console.error('Error in getFollowers:', error);
+    return [];
+  }
+}
+
+// Get following list
+export async function getFollowing(userId: number): Promise<FollowUser[]> {
+  try {
+    const { data, error } = await supabase
+      .from('user_follows')
+      .select(`
+        following:following_id (id, name, avatar_url, role)
+      `)
+      .eq('follower_id', userId);
+
+    if (error) {
+      console.error('Error getting following:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => ({
+      id: item.following.id,
+      name: item.following.name,
+      avatarUrl: item.following.avatar_url,
+      role: item.following.role || 'Pembaca',
+    }));
+  } catch (error) {
+    console.error('Error in getFollowing:', error);
+    return [];
+  }
+}

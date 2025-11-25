@@ -63,6 +63,9 @@ export default function NovelDetailScreen() {
   const [replyingToReviewId, setReplyingToReviewId] = useState<number | null>(null);
   const [replyText, setReplyText] = useState("");
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  
+  // Edit review state
+  const [isEditingReview, setIsEditingReview] = useState(false);
 
   React.useLayoutEffect(() => {
     if (novel) {
@@ -167,6 +170,8 @@ export default function NovelDetailScreen() {
 
     if (result.success) {
       Alert.alert("Berhasil", "Ulasan kamu telah disimpan!");
+      setIsEditingReview(false);
+      setHasExistingReview(true);
       loadReviews();
       refreshNovels(); // Refresh novels to update ratings on home screen
     } else {
@@ -352,39 +357,84 @@ export default function NovelDetailScreen() {
 
         {/* Write Review */}
         {user && !isAuthor ? (
-          <Card elevation={1} style={styles.writeReviewCard}>
-            <ThemedText style={[Typography.body, styles.writeReviewTitle]}>
-              {hasExistingReview ? "Edit Ulasan" : "Tulis Ulasan"}
-            </ThemedText>
-            <View style={styles.starSelector}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Pressable key={star} onPress={() => setUserRating(star)} style={styles.starButton}>
-                  <StarIcon
-                    size={32}
-                    color={star <= userRating ? theme.secondary : theme.backgroundSecondary}
-                    filled={star <= userRating}
-                  />
+          hasExistingReview && !isEditingReview ? (
+            <Card elevation={1} style={styles.writeReviewCard}>
+              <View style={styles.existingReviewHeader}>
+                <View>
+                  <ThemedText style={[Typography.body, styles.writeReviewTitle]}>
+                    Ulasan Kamu
+                  </ThemedText>
+                  <View style={styles.existingRatingRow}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <StarIcon
+                        key={star}
+                        size={16}
+                        color={star <= userRating ? theme.secondary : theme.backgroundSecondary}
+                        filled={star <= userRating}
+                      />
+                    ))}
+                  </View>
+                </View>
+                <Pressable 
+                  onPress={() => setIsEditingReview(true)}
+                  style={[styles.editReviewButton, { borderColor: theme.primary }]}
+                >
+                  <EditIcon size={14} color={theme.primary} />
+                  <ThemedText style={[styles.editReviewText, { color: theme.primary }]}>
+                    Edit
+                  </ThemedText>
                 </Pressable>
-              ))}
-            </View>
-            <TextInput
-              style={[styles.commentInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              placeholder={hasExistingReview ? "Edit komentar kamu..." : "Tulis komentar (opsional)..."}
-              placeholderTextColor={theme.textMuted}
-              value={userComment}
-              onChangeText={setUserComment}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
-            <Button
-              onPress={handleSubmitReview}
-              style={styles.submitButton}
-              disabled={isSubmittingReview || userRating === 0}
-            >
-              {isSubmittingReview ? "Menyimpan..." : (hasExistingReview ? "Update Ulasan" : "Kirim Ulasan")}
-            </Button>
-          </Card>
+              </View>
+              {userComment ? (
+                <ThemedText style={[styles.existingComment, { color: theme.textSecondary }]} numberOfLines={2}>
+                  "{userComment}"
+                </ThemedText>
+              ) : null}
+            </Card>
+          ) : (
+            <Card elevation={1} style={styles.writeReviewCard}>
+              <View style={styles.writeReviewHeader}>
+                <ThemedText style={[Typography.body, styles.writeReviewTitle]}>
+                  {hasExistingReview ? "Edit Ulasan" : "Tulis Ulasan"}
+                </ThemedText>
+                {hasExistingReview ? (
+                  <Pressable onPress={() => setIsEditingReview(false)}>
+                    <ThemedText style={[styles.cancelEditText, { color: theme.textMuted }]}>
+                      Batal
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
+              </View>
+              <View style={styles.starSelector}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable key={star} onPress={() => setUserRating(star)} style={styles.starButton}>
+                    <StarIcon
+                      size={32}
+                      color={star <= userRating ? theme.secondary : theme.backgroundSecondary}
+                      filled={star <= userRating}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                style={[styles.commentInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                placeholder={hasExistingReview ? "Edit komentar kamu..." : "Tulis komentar (opsional)..."}
+                placeholderTextColor={theme.textMuted}
+                value={userComment}
+                onChangeText={setUserComment}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
+              <Button
+                onPress={handleSubmitReview}
+                style={styles.submitButton}
+                disabled={isSubmittingReview || userRating === 0}
+              >
+                {isSubmittingReview ? "Menyimpan..." : (hasExistingReview ? "Update Ulasan" : "Kirim Ulasan")}
+              </Button>
+            </Card>
+          )
         ) : null}
 
         {/* Reviews List */}
@@ -668,7 +718,45 @@ const styles = StyleSheet.create({
   },
   writeReviewTitle: {
     fontWeight: "600",
+    marginBottom: Spacing.sm,
+  },
+  writeReviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: Spacing.md,
+  },
+  existingReviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  existingRatingRow: {
+    flexDirection: "row",
+    gap: 2,
+    marginTop: 4,
+  },
+  editReviewButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+  },
+  editReviewText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  existingComment: {
+    fontSize: 13,
+    fontStyle: "italic",
+    marginTop: Spacing.sm,
+  },
+  cancelEditText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   starSelector: {
     flexDirection: "row",

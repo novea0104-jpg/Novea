@@ -13,6 +13,7 @@ import AdminDashboardScreen from "@/screens/AdminDashboardScreen";
 import ManageNovelScreen from "@/screens/ManageNovelScreen";
 import EditChapterScreen from "@/screens/EditChapterScreen";
 import EditNovelScreen from "@/screens/EditNovelScreen";
+import FollowListScreen from "@/screens/FollowListScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -29,6 +30,7 @@ export type ProfileStackParamList = {
   ManageNovel: { novelId: string };
   EditChapter: { novelId: string; chapterId?: string };
   EditNovel: { novelId: string };
+  FollowList: { userId: string; type: "followers" | "following"; userName: string };
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -97,6 +99,11 @@ export default function ProfileStackNavigator() {
         name="EditNovel"
         component={EditNovelScreen}
         options={{ title: "Edit Novel" }}
+      />
+      <Stack.Screen
+        name="FollowList"
+        component={FollowListScreen}
+        options={{ title: "Pengikut" }}
       />
     </Stack.Navigator>
   );
