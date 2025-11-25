@@ -45,8 +45,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Fetch view counts for all novels from novel_views table
       const novelIds = (novelsData || []).map(n => n.id);
       const viewCountsMap = new Map<number, number>();
+      const ratingCountsMap = new Map<number, number>();
 
       if (novelIds.length > 0) {
+        // Fetch view counts
         const { data: viewsData, error: viewsError } = await supabase
           .from('novel_views')
           .select('novel_id')
@@ -57,6 +59,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
           viewsData.forEach(view => {
             const currentCount = viewCountsMap.get(view.novel_id) || 0;
             viewCountsMap.set(view.novel_id, currentCount + 1);
+          });
+        }
+
+        // Fetch rating counts from novel_reviews
+        const { data: reviewsData, error: reviewsError } = await supabase
+          .from('novel_reviews')
+          .select('novel_id')
+          .in('novel_id', novelIds);
+
+        if (!reviewsError && reviewsData) {
+          // Count reviews per novel
+          reviewsData.forEach(review => {
+            const currentCount = ratingCountsMap.get(review.novel_id) || 0;
+            ratingCountsMap.set(review.novel_id, currentCount + 1);
           });
         }
       }
@@ -104,7 +120,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         genre: apiNovel.genre as any,
         status: apiNovel.status as any,
         rating: apiNovel.rating,
-        ratingCount: 0,
+        ratingCount: ratingCountsMap.get(apiNovel.id) || 0,
         synopsis: apiNovel.description,
         coinPerChapter: apiNovel.chapter_price,
         totalChapters: apiNovel.total_chapters,

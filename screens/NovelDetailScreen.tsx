@@ -27,7 +27,7 @@ export default function NovelDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
-  const { novels, followingNovels, toggleFollow, unlockedChapters, getChaptersForNovel } = useApp();
+  const { novels, followingNovels, toggleFollow, unlockedChapters, getChaptersForNovel, refreshNovels } = useApp();
   const { user } = useAuth();
   
   const { novelId } = route.params as { novelId: string };
@@ -128,6 +128,7 @@ export default function NovelDetailScreen() {
     if (result.success) {
       Alert.alert("Berhasil", "Ulasan kamu telah disimpan!");
       loadReviews();
+      refreshNovels(); // Refresh novels to update ratings on home screen
     } else {
       Alert.alert("Gagal", result.error || "Gagal menyimpan ulasan.");
     }
@@ -199,7 +200,7 @@ export default function NovelDetailScreen() {
             <View style={styles.rating}>
               <StarIcon size={16} color={theme.secondary} filled />
               <ThemedText style={{ color: theme.textSecondary }}>
-                {novel.rating.toFixed(1)} ({novel.ratingCount.toLocaleString()})
+                {ratingStats.averageRating.toFixed(1)} ({ratingStats.totalReviews.toLocaleString()})
               </ThemedText>
             </View>
             <View style={[styles.tag, { backgroundColor: theme.primary }]}>
