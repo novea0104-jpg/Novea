@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
@@ -14,10 +14,11 @@ import { HeartIcon } from "@/components/icons/HeartIcon";
 import { ZapIcon } from "@/components/icons/ZapIcon";
 import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
+import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/utils/supabase";
+import { supabase, getTotalUnreadCount } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 import { Novel } from "@/types/models";
@@ -51,12 +52,34 @@ export default function BrowseHomeScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { novels } = useApp();
-  const { user } = useAuth();
+  const { user, showAuthPrompt } = useAuth();
   const [genres, setGenres] = useState<GenreItem[]>([]);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     fetchGenres();
   }, []);
+
+  const loadUnreadCount = useCallback(async () => {
+    if (user) {
+      const count = await getTotalUnreadCount(parseInt(user.id));
+      setUnreadMessageCount(count);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUnreadCount();
+    }, [loadUnreadCount])
+  );
+
+  const goToMessages = () => {
+    if (!user) {
+      showAuthPrompt("Masuk untuk mengakses pesan");
+      return;
+    }
+    navigation.navigate("Messages");
+  };
 
   const fetchGenres = async () => {
     try {
@@ -259,9 +282,23 @@ export default function BrowseHomeScreen() {
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
+            onPress={goToMessages}
+            activeOpacity={0.6}
+            style={styles.headerIconButton}
+          >
+            <MessageSquareIcon size={22} color={theme.text} />
+            {unreadMessageCount > 0 ? (
+              <View style={styles.headerBadge}>
+                <ThemedText style={styles.headerBadgeText}>
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </ThemedText>
+              </View>
+            ) : null}
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={goToSearch}
             activeOpacity={0.6}
-            style={styles.searchButton}
+            style={styles.headerIconButton}
           >
             <SearchIcon size={22} color={theme.text} />
           </TouchableOpacity>
@@ -331,9 +368,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  searchButton: {
+  headerIconButton: {
     padding: Spacing.sm,
-    marginRight: Spacing.xs,
+    position: "relative",
+  },
+  headerBadge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    backgroundColor: "#EF4444",
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  headerBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "700",
   },
   coinBadge: {
     flexDirection: "row",

@@ -11,6 +11,9 @@ import ManageNovelScreen from "@/screens/ManageNovelScreen";
 import EditNovelScreen from "@/screens/EditNovelScreen";
 import EditChapterScreen from "@/screens/EditChapterScreen";
 import CreateChapterScreen from "@/screens/CreateChapterScreen";
+import MessagesHomeScreen from "@/screens/MessagesHomeScreen";
+import MessageThreadScreen from "@/screens/MessageThreadScreen";
+import NewMessageScreen from "@/screens/NewMessageScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -26,6 +29,9 @@ export type BrowseStackParamList = {
   EditNovel: { novelId: string };
   EditChapter: { novelId: string; chapterId?: string };
   CreateChapter: { novelId: string };
+  Messages: undefined;
+  MessageThread: { conversationId: string; recipientName: string; recipientAvatar?: string; recipientRole: string };
+  NewMessage: undefined;
 };
 
 const Stack = createNativeStackNavigator<BrowseStackParamList>();
@@ -89,6 +95,21 @@ export default function BrowseStackNavigator() {
         name="CreateChapter"
         component={CreateChapterScreen}
         options={{ title: "Tulis Chapter" }}
+      />
+      <Stack.Screen
+        name="Messages"
+        component={MessagesHomeScreen}
+        options={{ title: "Pesan" }}
+      />
+      <Stack.Screen
+        name="MessageThread"
+        component={MessageThreadScreen}
+        options={({ route }) => ({ title: route.params.recipientName })}
+      />
+      <Stack.Screen
+        name="NewMessage"
+        component={NewMessageScreen}
+        options={{ title: "Pesan Baru" }}
       />
     </Stack.Navigator>
   );
