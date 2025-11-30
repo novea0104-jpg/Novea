@@ -1304,3 +1304,373 @@ export async function deleteTimelinePostComment(
     return { success: false, error: 'Terjadi kesalahan' };
   }
 }
+
+// ==================== PRIVATE MESSAGES ====================
+
+export interface PMConversation {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  lastMessageAt: string;
+  lastMessagePreview: string | null;
+  participants: PMParticipant[];
+  unreadCount: number;
+}
+
+export interface PMParticipant {
+  id: number;
+  conversationId: string;
+  userId: number;
+  userName: string;
+  userAvatar: string | null;
+  userRole: string;
+  lastReadAt: string | null;
+  joinedAt: string;
+}
+
+export interface PMMessage {
+  id: number;
+  conversationId: string;
+  senderId: number;
+  senderName: string;
+  senderAvatar: string | null;
+  body: string;
+  attachmentUrl: string | null;
+  createdAt: string;
+  isOwn: boolean;
+}
+
+// Get all conversations for a user
+export async function getConversations(userId: number): Promise<PMConversation[]> {
+  try {
+    // Get all conversation IDs where user is participant
+    const { data: participantData, error: partError } = await supabase
+      .from('pm_participants')
+      .select('conversation_id, last_read_at')
+      .eq('user_id', userId);
+
+    if (partError || !participantData || participantData.length === 0) {
+      return [];
+    }
+
+    const conversationIds = participantData.map(p => p.conversation_id);
+    const lastReadMap = new Map(participantData.map(p => [p.conversation_id, p.last_read_at]));
+
+    // Get conversations with participants
+    const { data: convData, error: convError } = await supabase
+      .from('pm_conversations')
+      .select('*')
+      .in('id', conversationIds)
+      .order('last_message_at', { ascending: false });
+
+    if (convError || !convData) {
+      console.error('Error fetching conversations:', convError);
+      return [];
+    }
+
+    // Get all participants for these conversations
+    const { data: allParticipants } = await supabase
+      .from('pm_participants')
+      .select(`
+        *,
+        user:user_id (id, name, avatar_url, role)
+      `)
+      .in('conversation_id', conversationIds);
+
+    // Get unread counts (messages after last_read_at)
+    const conversations: PMConversation[] = [];
+
+    for (const conv of convData) {
+      const lastRead = lastReadMap.get(conv.id);
+      
+      // Count unread messages
+      let unreadCount = 0;
+      if (lastRead) {
+        const { count } = await supabase
+          .from('pm_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', conv.id)
+          .neq('sender_id', userId)
+          .gt('created_at', lastRead);
+        unreadCount = count || 0;
+      } else {
+        // Never read - count all messages not from self
+        const { count } = await supabase
+          .from('pm_messages')
+          .select('*', { count: 'exact', head: true })
+          .eq('conversation_id', conv.id)
+          .neq('sender_id', userId);
+        unreadCount = count || 0;
+      }
+
+      // Get participants for this conversation (exclude self)
+      const participants = (allParticipants || [])
+        .filter((p: any) => p.conversation_id === conv.id)
+        .map((p: any) => ({
+          id: p.id,
+          conversationId: p.conversation_id,
+          userId: p.user_id,
+          userName: p.user?.name || 'Pengguna',
+          userAvatar: p.user?.avatar_url,
+          userRole: p.user?.role || 'pembaca',
+          lastReadAt: p.last_read_at,
+          joinedAt: p.joined_at,
+        }));
+
+      conversations.push({
+        id: conv.id,
+        createdAt: conv.created_at,
+        updatedAt: conv.updated_at,
+        lastMessageAt: conv.last_message_at,
+        lastMessagePreview: conv.last_message_preview,
+        participants,
+        unreadCount,
+      });
+    }
+
+    return conversations;
+  } catch (error) {
+    console.error('Error in getConversations:', error);
+    return [];
+  }
+}
+
+// Get or create a conversation between two users
+export async function getOrCreateConversation(
+  userId1: number,
+  userId2: number
+): Promise<{ conversationId: string | null; error?: string }> {
+  try {
+    // Check if conversation already exists between these two users
+    const { data: existingParticipants } = await supabase
+      .from('pm_participants')
+      .select('conversation_id')
+      .eq('user_id', userId1);
+
+    if (existingParticipants && existingParticipants.length > 0) {
+      const convIds = existingParticipants.map(p => p.conversation_id);
+      
+      // Check if user2 is in any of these conversations
+      const { data: sharedConv } = await supabase
+        .from('pm_participants')
+        .select('conversation_id')
+        .eq('user_id', userId2)
+        .in('conversation_id', convIds);
+
+      if (sharedConv && sharedConv.length > 0) {
+        // Found existing conversation
+        return { conversationId: sharedConv[0].conversation_id };
+      }
+    }
+
+    // Create new conversation
+    const { data: newConv, error: convError } = await supabase
+      .from('pm_conversations')
+      .insert({ created_by: userId1 })
+      .select('id')
+      .single();
+
+    if (convError || !newConv) {
+      console.error('Error creating conversation:', convError);
+      return { conversationId: null, error: 'Gagal membuat percakapan' };
+    }
+
+    // Add both participants
+    const { error: partError } = await supabase
+      .from('pm_participants')
+      .insert([
+        { conversation_id: newConv.id, user_id: userId1 },
+        { conversation_id: newConv.id, user_id: userId2 },
+      ]);
+
+    if (partError) {
+      console.error('Error adding participants:', partError);
+      // Clean up conversation
+      await supabase.from('pm_conversations').delete().eq('id', newConv.id);
+      return { conversationId: null, error: 'Gagal menambahkan peserta' };
+    }
+
+    return { conversationId: newConv.id };
+  } catch (error) {
+    console.error('Error in getOrCreateConversation:', error);
+    return { conversationId: null, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Get messages for a conversation
+export async function getMessages(
+  conversationId: string,
+  currentUserId: number,
+  limit: number = 50,
+  before?: string
+): Promise<PMMessage[]> {
+  try {
+    let query = supabase
+      .from('pm_messages')
+      .select(`
+        *,
+        sender:sender_id (id, name, avatar_url)
+      `)
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (before) {
+      query = query.lt('created_at', before);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching messages:', error);
+      return [];
+    }
+
+    return (data || []).reverse().map((msg: any) => ({
+      id: msg.id,
+      conversationId: msg.conversation_id,
+      senderId: msg.sender_id,
+      senderName: msg.sender?.name || 'Pengguna',
+      senderAvatar: msg.sender?.avatar_url,
+      body: msg.body,
+      attachmentUrl: msg.attachment_url,
+      createdAt: msg.created_at,
+      isOwn: msg.sender_id === currentUserId,
+    }));
+  } catch (error) {
+    console.error('Error in getMessages:', error);
+    return [];
+  }
+}
+
+// Send a message
+export async function sendMessage(
+  conversationId: string,
+  senderId: number,
+  body: string,
+  attachmentUrl?: string
+): Promise<{ success: boolean; message?: PMMessage; error?: string }> {
+  try {
+    // Verify sender is participant
+    const { data: participant } = await supabase
+      .from('pm_participants')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('user_id', senderId)
+      .single();
+
+    if (!participant) {
+      return { success: false, error: 'Kamu bukan peserta percakapan ini' };
+    }
+
+    // Get sender info
+    const { data: sender } = await supabase
+      .from('users')
+      .select('name, avatar_url')
+      .eq('id', senderId)
+      .single();
+
+    // Insert message
+    const { data: newMsg, error: msgError } = await supabase
+      .from('pm_messages')
+      .insert({
+        conversation_id: conversationId,
+        sender_id: senderId,
+        body: body.trim(),
+        attachment_url: attachmentUrl || null,
+      })
+      .select('*')
+      .single();
+
+    if (msgError || !newMsg) {
+      console.error('Error sending message:', msgError);
+      return { success: false, error: 'Gagal mengirim pesan' };
+    }
+
+    // Update sender's last_read_at
+    await supabase
+      .from('pm_participants')
+      .update({ last_read_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .eq('user_id', senderId);
+
+    return {
+      success: true,
+      message: {
+        id: newMsg.id,
+        conversationId: newMsg.conversation_id,
+        senderId: newMsg.sender_id,
+        senderName: sender?.name || 'Pengguna',
+        senderAvatar: sender?.avatar_url,
+        body: newMsg.body,
+        attachmentUrl: newMsg.attachment_url,
+        createdAt: newMsg.created_at,
+        isOwn: true,
+      },
+    };
+  } catch (error) {
+    console.error('Error in sendMessage:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Mark conversation as read
+export async function markConversationRead(
+  conversationId: string,
+  userId: number
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('pm_participants')
+      .update({ last_read_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId);
+
+    return !error;
+  } catch (error) {
+    console.error('Error in markConversationRead:', error);
+    return false;
+  }
+}
+
+// Get total unread message count for a user
+export async function getTotalUnreadCount(userId: number): Promise<number> {
+  try {
+    const conversations = await getConversations(userId);
+    return conversations.reduce((total, conv) => total + conv.unreadCount, 0);
+  } catch (error) {
+    console.error('Error in getTotalUnreadCount:', error);
+    return 0;
+  }
+}
+
+// Search users for new conversation
+export async function searchUsersForPM(
+  query: string,
+  currentUserId: number,
+  limit: number = 20
+): Promise<{ id: number; name: string; avatarUrl: string | null; role: string }[]> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, avatar_url, role')
+      .neq('id', currentUserId)
+      .ilike('name', `%${query}%`)
+      .limit(limit);
+
+    if (error) {
+      console.error('Error searching users:', error);
+      return [];
+    }
+
+    return (data || []).map((u: any) => ({
+      id: u.id,
+      name: u.name,
+      avatarUrl: u.avatar_url,
+      role: u.role || 'pembaca',
+    }));
+  } catch (error) {
+    console.error('Error in searchUsersForPM:', error);
+    return [];
+  }
+}
