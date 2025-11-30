@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
 import { 
   View, 
   StyleSheet, 
@@ -13,7 +13,6 @@ import {
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -51,10 +50,18 @@ export default function MessageThreadScreen() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const flatListRef = useRef<FlatList>(null);
   
   const { conversationId, recipientName, recipientAvatar, recipientRole } = route.params;
+
+  useLayoutEffect(() => {
+    const parent = navigation.getParent();
+    parent?.setOptions({ tabBarStyle: { display: 'none' } });
+    
+    return () => {
+      parent?.setOptions({ tabBarStyle: undefined });
+    };
+  }, [navigation]);
   
   const [messages, setMessages] = useState<PMMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -208,7 +215,7 @@ export default function MessageThreadScreen() {
         />
       )}
       
-      <View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary, marginBottom: tabBarHeight, paddingBottom: Spacing.md }]}>
+      <View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary, paddingBottom: insets.bottom + Spacing.sm }]}>
         <TextInput
           style={[styles.textInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
           placeholder="Tulis pesan..."
