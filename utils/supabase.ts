@@ -901,3 +901,384 @@ export async function getFollowing(userId: number): Promise<FollowUser[]> {
     return [];
   }
 }
+
+// ==================== TIMELINE POSTS ====================
+
+export interface TimelinePost {
+  id: number;
+  userId: number;
+  userName: string;
+  userAvatar: string | null;
+  userRole: string;
+  content: string;
+  imageUrl: string | null;
+  novelId: number | null;
+  novelTitle?: string;
+  novelCover?: string;
+  likesCount: number;
+  commentsCount: number;
+  isLiked: boolean;
+  createdAt: string;
+}
+
+export interface TimelinePostComment {
+  id: number;
+  userId: number;
+  userName: string;
+  userAvatar: string | null;
+  userRole: string;
+  content: string;
+  parentId: number | null;
+  createdAt: string;
+  replies?: TimelinePostComment[];
+}
+
+// Get timeline feed for a user
+// Rules:
+// 1. Show all posts from Super Admin, Co Admin, Editor (to all users)
+// 2. Show posts from authors the user follows
+// 3. Show user's own posts
+export async function getTimelineFeed(
+  currentUserId: number | null,
+  limit: number = 20,
+  offset: number = 0
+): Promise<TimelinePost[]> {
+  try {
+    // First, get the list of user IDs the current user follows
+    let followingIds: number[] = [];
+    if (currentUserId) {
+      const { data: followingData } = await supabase
+        .from('user_follows')
+        .select('following_id')
+        .eq('follower_id', currentUserId);
+      followingIds = (followingData || []).map(f => f.following_id);
+    }
+
+    // Build the query - get posts where:
+    // 1. User role is super_admin, co_admin, or editor
+    // 2. User is in the following list
+    // 3. Post is from current user
+    let query = supabase
+      .from('timeline_posts')
+      .select(`
+        *,
+        user:user_id (id, name, avatar_url, role),
+        novel:novel_id (id, title, cover_url)
+      `)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching timeline:', error);
+      return [];
+    }
+
+    // Filter posts according to rules
+    const adminRoles = ['super_admin', 'co_admin', 'editor'];
+    const filteredPosts = (data || []).filter((post: any) => {
+      const userRole = post.user?.role || 'pembaca';
+      
+      // Rule 1: Show all admin/editor posts
+      if (adminRoles.includes(userRole)) return true;
+      
+      // Rule 2: Show posts from followed users
+      if (followingIds.includes(post.user_id)) return true;
+      
+      // Rule 3: Show own posts
+      if (currentUserId && post.user_id === currentUserId) return true;
+      
+      return false;
+    });
+
+    // Get liked posts for current user
+    let likedPostIds = new Set<number>();
+    if (currentUserId) {
+      const { data: likesData } = await supabase
+        .from('timeline_post_likes')
+        .select('post_id')
+        .eq('user_id', currentUserId);
+      likedPostIds = new Set((likesData || []).map(l => l.post_id));
+    }
+
+    return filteredPosts.map((post: any) => ({
+      id: post.id,
+      userId: post.user_id,
+      userName: post.user?.name || 'Pengguna',
+      userAvatar: post.user?.avatar_url,
+      userRole: post.user?.role || 'pembaca',
+      content: post.content,
+      imageUrl: post.image_url,
+      novelId: post.novel_id,
+      novelTitle: post.novel?.title,
+      novelCover: post.novel?.cover_url,
+      likesCount: post.likes_count || 0,
+      commentsCount: post.comments_count || 0,
+      isLiked: likedPostIds.has(post.id),
+      createdAt: post.created_at,
+    }));
+  } catch (error) {
+    console.error('Error in getTimelineFeed:', error);
+    return [];
+  }
+}
+
+// Create a new timeline post
+export async function createTimelinePost(
+  userId: number,
+  content: string,
+  imageUrl?: string,
+  novelId?: number
+): Promise<{ success: boolean; postId?: number; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('timeline_posts')
+      .insert({
+        user_id: userId,
+        content: content.trim(),
+        image_url: imageUrl || null,
+        novel_id: novelId || null,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error creating post:', error);
+      return { success: false, error: 'Gagal membuat postingan' };
+    }
+
+    return { success: true, postId: data.id };
+  } catch (error) {
+    console.error('Error in createTimelinePost:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Delete a timeline post
+export async function deleteTimelinePost(
+  postId: number,
+  userId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Check if user owns this post
+    const { data: post, error: checkError } = await supabase
+      .from('timeline_posts')
+      .select('user_id')
+      .eq('id', postId)
+      .single();
+
+    if (checkError || !post) {
+      return { success: false, error: 'Postingan tidak ditemukan' };
+    }
+
+    if (post.user_id !== userId) {
+      return { success: false, error: 'Kamu tidak bisa menghapus postingan orang lain' };
+    }
+
+    const { error } = await supabase
+      .from('timeline_posts')
+      .delete()
+      .eq('id', postId);
+
+    if (error) {
+      console.error('Error deleting post:', error);
+      return { success: false, error: 'Gagal menghapus postingan' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in deleteTimelinePost:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Toggle like on a timeline post
+export async function toggleTimelinePostLike(
+  userId: number,
+  postId: number
+): Promise<{ isLiked: boolean; likesCount: number; error?: string }> {
+  try {
+    // Check if already liked
+    const { data: existing } = await supabase
+      .from('timeline_post_likes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('post_id', postId)
+      .single();
+
+    if (existing) {
+      // Unlike
+      await supabase
+        .from('timeline_post_likes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('post_id', postId);
+
+      // Update likes count
+      await supabase.rpc('decrement_post_likes', { post_id: postId });
+    } else {
+      // Like
+      await supabase
+        .from('timeline_post_likes')
+        .insert({ user_id: userId, post_id: postId });
+
+      // Update likes count
+      await supabase.rpc('increment_post_likes', { post_id: postId });
+    }
+
+    // Get updated likes count
+    const { data: post } = await supabase
+      .from('timeline_posts')
+      .select('likes_count')
+      .eq('id', postId)
+      .single();
+
+    return {
+      isLiked: !existing,
+      likesCount: post?.likes_count || 0,
+    };
+  } catch (error) {
+    console.error('Error in toggleTimelinePostLike:', error);
+    return { isLiked: false, likesCount: 0, error: 'Gagal menyimpan like' };
+  }
+}
+
+// Get comments for a post
+export async function getTimelinePostComments(postId: number): Promise<TimelinePostComment[]> {
+  try {
+    const { data, error } = await supabase
+      .from('timeline_post_comments')
+      .select(`
+        *,
+        user:user_id (id, name, avatar_url, role)
+      `)
+      .eq('post_id', postId)
+      .is('parent_id', null)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error getting comments:', error);
+      return [];
+    }
+
+    // Get replies for all comments
+    const { data: repliesData } = await supabase
+      .from('timeline_post_comments')
+      .select(`
+        *,
+        user:user_id (id, name, avatar_url, role)
+      `)
+      .eq('post_id', postId)
+      .not('parent_id', 'is', null)
+      .order('created_at', { ascending: true });
+
+    const repliesMap = new Map<number, TimelinePostComment[]>();
+    (repliesData || []).forEach((reply: any) => {
+      const parentId = reply.parent_id;
+      const existing = repliesMap.get(parentId) || [];
+      existing.push({
+        id: reply.id,
+        userId: reply.user_id,
+        userName: reply.user?.name || 'Pengguna',
+        userAvatar: reply.user?.avatar_url,
+        userRole: reply.user?.role || 'pembaca',
+        content: reply.content,
+        parentId: reply.parent_id,
+        createdAt: reply.created_at,
+      });
+      repliesMap.set(parentId, existing);
+    });
+
+    return (data || []).map((comment: any) => ({
+      id: comment.id,
+      userId: comment.user_id,
+      userName: comment.user?.name || 'Pengguna',
+      userAvatar: comment.user?.avatar_url,
+      userRole: comment.user?.role || 'pembaca',
+      content: comment.content,
+      parentId: comment.parent_id,
+      createdAt: comment.created_at,
+      replies: repliesMap.get(comment.id) || [],
+    }));
+  } catch (error) {
+    console.error('Error in getTimelinePostComments:', error);
+    return [];
+  }
+}
+
+// Add comment to a post
+export async function addTimelinePostComment(
+  userId: number,
+  postId: number,
+  content: string,
+  parentId?: number
+): Promise<{ success: boolean; commentId?: number; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('timeline_post_comments')
+      .insert({
+        user_id: userId,
+        post_id: postId,
+        content: content.trim(),
+        parent_id: parentId || null,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error adding comment:', error);
+      return { success: false, error: 'Gagal mengirim komentar' };
+    }
+
+    // Update comments count
+    await supabase.rpc('increment_post_comments', { post_id: postId });
+
+    return { success: true, commentId: data.id };
+  } catch (error) {
+    console.error('Error in addTimelinePostComment:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Delete comment
+export async function deleteTimelinePostComment(
+  commentId: number,
+  userId: number,
+  postId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Check if user owns this comment
+    const { data: comment, error: checkError } = await supabase
+      .from('timeline_post_comments')
+      .select('user_id')
+      .eq('id', commentId)
+      .single();
+
+    if (checkError || !comment) {
+      return { success: false, error: 'Komentar tidak ditemukan' };
+    }
+
+    if (comment.user_id !== userId) {
+      return { success: false, error: 'Kamu tidak bisa menghapus komentar orang lain' };
+    }
+
+    const { error } = await supabase
+      .from('timeline_post_comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('Error deleting comment:', error);
+      return { success: false, error: 'Gagal menghapus komentar' };
+    }
+
+    // Update comments count
+    await supabase.rpc('decrement_post_comments', { post_id: postId });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in deleteTimelinePostComment:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
