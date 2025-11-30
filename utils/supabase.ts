@@ -1896,10 +1896,7 @@ export async function getAllNovelsAdmin(
   try {
     let query = supabase
       .from('novels')
-      .select(`
-        *,
-        author:author_id (id, name)
-      `, { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     if (searchQuery && searchQuery.trim()) {
       query = query.ilike('title', `%${searchQuery}%`);
@@ -1914,9 +1911,22 @@ export async function getAllNovelsAdmin(
       return { novels: [], total: 0 };
     }
 
-    // Get chapter counts and view counts for each novel
+    // Get author names and stats for each novel
     const novels: AdminNovel[] = await Promise.all(
       (data || []).map(async (n: any) => {
+        // Fetch author name
+        let authorName = 'Unknown';
+        if (n.author_id) {
+          const { data: authorData } = await supabase
+            .from('users')
+            .select('name')
+            .eq('id', n.author_id)
+            .single();
+          if (authorData) {
+            authorName = authorData.name || 'Unknown';
+          }
+        }
+
         const { count: chaptersCount } = await supabase
           .from('chapters')
           .select('*', { count: 'exact', head: true })
@@ -1936,7 +1946,7 @@ export async function getAllNovelsAdmin(
           id: n.id,
           title: n.title,
           authorId: n.author_id,
-          authorName: n.author?.name || 'Unknown',
+          authorName,
           genre: n.genre || '',
           status: n.status || 'ongoing',
           isPublished: n.is_published !== false,
