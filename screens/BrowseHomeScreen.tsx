@@ -1,13 +1,12 @@
 import React from "react";
 import { View, ScrollView, StyleSheet, Pressable, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
-import { SearchIcon } from "@/components/icons/SearchIcon";
-import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
 import { CoinIcon } from "@/components/icons/CoinIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
@@ -67,7 +66,7 @@ export default function BrowseHomeScreen() {
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <SearchIcon size={20} color={theme.text} />
+            <Feather name="search" size={20} color={theme.text} />
           </Pressable>
           <Pressable
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -77,7 +76,7 @@ export default function BrowseHomeScreen() {
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1, marginLeft: Spacing.sm },
             ]}
           >
-            <NotificationsIcon size={20} color={theme.text} />
+            <Feather name="bell" size={20} color={theme.text} />
           </Pressable>
           <LinearGradient
             colors={GradientColors.yellowGreen.colors}
