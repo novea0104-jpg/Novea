@@ -1,7 +1,6 @@
 import React from "react";
 import { View, ScrollView, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +8,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
 import { CoinIcon } from "@/components/icons/CoinIcon";
+import { SearchIcon } from "@/components/icons/SearchIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -87,7 +87,7 @@ export default function BrowseHomeScreen() {
             activeOpacity={0.6}
             style={styles.searchButton}
           >
-            <Feather name="search" size={22} color={theme.text} />
+            <SearchIcon size={22} color={theme.text} />
           </TouchableOpacity>
           <LinearGradient
             colors={GradientColors.yellowGreen.colors}
