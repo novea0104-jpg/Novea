@@ -6,7 +6,7 @@ import { BookOpenIcon } from './icons/BookOpenIcon';
 import { FeatherIcon } from './icons/FeatherIcon';
 import { EditIcon } from './icons/EditIcon';
 import { ShieldIcon } from './icons/ShieldIcon';
-import { AwardIcon } from './icons/AwardIcon';
+import { CrownIcon } from './icons/CrownIcon';
 import { BorderRadius } from '@/constants/theme';
 
 export type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
@@ -75,7 +75,7 @@ const RoleIcon = ({ role, size }: { role: UserRole; size: number }) => {
     case 'co_admin':
       return <ShieldIcon size={size} color={iconColor} />;
     case 'super_admin':
-      return <AwardIcon size={size} color={iconColor} />;
+      return <CrownIcon size={size} color={iconColor} />;
     default:
       return <BookOpenIcon size={size} color={iconColor} />;
   }
