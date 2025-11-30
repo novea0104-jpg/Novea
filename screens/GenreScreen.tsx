@@ -94,7 +94,7 @@ export default function GenreScreen() {
         console.log("Falling back to legacy genre column");
         const { data: novelsData, error: novelsError } = await supabase
           .from("novels")
-          .select("id, title, synopsis, genre, status, cover_image, created_at, updated_at, author_id, total_chapters, total_reads, rating, total_reviews")
+          .select("id, title, description, genre, status, cover_url, created_at, updated_at, author_id, total_chapters, total_reads, rating, total_reviews")
           .ilike("genre", genreId)
           .order("total_reads", { ascending: false });
 
@@ -125,10 +125,10 @@ export default function GenreScreen() {
           title: novel.title,
           author: authorsMap[novel.author_id] || "Unknown Author",
           authorId: novel.author_id?.toString() || "",
-          synopsis: novel.synopsis || "",
+          synopsis: novel.description || "",
           genre: novel.genre,
           status: novel.status || "ongoing",
-          coverImage: novel.cover_image,
+          coverImage: novel.cover_url,
           totalChapters: novel.total_chapters || 0,
           followers: novel.total_reads || 0,
           rating: novel.rating || 0,
@@ -162,7 +162,7 @@ export default function GenreScreen() {
       // Get novels data
       const { data: novelsData, error: novelsError } = await supabase
         .from("novels")
-        .select("id, title, synopsis, genre, status, cover_image, created_at, updated_at, author_id, total_chapters, total_reads, rating, total_reviews")
+        .select("id, title, description, genre, status, cover_url, created_at, updated_at, author_id, total_chapters, total_reads, rating, total_reviews")
         .in("id", novelIds)
         .order("total_reads", { ascending: false });
 
@@ -195,10 +195,10 @@ export default function GenreScreen() {
         title: novel.title,
         author: authorsMap[novel.author_id] || "Unknown Author",
         authorId: novel.author_id?.toString() || "",
-        synopsis: novel.synopsis || "",
+        synopsis: novel.description || "",
         genre: novel.genre,
         status: novel.status || "ongoing",
-        coverImage: novel.cover_image,
+        coverImage: novel.cover_url,
         totalChapters: novel.total_chapters || 0,
         followers: novel.total_reads || 0,
         rating: novel.rating || 0,
