@@ -18,6 +18,7 @@ import { FeatherIcon } from "@/components/icons/FeatherIcon";
 import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
 import { LogOutIcon } from "@/components/icons/LogOutIcon";
 import { CoinIcon } from "@/components/icons/CoinIcon";
+import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserFollowStats, FollowStats } from "@/utils/supabase";
@@ -83,6 +84,7 @@ export default function ProfileScreen() {
     book: <BookIcon size={20} color={theme.text} />,
     feather: <FeatherIcon size={20} color={theme.text} />,
     "alert-circle": <AlertCircleIcon size={20} color={theme.text} />,
+    message: <MessageSquareIcon size={20} color={theme.text} />,
   };
 
   const MenuItem = ({ icon, title, subtitle, onPress }: any) => (
@@ -202,6 +204,12 @@ export default function ProfileScreen() {
           title="Edit Profil"
           subtitle="Ubah foto & informasi"
           onPress={() => navigation.navigate("EditProfile")}
+        />
+        <MenuItem
+          icon="message"
+          title="Pesan Pribadi"
+          subtitle="Chat dengan pengguna lain"
+          onPress={() => navigation.navigate("Messages")}
         />
         {isAdmin ? (
           <MenuItem

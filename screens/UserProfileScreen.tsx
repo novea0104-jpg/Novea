@@ -10,6 +10,7 @@ import { UserIcon } from "@/components/icons/UserIcon";
 import { BookIcon } from "@/components/icons/BookIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
 import { EyeIcon } from "@/components/icons/EyeIcon";
+import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -19,6 +20,7 @@ import {
   isFollowing, 
   followUser, 
   unfollowUser,
+  getOrCreateConversation,
   PublicUserProfile,
   UserNovel,
   FollowStats 
@@ -51,6 +53,7 @@ export default function UserProfileScreen() {
   const [isFollowingUser, setIsFollowingUser] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [isMessageLoading, setIsMessageLoading] = useState(false);
 
   const isOwnProfile = currentUser && parseInt(currentUser.id) === parseInt(userId);
 
@@ -107,6 +110,25 @@ export default function UserProfileScreen() {
     }
     
     setIsFollowLoading(false);
+  };
+
+  const handleSendMessage = async () => {
+    if (!currentUser || !userProfile || isMessageLoading || isOwnProfile) return;
+    
+    setIsMessageLoading(true);
+    
+    const result = await getOrCreateConversation(parseInt(currentUser.id), parseInt(userId));
+    
+    if (result.conversationId) {
+      navigation.navigate("MessageThread", {
+        conversationId: result.conversationId,
+        recipientName: userProfile.name,
+        recipientAvatar: userProfile.avatarUrl || undefined,
+        recipientRole: userProfile.role || 'pembaca',
+      });
+    }
+    
+    setIsMessageLoading(false);
   };
 
   const handleNovelPress = (novelId: number) => {
@@ -199,27 +221,43 @@ export default function UserProfileScreen() {
         </View>
 
         {currentUser && !isOwnProfile ? (
-          <Pressable
-            onPress={handleFollowToggle}
-            disabled={isFollowLoading}
-            style={[
-              styles.followButton,
-              isFollowingUser 
-                ? { backgroundColor: theme.backgroundSecondary }
-                : { backgroundColor: theme.primary }
-            ]}
-          >
-            {isFollowLoading ? (
-              <ActivityIndicator size="small" color={isFollowingUser ? theme.text : "#FFFFFF"} />
-            ) : (
-              <ThemedText style={[
-                styles.followButtonText,
-                { color: isFollowingUser ? theme.text : "#FFFFFF" }
-              ]}>
-                {isFollowingUser ? "Mengikuti" : "Ikuti"}
-              </ThemedText>
-            )}
-          </Pressable>
+          <View style={styles.actionButtonsContainer}>
+            <Pressable
+              onPress={handleFollowToggle}
+              disabled={isFollowLoading}
+              style={[
+                styles.followButton,
+                isFollowingUser 
+                  ? { backgroundColor: theme.backgroundSecondary }
+                  : { backgroundColor: theme.primary }
+              ]}
+            >
+              {isFollowLoading ? (
+                <ActivityIndicator size="small" color={isFollowingUser ? theme.text : "#FFFFFF"} />
+              ) : (
+                <ThemedText style={[
+                  styles.followButtonText,
+                  { color: isFollowingUser ? theme.text : "#FFFFFF" }
+                ]}>
+                  {isFollowingUser ? "Mengikuti" : "Ikuti"}
+                </ThemedText>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={handleSendMessage}
+              disabled={isMessageLoading}
+              style={[
+                styles.messageButton,
+                { backgroundColor: theme.backgroundSecondary }
+              ]}
+            >
+              {isMessageLoading ? (
+                <ActivityIndicator size="small" color={theme.text} />
+              ) : (
+                <MessageSquareIcon size={20} color={theme.text} />
+              )}
+            </Pressable>
+          </View>
         ) : null}
 
         <ThemedText style={[styles.joinDate, { color: theme.textMuted }]}>
@@ -357,17 +395,30 @@ const styles = StyleSheet.create({
     height: 40,
     marginHorizontal: Spacing.xl,
   },
+  actionButtonsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
   followButton: {
     paddingHorizontal: Spacing["2xl"],
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    minWidth: 140,
+    minWidth: 120,
     alignItems: "center",
-    marginBottom: Spacing.md,
   },
   followButtonText: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  messageButton: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
   joinDate: {
     fontSize: 12,
