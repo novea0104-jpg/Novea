@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
 } from "react-native";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -58,6 +59,7 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 export default function AdminDashboardScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const headerHeight = useHeaderHeight();
   
   const adminRole = user?.role || 'pembaca';
   const isEditor = adminRole === 'editor';
@@ -152,7 +154,7 @@ export default function AdminDashboardScreen() {
     }
   };
 
-  const handleBanUser = async (userId: number, ban: boolean) => {
+  const handleBanUser = async (userId: string, ban: boolean) => {
     if (!user) return;
     setActionLoading(true);
     const result = await toggleUserBan(user.id, adminRole, userId, ban);
@@ -168,7 +170,7 @@ export default function AdminDashboardScreen() {
     }
   };
 
-  const handleDeleteUser = async (userId: number) => {
+  const handleDeleteUser = async (userId: string) => {
     if (!isSuperAdmin) {
       Alert.alert('Tidak Diizinkan', 'Hanya Super Admin yang dapat menghapus user');
       return;
@@ -198,7 +200,7 @@ export default function AdminDashboardScreen() {
     );
   };
 
-  const handleChangeRole = async (userId: number, newRole: string) => {
+  const handleChangeRole = async (userId: string, newRole: string) => {
     if (!user) return;
     setActionLoading(true);
     const result = await changeUserRole(user.id, adminRole, userId, newRole);
@@ -620,7 +622,7 @@ export default function AdminDashboardScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.loadingContainer}>
+      <ThemedView style={[styles.loadingContainer, { paddingTop: headerHeight }]}>
         <ActivityIndicator size="large" color={theme.primary} />
         <ThemedText style={[styles.loadingText, { color: theme.textSecondary }]}>
           Memuat dashboard...
@@ -630,7 +632,7 @@ export default function AdminDashboardScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.md }]}>
       <View style={styles.tabsContainer}>
         {renderTabButton('stats', 'Statistik', <BarChartIcon size={18} color={activeTab === 'stats' ? '#FFFFFF' : theme.text} />)}
         {renderTabButton('users', 'Users', <UsersIcon size={18} color={activeTab === 'users' ? '#FFFFFF' : theme.text} />)}
