@@ -85,9 +85,9 @@ export default function BrowseHomeScreen() {
           <TouchableOpacity
             onPress={goToSearch}
             activeOpacity={0.6}
-            style={[styles.searchButton, { backgroundColor: theme.backgroundDefault }]}
+            style={styles.searchButton}
           >
-            <Feather name="search" size={20} color={theme.text} />
+            <Feather name="search" size={22} color={theme.text} />
           </TouchableOpacity>
           <LinearGradient
             colors={GradientColors.yellowGreen.colors}
@@ -143,11 +143,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.sm,
-    alignItems: "center",
-    justifyContent: "center",
+    padding: Spacing.sm,
+    marginRight: Spacing.xs,
   },
   coinBadge: {
     flexDirection: "row",
