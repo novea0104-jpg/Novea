@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -48,6 +49,7 @@ export default function MessageThreadScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const flatListRef = useRef<FlatList>(null);
   
   const { conversationId, recipientName, recipientAvatar, recipientRole } = route.params;
@@ -177,9 +179,9 @@ export default function MessageThreadScreen() {
 
   return (
     <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: theme.backgroundDefault }}
+      style={{ flex: 1, backgroundColor: theme.backgroundDefault, paddingTop: headerHeight }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
     >
       {isLoading ? (
         <View style={styles.loadingContainer}>

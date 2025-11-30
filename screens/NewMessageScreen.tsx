@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, Pressable, Image, TextInput, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Image, TextInput, ActivityIndicator, FlatList } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
-import { ScreenFlatList } from "@/components/ScreenFlatList";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { RoleBadge } from "@/components/RoleBadge";
@@ -28,6 +28,7 @@ export default function NewMessageScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const { user } = useAuth();
+  const headerHeight = useHeaderHeight();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
@@ -166,7 +167,7 @@ export default function NewMessageScreen() {
   }
 
   return (
-    <ThemedView style={{ flex: 1 }}>
+    <ThemedView style={{ flex: 1, paddingTop: headerHeight }}>
       <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary }]}>
         <View style={[styles.searchInputContainer, { backgroundColor: theme.backgroundDefault }]}>
           <SearchIcon size={20} color={theme.textMuted} />
@@ -192,11 +193,11 @@ export default function NewMessageScreen() {
           </ThemedText>
         </View>
       ) : (
-        <ScreenFlatList
+        <FlatList
           data={searchResults}
           renderItem={renderUserItem}
           keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={searchResults.length === 0 ? { flex: 1 } : undefined}
+          contentContainerStyle={searchResults.length === 0 ? { flex: 1 } : { paddingBottom: Spacing.xl }}
           ListEmptyComponent={renderEmpty}
           ItemSeparatorComponent={() => (
             <View style={[styles.separator, { backgroundColor: theme.cardBorder }]} />
