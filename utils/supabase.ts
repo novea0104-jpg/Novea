@@ -1334,7 +1334,7 @@ export interface PMMessage {
   senderId: number;
   senderName: string;
   senderAvatar: string | null;
-  body: string;
+  content: string;
   createdAt: string;
   isOwn: boolean;
 }
@@ -1531,7 +1531,7 @@ export async function getMessages(
       senderId: msg.sender_id,
       senderName: msg.sender?.name || 'Pengguna',
       senderAvatar: msg.sender?.avatar_url,
-      body: msg.body,
+      content: msg.content,
       createdAt: msg.created_at,
       isOwn: msg.sender_id === currentUserId,
     }));
@@ -1573,7 +1573,7 @@ export async function sendMessage(
       .insert({
         conversation_id: conversationId,
         sender_id: senderId,
-        body: body.trim(),
+        content: body.trim(),
       })
       .select('*')
       .single();
@@ -1598,7 +1598,7 @@ export async function sendMessage(
         senderId: newMsg.sender_id,
         senderName: sender?.name || 'Pengguna',
         senderAvatar: sender?.avatar_url,
-        body: newMsg.body,
+        content: newMsg.content,
         createdAt: newMsg.created_at,
         isOwn: true,
       },

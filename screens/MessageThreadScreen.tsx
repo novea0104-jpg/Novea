@@ -7,12 +7,14 @@ import {
   TextInput, 
   FlatList,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
+  Keyboard,
 } from "react-native";
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { KeyboardAvoidingView, useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -157,7 +159,7 @@ export default function MessageThreadScreen() {
                 { color: isOwn ? '#FFFFFF' : theme.text }
               ]}
             >
-              {item.body}
+              {item.content}
             </ThemedText>
           </View>
           {showTime ? (
@@ -186,12 +188,16 @@ export default function MessageThreadScreen() {
     );
   }
 
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  
+  const inputContainerStyle = useAnimatedStyle(() => {
+    return {
+      paddingBottom: Math.max(insets.bottom + Spacing.sm, -keyboardHeight.value + Spacing.sm),
+    };
+  });
+
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: theme.backgroundDefault, paddingTop: headerHeight }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
-    >
+    <View style={{ flex: 1, backgroundColor: theme.backgroundDefault, paddingTop: headerHeight }}>
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.primary} />
@@ -207,6 +213,7 @@ export default function MessageThreadScreen() {
             messages.length === 0 && { flex: 1 },
           ]}
           ListEmptyComponent={renderEmpty}
+          keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => {
             if (messages.length > 0) {
               flatListRef.current?.scrollToEnd({ animated: false });
@@ -215,7 +222,7 @@ export default function MessageThreadScreen() {
         />
       )}
       
-      <View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary, paddingBottom: insets.bottom + Spacing.sm }]}>
+      <Animated.View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary }, inputContainerStyle]}>
         <TextInput
           style={[styles.textInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
           placeholder="Tulis pesan..."
@@ -242,8 +249,8 @@ export default function MessageThreadScreen() {
             <SendIcon size={20} color={messageText.trim() ? '#FFFFFF' : theme.textMuted} />
           )}
         </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+      </Animated.View>
+    </View>
   );
 }
 
