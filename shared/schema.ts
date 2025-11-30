@@ -8,7 +8,10 @@ export const users = pgTable("users", {
   password: varchar("password", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   isWriter: boolean("is_writer").default(false).notNull(),
+  role: varchar("role", { length: 20 }).default("pembaca").notNull(),
   coinBalance: integer("coin_balance").default(10).notNull(),
+  avatarUrl: varchar("avatar_url", { length: 500 }),
+  bio: text("bio"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -120,6 +123,50 @@ export const novelLikes = pgTable("novel_likes", {
   // One like per user per novel
   uniqueUserNovelLike: unique().on(table.userId, table.novelId),
 }));
+
+// User Follows - tracks user following other users (authors)
+export const userFollows = pgTable("user_follows", {
+  id: serial("id").primaryKey(),
+  followerId: integer("follower_id").references(() => users.id).notNull(),
+  followingId: integer("following_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueFollow: unique().on(table.followerId, table.followingId),
+}));
+
+// Timeline Posts - posts in the timeline feed
+export const timelinePosts = pgTable("timeline_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  imageUrl: varchar("image_url", { length: 500 }),
+  novelId: integer("novel_id").references(() => novels.id),
+  likesCount: integer("likes_count").default(0).notNull(),
+  commentsCount: integer("comments_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Timeline Post Likes
+export const timelinePostLikes = pgTable("timeline_post_likes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  postId: integer("post_id").references(() => timelinePosts.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniquePostLike: unique().on(table.userId, table.postId),
+}));
+
+// Timeline Post Comments
+export const timelinePostComments = pgTable("timeline_post_comments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  postId: integer("post_id").references(() => timelinePosts.id).notNull(),
+  content: text("content").notNull(),
+  parentId: integer("parent_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
