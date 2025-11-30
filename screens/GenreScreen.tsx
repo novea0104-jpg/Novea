@@ -65,22 +65,40 @@ export default function GenreScreen() {
   const fetchNovelsByGenre = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: novelsData, error: novelsError } = await supabase
         .from("novels")
-        .select(`
-          id, title, synopsis, genre, status, cover_image, created_at, updated_at,
-          author_id, total_chapters, total_reads, rating, total_reviews,
-          users!novels_author_id_users_id_fk(name)
-        `)
+        .select("id, title, synopsis, genre, status, cover_image, created_at, updated_at, author_id, total_chapters, total_reads, rating, total_reviews")
         .ilike("genre", genreId)
         .order("total_reads", { ascending: false });
 
-      if (error) throw error;
+      if (novelsError) throw novelsError;
 
-      const mappedNovels: Novel[] = (data || []).map((novel: any) => ({
+      if (!novelsData || novelsData.length === 0) {
+        setNovels([]);
+        return;
+      }
+
+      const authorIds = [...new Set(novelsData.map((n: any) => n.author_id).filter(Boolean))];
+      
+      let authorsMap: Record<number, string> = {};
+      if (authorIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from("users")
+          .select("id, name")
+          .in("id", authorIds);
+        
+        if (usersData) {
+          authorsMap = usersData.reduce((acc: Record<number, string>, user: any) => {
+            acc[user.id] = user.name;
+            return acc;
+          }, {});
+        }
+      }
+
+      const mappedNovels: Novel[] = novelsData.map((novel: any) => ({
         id: novel.id.toString(),
         title: novel.title,
-        author: novel.users?.name || "Unknown Author",
+        author: authorsMap[novel.author_id] || "Unknown Author",
         authorId: novel.author_id?.toString() || "",
         synopsis: novel.synopsis || "",
         genre: novel.genre,
