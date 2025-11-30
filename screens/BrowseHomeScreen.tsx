@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, StyleSheet, Image, TouchableOpacity } from "react-native";
+import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -9,6 +9,10 @@ import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
 import { CoinIcon } from "@/components/icons/CoinIcon";
 import { SearchIcon } from "@/components/icons/SearchIcon";
+import { HeartIcon } from "@/components/icons/HeartIcon";
+import { ZapIcon } from "@/components/icons/ZapIcon";
+import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
+import { StarIcon } from "@/components/icons/StarIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +21,14 @@ import { Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 import { Novel } from "@/types/models";
 
 type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
+
+interface GenreItem {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  gradient: readonly [string, string];
+  count: number;
+}
 
 export default function BrowseHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -28,6 +40,44 @@ export default function BrowseHomeScreen() {
   const goToSearch = () => {
     navigation.navigate("Search");
   };
+
+  const genres: GenreItem[] = [
+    { 
+      id: "romance", 
+      name: "Romance", 
+      icon: <HeartIcon size={24} color="#FFFFFF" />,
+      gradient: GradientColors.romance.colors,
+      count: novels.filter(n => n.genre.toLowerCase() === "romance").length
+    },
+    { 
+      id: "fantasy", 
+      name: "Fantasy", 
+      icon: <StarIcon size={24} color="#FFFFFF" />,
+      gradient: GradientColors.fantasy.colors,
+      count: novels.filter(n => n.genre.toLowerCase() === "fantasy").length
+    },
+    { 
+      id: "thriller", 
+      name: "Thriller", 
+      icon: <ZapIcon size={24} color="#FFFFFF" />,
+      gradient: GradientColors.thriller.colors,
+      count: novels.filter(n => n.genre.toLowerCase() === "thriller").length
+    },
+    { 
+      id: "mystery", 
+      name: "Mystery", 
+      icon: <SearchIcon size={24} color="#FFFFFF" />,
+      gradient: GradientColors.mystery.colors,
+      count: novels.filter(n => n.genre.toLowerCase() === "mystery").length
+    },
+    { 
+      id: "adventure", 
+      name: "Adventure", 
+      icon: <BookOpenIcon size={24} color="#FFFFFF" />,
+      gradient: ["#F59E0B", "#D97706"] as const,
+      count: novels.filter(n => n.genre.toLowerCase() === "adventure").length
+    },
+  ];
 
   // Sedang Trending: Sort by total_reads (most viewed)
   const trendingNovels = [...novels]
@@ -49,6 +99,41 @@ export default function BrowseHomeScreen() {
       headerShown: false,
     });
   }, [navigation]);
+
+  const handleGenrePress = (genreId: string) => {
+    navigation.navigate("Search");
+  };
+
+  const renderGenreCard = (genre: GenreItem) => (
+    <Pressable
+      key={genre.id}
+      onPress={() => handleGenrePress(genre.id)}
+      style={({ pressed }) => [
+        styles.genreCardWrapper,
+        { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }
+      ]}
+    >
+      <LinearGradient
+        colors={genre.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.genreCard}
+      >
+        <View style={styles.genreIconContainer}>
+          {genre.icon}
+        </View>
+        <View style={styles.genreInfo}>
+          <ThemedText style={styles.genreName} lightColor="#FFFFFF" darkColor="#FFFFFF">
+            {genre.name}
+          </ThemedText>
+          <ThemedText style={styles.genreCount} lightColor="rgba(255,255,255,0.8)" darkColor="rgba(255,255,255,0.8)">
+            {genre.count} novel
+          </ThemedText>
+        </View>
+        <View style={styles.genreGlow} />
+      </LinearGradient>
+    </Pressable>
+  );
 
   const renderNovelSection = (title: string, novels: Novel[], variant: "large" | "medium" = "medium") => (
     <View style={styles.section}>
@@ -106,6 +191,17 @@ export default function BrowseHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Jelajahi Genre</ThemedText>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.genreCarousel}
+          >
+            {genres.map(renderGenreCard)}
+          </ScrollView>
+        </View>
+
         {renderNovelSection("Sedang Trending", trendingNovels, "large")}
         {renderNovelSection("Novel Terbaru", newReleases)}
         {renderNovelSection("Pilihan Editor", editorsPick)}
@@ -176,5 +272,50 @@ const styles = StyleSheet.create({
   },
   carousel: {
     paddingRight: Spacing.lg,
+  },
+  genreCarousel: {
+    paddingRight: Spacing.lg,
+    gap: Spacing.md,
+  },
+  genreCardWrapper: {
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+  },
+  genreCard: {
+    width: 140,
+    height: 100,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    justifyContent: "space-between",
+    overflow: "hidden",
+  },
+  genreIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  genreInfo: {
+    gap: 2,
+  },
+  genreName: {
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  genreCount: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  genreGlow: {
+    position: "absolute",
+    top: -20,
+    right: -20,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
 });
