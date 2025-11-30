@@ -15,6 +15,9 @@ import EditChapterScreen from "@/screens/EditChapterScreen";
 import EditNovelScreen from "@/screens/EditNovelScreen";
 import FollowListScreen from "@/screens/FollowListScreen";
 import UserProfileScreen from "@/screens/UserProfileScreen";
+import MessagesHomeScreen from "@/screens/MessagesHomeScreen";
+import MessageThreadScreen from "@/screens/MessageThreadScreen";
+import NewMessageScreen from "@/screens/NewMessageScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -33,6 +36,9 @@ export type ProfileStackParamList = {
   EditNovel: { novelId: string };
   FollowList: { userId: string; type: "followers" | "following"; userName: string };
   UserProfile: { userId: string };
+  Messages: undefined;
+  MessageThread: { conversationId: string; recipientName: string; recipientAvatar?: string; recipientRole: string };
+  NewMessage: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -111,6 +117,21 @@ export default function ProfileStackNavigator() {
         name="UserProfile"
         component={UserProfileScreen}
         options={{ title: "Profil" }}
+      />
+      <Stack.Screen
+        name="Messages"
+        component={MessagesHomeScreen}
+        options={{ title: "Pesan" }}
+      />
+      <Stack.Screen
+        name="MessageThread"
+        component={MessageThreadScreen}
+        options={({ route }) => ({ title: route.params.recipientName })}
+      />
+      <Stack.Screen
+        name="NewMessage"
+        component={NewMessageScreen}
+        options={{ title: "Pesan Baru" }}
       />
     </Stack.Navigator>
   );
