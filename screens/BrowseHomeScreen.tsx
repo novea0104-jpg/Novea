@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ScrollView, StyleSheet, Pressable, Image } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -57,27 +57,6 @@ export default function BrowseHomeScreen() {
       ),
       headerRight: () => (
         <View style={styles.headerRight}>
-          <Pressable
-            onPress={() => navigation.navigate("Search")}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            android_ripple={{ color: theme.textMuted, borderless: true, radius: 20 }}
-            style={({ pressed }) => [
-              styles.iconButton,
-              { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <Feather name="search" size={20} color={theme.text} />
-          </Pressable>
-          <Pressable
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            android_ripple={{ color: theme.textMuted, borderless: true, radius: 20 }}
-            style={({ pressed }) => [
-              styles.iconButton,
-              { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1, marginLeft: Spacing.sm },
-            ]}
-          >
-            <Feather name="bell" size={20} color={theme.text} />
-          </Pressable>
           <LinearGradient
             colors={GradientColors.yellowGreen.colors}
             start={GradientColors.yellowGreen.start}
@@ -122,6 +101,17 @@ export default function BrowseHomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        <TouchableOpacity
+          style={[styles.searchBar, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => navigation.navigate("Search")}
+          activeOpacity={0.7}
+        >
+          <Feather name="search" size={18} color={theme.textMuted} />
+          <ThemedText style={[styles.searchPlaceholder, { color: theme.textMuted }]}>
+            Cari novel atau penulis...
+          </ThemedText>
+        </TouchableOpacity>
+
         {renderNovelSection("Sedang Trending", trendingNovels, "large")}
         {renderNovelSection("Novel Terbaru", newReleases)}
         {renderNovelSection("Pilihan Editor", editorsPick)}
@@ -188,5 +178,17 @@ const styles = StyleSheet.create({
   },
   carousel: {
     paddingRight: Spacing.lg,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  searchPlaceholder: {
+    fontSize: 14,
   },
 });
