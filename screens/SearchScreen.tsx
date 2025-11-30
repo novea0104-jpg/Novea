@@ -267,13 +267,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: Spacing.md,
-    height: Spacing.inputHeight,
+    height: 48,
     borderRadius: BorderRadius.md,
     gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: "rgba(128, 128, 128, 0.3)",
   },
   input: {
     flex: 1,
     fontSize: 16,
+    height: 48,
+    paddingVertical: 0,
   },
   tabContainer: {
     flexDirection: "row",
