@@ -129,7 +129,7 @@ export default function MessagesHomeScreen() {
             </View>
           )}
           {item.unreadCount > 0 ? (
-            <View style={[styles.unreadBadge, { backgroundColor: theme.primary }]}>
+            <View style={[styles.unreadBadge, { backgroundColor: '#EF4444' }]}>
               <ThemedText style={styles.unreadText}>
                 {item.unreadCount > 99 ? '99+' : item.unreadCount}
               </ThemedText>
