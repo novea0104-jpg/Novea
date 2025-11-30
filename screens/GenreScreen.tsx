@@ -3,9 +3,11 @@ import { View, StyleSheet, FlatList, Pressable, Image, ActivityIndicator } from 
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { EmptyState } from "@/components/EmptyState";
+import { ChevronLeftIcon } from "@/components/icons/ChevronLeftIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { supabase } from "@/utils/supabase";
@@ -38,6 +40,7 @@ export default function GenreScreen() {
   const route = useRoute<GenreRouteProp>();
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
+  const insets = useSafeAreaInsets();
   const { genreId, genreName } = route.params;
 
   const [novels, setNovels] = useState<Novel[]>([]);
@@ -54,13 +57,9 @@ export default function GenreScreen() {
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <View style={styles.headerTitle}>
-          <ThemedText style={styles.headerTitleText}>{genreName}</ThemedText>
-        </View>
-      ),
+      headerShown: false,
     });
-  }, [navigation, genreName, genreConfig]);
+  }, [navigation]);
 
   const fetchNovelsByGenre = async () => {
     setIsLoading(true);
@@ -270,8 +269,15 @@ export default function GenreScreen() {
       colors={genreConfig.gradient}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.headerBanner}
+      style={[styles.headerBanner, { paddingTop: insets.top + Spacing.md }]}
     >
+      <Pressable 
+        onPress={() => navigation.goBack()} 
+        style={styles.backButton}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <ChevronLeftIcon size={28} color="#FFFFFF" />
+      </Pressable>
       <View style={styles.bannerContent}>
         <ThemedText style={styles.bannerTitle} lightColor="#FFFFFF" darkColor="#FFFFFF">
           {genreName}
@@ -336,11 +342,19 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     marginHorizontal: Spacing.lg,
-    marginTop: Spacing.xl,
     marginBottom: Spacing.lg,
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
     overflow: "hidden",
+  },
+  backButton: {
+    marginBottom: Spacing.md,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   bannerContent: {
     gap: Spacing.xs,
