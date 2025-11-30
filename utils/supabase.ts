@@ -1335,7 +1335,6 @@ export interface PMMessage {
   senderName: string;
   senderAvatar: string | null;
   body: string;
-  attachmentUrl: string | null;
   createdAt: string;
   isOwn: boolean;
 }
@@ -1533,7 +1532,6 @@ export async function getMessages(
       senderName: msg.sender?.name || 'Pengguna',
       senderAvatar: msg.sender?.avatar_url,
       body: msg.body,
-      attachmentUrl: msg.attachment_url,
       createdAt: msg.created_at,
       isOwn: msg.sender_id === currentUserId,
     }));
@@ -1547,8 +1545,7 @@ export async function getMessages(
 export async function sendMessage(
   conversationId: string,
   senderId: number,
-  body: string,
-  attachmentUrl?: string
+  body: string
 ): Promise<{ success: boolean; message?: PMMessage; error?: string }> {
   try {
     // Verify sender is participant
@@ -1577,7 +1574,6 @@ export async function sendMessage(
         conversation_id: conversationId,
         sender_id: senderId,
         body: body.trim(),
-        attachment_url: attachmentUrl || null,
       })
       .select('*')
       .single();
@@ -1603,7 +1599,6 @@ export async function sendMessage(
         senderName: sender?.name || 'Pengguna',
         senderAvatar: sender?.avatar_url,
         body: newMsg.body,
-        attachmentUrl: newMsg.attachment_url,
         createdAt: newMsg.created_at,
         isOwn: true,
       },
