@@ -259,6 +259,7 @@ const styles = StyleSheet.create({
   },
   searchBar: {
     paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(128, 128, 128, 0.2)",

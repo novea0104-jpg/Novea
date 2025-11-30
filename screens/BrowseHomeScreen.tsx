@@ -1,19 +1,19 @@
 import React from "react";
-import { View, ScrollView, StyleSheet, Pressable, Image, TouchableOpacity } from "react-native";
+import { View, ScrollView, StyleSheet, Image, TouchableOpacity } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
 import { CoinIcon } from "@/components/icons/CoinIcon";
 import { useTheme } from "@/hooks/useTheme";
-import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
-import { Spacing, Typography, BorderRadius, GradientColors } from "@/constants/theme";
+import { Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 import { Novel } from "@/types/models";
 
 type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
@@ -21,9 +21,13 @@ type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
 export default function BrowseHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
-  const screenInsets = useScreenInsets();
+  const insets = useSafeAreaInsets();
   const { novels } = useApp();
   const { user } = useAuth();
+
+  const goToSearch = () => {
+    navigation.navigate("Search");
+  };
 
   // Sedang Trending: Sort by total_reads (most viewed)
   const trendingNovels = [...novels]
@@ -42,41 +46,9 @@ export default function BrowseHomeScreen() {
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: true,
-      headerTransparent: true,
-      headerTitle: "",
-      headerLeft: () => (
-        <View style={[styles.headerTitleContainer, { marginLeft: Spacing.md }]}>
-          <Image
-            source={require("@/assets/images/novea-logo.png")}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-          <ThemedText style={styles.appName}>ovea</ThemedText>
-        </View>
-      ),
-      headerRight: () => (
-        <View style={styles.headerRight}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("Search")}
-            activeOpacity={0.7}
-            style={[styles.iconButton, { backgroundColor: theme.backgroundDefault }]}
-          >
-            <Feather name="search" size={20} color={theme.text} />
-          </TouchableOpacity>
-          <LinearGradient
-            colors={GradientColors.yellowGreen.colors}
-            start={GradientColors.yellowGreen.start}
-            end={GradientColors.yellowGreen.end}
-            style={styles.coinBadge}
-          >
-            <CoinIcon size={12} color={theme.backgroundRoot} />
-            <ThemedText style={[styles.coinText, { color: theme.backgroundRoot }]}>{user?.coinBalance || 0}</ThemedText>
-          </LinearGradient>
-        </View>
-      ),
+      headerShown: false,
     });
-  }, [navigation, theme, user]);
+  }, [navigation]);
 
   const renderNovelSection = (title: string, novels: Novel[], variant: "large" | "medium" = "medium") => (
     <View style={styles.section}>
@@ -100,12 +72,38 @@ export default function BrowseHomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <View style={[styles.customHeader, { paddingTop: insets.top + Spacing.sm }]}>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require("@/assets/images/novea-logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <ThemedText style={styles.appName}>ovea</ThemedText>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={goToSearch}
+            activeOpacity={0.6}
+            style={[styles.searchButton, { backgroundColor: theme.backgroundDefault }]}
+          >
+            <Feather name="search" size={20} color={theme.text} />
+          </TouchableOpacity>
+          <LinearGradient
+            colors={GradientColors.yellowGreen.colors}
+            start={GradientColors.yellowGreen.start}
+            end={GradientColors.yellowGreen.end}
+            style={styles.coinBadge}
+          >
+            <CoinIcon size={12} color={theme.backgroundRoot} />
+            <ThemedText style={[styles.coinText, { color: theme.backgroundRoot }]}>{user?.coinBalance || 0}</ThemedText>
+          </LinearGradient>
+        </View>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: screenInsets.paddingTop, paddingBottom: screenInsets.paddingBottom },
-        ]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {renderNovelSection("Sedang Trending", trendingNovels, "large")}
@@ -120,13 +118,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
-  headerTitleContainer: {
+  headerLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -142,9 +141,8 @@ const styles = StyleSheet.create({
   headerRight: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: Spacing.md,
   },
-  iconButton: {
+  searchButton: {
     width: 40,
     height: 40,
     borderRadius: BorderRadius.sm,
@@ -163,6 +161,13 @@ const styles = StyleSheet.create({
   coinText: {
     fontSize: 14,
     fontWeight: "700",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
   section: {
     marginBottom: Spacing.xl,
