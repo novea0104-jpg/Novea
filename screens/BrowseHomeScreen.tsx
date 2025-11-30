@@ -43,39 +43,39 @@ export default function BrowseHomeScreen() {
 
   const genres: GenreItem[] = [
     { 
-      id: "romance", 
+      id: "Romance", 
       name: "Romance", 
       icon: <HeartIcon size={24} color="#FFFFFF" />,
       gradient: GradientColors.romance.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "romance").length
     },
     { 
-      id: "fantasy", 
+      id: "Fantasy", 
       name: "Fantasy", 
       icon: <StarIcon size={24} color="#FFFFFF" />,
       gradient: GradientColors.fantasy.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "fantasy").length
     },
     { 
-      id: "thriller", 
+      id: "Thriller", 
       name: "Thriller", 
       icon: <ZapIcon size={24} color="#FFFFFF" />,
       gradient: GradientColors.thriller.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "thriller").length
     },
     { 
-      id: "mystery", 
+      id: "Mystery", 
       name: "Mystery", 
       icon: <SearchIcon size={24} color="#FFFFFF" />,
       gradient: GradientColors.mystery.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "mystery").length
     },
     { 
-      id: "adventure", 
-      name: "Adventure", 
+      id: "Sci-Fi", 
+      name: "Sci-Fi", 
       icon: <BookOpenIcon size={24} color="#FFFFFF" />,
-      gradient: ["#F59E0B", "#D97706"] as const,
-      count: novels.filter(n => n.genre.toLowerCase() === "adventure").length
+      gradient: GradientColors.sciFi.colors,
+      count: novels.filter(n => n.genre.toLowerCase() === "sci-fi").length
     },
   ];
 
@@ -100,14 +100,14 @@ export default function BrowseHomeScreen() {
     });
   }, [navigation]);
 
-  const handleGenrePress = (genreId: string) => {
-    navigation.navigate("Search");
+  const handleGenrePress = (genreId: string, genreName: string) => {
+    navigation.navigate("Genre", { genreId, genreName });
   };
 
   const renderGenreCard = (genre: GenreItem) => (
     <Pressable
       key={genre.id}
-      onPress={() => handleGenrePress(genre.id)}
+      onPress={() => handleGenrePress(genre.id, genre.name)}
       style={({ pressed }) => [
         styles.genreCardWrapper,
         { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }
@@ -191,6 +191,9 @@ export default function BrowseHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {renderNovelSection("Sedang Trending", trendingNovels, "large")}
+        {renderNovelSection("Novel Terbaru", newReleases)}
+
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Jelajahi Genre</ThemedText>
           <ScrollView
@@ -202,8 +205,6 @@ export default function BrowseHomeScreen() {
           </ScrollView>
         </View>
 
-        {renderNovelSection("Sedang Trending", trendingNovels, "large")}
-        {renderNovelSection("Novel Terbaru", newReleases)}
         {renderNovelSection("Pilihan Editor", editorsPick)}
       </ScrollView>
     </ThemedView>

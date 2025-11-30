@@ -4,6 +4,7 @@ import BrowseHomeScreen from "@/screens/BrowseHomeScreen";
 import NovelDetailScreen from "@/screens/NovelDetailScreen";
 import ReaderScreen from "@/screens/ReaderScreen";
 import SearchScreen from "@/screens/SearchScreen";
+import GenreScreen from "@/screens/GenreScreen";
 import UserProfileScreen from "@/screens/UserProfileScreen";
 import FollowListScreen from "@/screens/FollowListScreen";
 import ManageNovelScreen from "@/screens/ManageNovelScreen";
@@ -18,6 +19,7 @@ export type BrowseStackParamList = {
   NovelDetail: { novelId: string };
   Reader: { novelId: string; chapterId: string };
   Search: undefined;
+  Genre: { genreId: string; genreName: string };
   UserProfile: { userId: string };
   FollowList: { userId: string; type: "followers" | "following"; userName: string };
   ManageNovel: { novelId: string };
@@ -52,6 +54,11 @@ export default function BrowseStackNavigator() {
         name="Search"
         component={SearchScreen}
         options={{ title: "Search", presentation: "modal" }}
+      />
+      <Stack.Screen
+        name="Genre"
+        component={GenreScreen}
+        options={{ title: "Genre" }}
       />
       <Stack.Screen
         name="UserProfile"
