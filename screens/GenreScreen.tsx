@@ -70,7 +70,7 @@ export default function GenreScreen() {
         .select(`
           id, title, synopsis, genre, status, cover_image, created_at, updated_at,
           author_id, total_chapters, total_reads, rating, total_reviews,
-          users!novels_author_id_fkey(name)
+          users!novels_author_id_users_id_fk(name)
         `)
         .ilike("genre", genreId)
         .order("total_reads", { ascending: false });
@@ -223,10 +223,10 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     marginHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.xl,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
     overflow: "hidden",
   },
   bannerContent: {

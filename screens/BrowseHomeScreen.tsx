@@ -45,35 +45,35 @@ export default function BrowseHomeScreen() {
     { 
       id: "Romance", 
       name: "Romance", 
-      icon: <HeartIcon size={24} color="#FFFFFF" />,
+      icon: <HeartIcon size={14} color="#FFFFFF" />,
       gradient: GradientColors.romance.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "romance").length
     },
     { 
       id: "Fantasy", 
       name: "Fantasy", 
-      icon: <StarIcon size={24} color="#FFFFFF" />,
+      icon: <StarIcon size={14} color="#FFFFFF" />,
       gradient: GradientColors.fantasy.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "fantasy").length
     },
     { 
       id: "Thriller", 
       name: "Thriller", 
-      icon: <ZapIcon size={24} color="#FFFFFF" />,
+      icon: <ZapIcon size={14} color="#FFFFFF" />,
       gradient: GradientColors.thriller.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "thriller").length
     },
     { 
       id: "Mystery", 
       name: "Mystery", 
-      icon: <SearchIcon size={24} color="#FFFFFF" />,
+      icon: <SearchIcon size={14} color="#FFFFFF" />,
       gradient: GradientColors.mystery.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "mystery").length
     },
     { 
       id: "Sci-Fi", 
       name: "Sci-Fi", 
-      icon: <BookOpenIcon size={24} color="#FFFFFF" />,
+      icon: <BookOpenIcon size={14} color="#FFFFFF" />,
       gradient: GradientColors.sciFi.colors,
       count: novels.filter(n => n.genre.toLowerCase() === "sci-fi").length
     },
@@ -283,17 +283,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   genreCard: {
-    width: 140,
-    height: 100,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    width: 100,
+    height: 70,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
     justifyContent: "space-between",
     overflow: "hidden",
   },
   genreIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
@@ -302,21 +302,21 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   genreName: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: "700",
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   genreCount: {
-    fontSize: 12,
+    fontSize: 9,
     fontWeight: "500",
   },
   genreGlow: {
     position: "absolute",
-    top: -20,
-    right: -20,
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    top: -15,
+    right: -15,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
 });
