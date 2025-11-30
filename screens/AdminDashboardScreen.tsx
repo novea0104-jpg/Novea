@@ -58,6 +58,13 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 export default function AdminDashboardScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  
+  const adminRole = user?.role || 'pembaca';
+  const isEditor = adminRole === 'editor';
+  const isCoAdmin = adminRole === 'co_admin';
+  const isSuperAdmin = adminRole === 'super_admin';
+  const canManageUsers = isSuperAdmin || isCoAdmin;
+  
   const [activeTab, setActiveTab] = useState<TabType>('stats');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -74,12 +81,15 @@ export default function AdminDashboardScreen() {
   const [showUserModal, setShowUserModal] = useState(false);
   const [showNovelModal, setShowNovelModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-
-  const adminRole = user?.role || 'pembaca';
-  const isEditor = adminRole === 'editor';
-  const isCoAdmin = adminRole === 'co_admin';
-  const isSuperAdmin = adminRole === 'super_admin';
-  const canManageUsers = isSuperAdmin || isCoAdmin;
+  const [loadingMore, setLoadingMore] = useState(false);
+  
+  const handleTabChange = (tab: TabType) => {
+    if (tab === 'users' && !canManageUsers) {
+      return;
+    }
+    setSearchQuery('');
+    setActiveTab(tab);
+  };
 
   const loadStats = useCallback(async () => {
     const data = await getAdminStats();
@@ -258,12 +268,26 @@ export default function AdminDashboardScreen() {
     return [];
   };
 
+  const handleLoadMoreUsers = async () => {
+    if (loadingMore || users.length >= totalUsers) return;
+    setLoadingMore(true);
+    await loadUsers(userPage + 1, searchQuery);
+    setLoadingMore(false);
+  };
+
+  const handleLoadMoreNovels = async () => {
+    if (loadingMore || novels.length >= totalNovels) return;
+    setLoadingMore(true);
+    await loadNovels(novelPage + 1, searchQuery);
+    setLoadingMore(false);
+  };
+
   const renderTabButton = (tab: TabType, label: string, icon: React.ReactNode) => {
     if (tab === 'users' && !canManageUsers) return null;
     const isActive = activeTab === tab;
     return (
       <Pressable
-        onPress={() => setActiveTab(tab)}
+        onPress={() => handleTabChange(tab)}
         style={[
           styles.tabButton,
           { backgroundColor: isActive ? Colors.primary : theme.backgroundSecondary },
@@ -637,12 +661,15 @@ export default function AdminDashboardScreen() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
             }
-            onEndReached={() => {
-              if (users.length < totalUsers) {
-                loadUsers(userPage + 1, searchQuery);
-              }
-            }}
+            onEndReached={handleLoadMoreUsers}
             onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={styles.loadingMore}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                </View>
+              ) : null
+            }
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <UsersIcon size={48} color={theme.textMuted} />
@@ -675,12 +702,15 @@ export default function AdminDashboardScreen() {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
             }
-            onEndReached={() => {
-              if (novels.length < totalNovels) {
-                loadNovels(novelPage + 1, searchQuery);
-              }
-            }}
+            onEndReached={handleLoadMoreNovels}
             onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              loadingMore ? (
+                <View style={styles.loadingMore}>
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                </View>
+              ) : null
+            }
             ListEmptyComponent={
               <View style={styles.emptyState}>
                 <BookIcon size={48} color={theme.textMuted} />
@@ -871,6 +901,10 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
+  },
+  loadingMore: {
+    paddingVertical: Spacing.lg,
+    alignItems: 'center',
   },
   modalOverlay: {
     flex: 1,
