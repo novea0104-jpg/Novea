@@ -931,6 +931,7 @@ export interface TimelinePostComment {
   parentId: number | null;
   createdAt: string;
   replies?: TimelinePostComment[];
+  replyCount?: number;
 }
 
 // Get timeline feed for a user
@@ -1002,6 +1003,23 @@ export async function getTimelineFeed(
       likedPostIds = new Set((likesData || []).map(l => l.post_id));
     }
 
+    // Get actual comment counts from comments table (more reliable than denormalized count)
+    const postIds = filteredPosts.map((p: any) => p.id);
+    const commentCountsMap = new Map<number, number>();
+    
+    if (postIds.length > 0) {
+      const { data: commentsData } = await supabase
+        .from('timeline_post_comments')
+        .select('post_id')
+        .in('post_id', postIds);
+      
+      // Count comments per post
+      (commentsData || []).forEach((c: any) => {
+        const current = commentCountsMap.get(c.post_id) || 0;
+        commentCountsMap.set(c.post_id, current + 1);
+      });
+    }
+
     return filteredPosts.map((post: any) => ({
       id: post.id,
       userId: post.user_id,
@@ -1014,7 +1032,7 @@ export async function getTimelineFeed(
       novelTitle: post.novel?.title,
       novelCover: post.novel?.cover_url,
       likesCount: post.likes_count || 0,
-      commentsCount: post.comments_count || 0,
+      commentsCount: commentCountsMap.get(post.id) || 0,
       isLiked: likedPostIds.has(post.id),
       createdAt: post.created_at,
     }));
@@ -1190,17 +1208,21 @@ export async function getTimelinePostComments(postId: number): Promise<TimelineP
       repliesMap.set(parentId, existing);
     });
 
-    return (data || []).map((comment: any) => ({
-      id: comment.id,
-      userId: comment.user_id,
-      userName: comment.user?.name || 'Pengguna',
-      userAvatar: comment.user?.avatar_url,
-      userRole: comment.user?.role || 'pembaca',
-      content: comment.content,
-      parentId: comment.parent_id,
-      createdAt: comment.created_at,
-      replies: repliesMap.get(comment.id) || [],
-    }));
+    return (data || []).map((comment: any) => {
+      const replies = repliesMap.get(comment.id) || [];
+      return {
+        id: comment.id,
+        userId: comment.user_id,
+        userName: comment.user?.name || 'Pengguna',
+        userAvatar: comment.user?.avatar_url,
+        userRole: comment.user?.role || 'pembaca',
+        content: comment.content,
+        parentId: comment.parent_id,
+        createdAt: comment.created_at,
+        replies,
+        replyCount: replies.length,
+      };
+    });
   } catch (error) {
     console.error('Error in getTimelinePostComments:', error);
     return [];
