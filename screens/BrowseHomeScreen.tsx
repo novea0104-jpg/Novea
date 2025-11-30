@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
+import { EditorPickCard } from "@/components/EditorPickCard";
 import { CoinIcon } from "@/components/icons/CoinIcon";
 import { SearchIcon } from "@/components/icons/SearchIcon";
 import { HeartIcon } from "@/components/icons/HeartIcon";
@@ -133,10 +134,10 @@ export default function BrowseHomeScreen() {
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 6);
   
-  // Pilihan Editor: Sort by rating (highest rated)
+  // Pilihan Editor: Sort by rating (highest rated), max 20
   const editorsPick = [...novels]
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-    .slice(0, 6);
+    .slice(0, 20);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
@@ -199,6 +200,27 @@ export default function BrowseHomeScreen() {
     </View>
   );
 
+  const renderEditorsPickSection = () => (
+    <View style={styles.section}>
+      <ThemedText style={styles.sectionTitle}>Pilihan Editor</ThemedText>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.carousel}
+        decelerationRate="fast"
+        snapToInterval={316}
+      >
+        {editorsPick.map((novel) => (
+          <EditorPickCard
+            key={novel.id}
+            novel={novel}
+            onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
       <View style={[styles.customHeader, { paddingTop: insets.top + Spacing.sm }]}>
@@ -249,7 +271,7 @@ export default function BrowseHomeScreen() {
           </ScrollView>
         </View>
 
-        {renderNovelSection("Pilihan Editor", editorsPick)}
+        {renderEditorsPickSection()}
       </ScrollView>
     </ThemedView>
   );
