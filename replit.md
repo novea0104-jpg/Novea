@@ -34,7 +34,64 @@ Preferred communication style: Simple, everyday language.
 
 **Authentication:** Supabase Auth (email/password) manages user sessions and integrates with the `users` table for profiles.
 
-**Database Schema:** Consists of 10 tables: `users`, `novels`, `chapters`, `reading_progress`, `unlocked_chapters`, `following_novels`, `coin_transactions`, `timeline_posts`, `timeline_post_likes`, and `timeline_post_comments`.
+**Database Schema:** Consists of 12 tables: `users`, `novels`, `chapters`, `reading_progress`, `unlocked_chapters`, `following_novels`, `coin_transactions`, `timeline_posts`, `timeline_post_likes`, `timeline_post_comments`, `genres`, and `novel_genres`.
+
+### Multi-Genre System
+
+**Overview:** Novels can have up to 3 genres. The first selected genre is marked as primary.
+
+**Database Tables:**
+- `genres`: id, name, slug, icon, gradient_start, gradient_end, created_at
+- `novel_genres`: id, novel_id, genre_id, is_primary, created_at (UNIQUE novel_id, genre_id)
+
+**SQL Migration for Supabase Dashboard:**
+```sql
+-- Create genres table
+CREATE TABLE IF NOT EXISTS genres (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(50) NOT NULL UNIQUE,
+  slug VARCHAR(50) NOT NULL UNIQUE,
+  icon VARCHAR(50),
+  gradient_start VARCHAR(7),
+  gradient_end VARCHAR(7),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create novel_genres junction table
+CREATE TABLE IF NOT EXISTS novel_genres (
+  id SERIAL PRIMARY KEY,
+  novel_id INTEGER NOT NULL REFERENCES novels(id) ON DELETE CASCADE,
+  genre_id INTEGER NOT NULL REFERENCES genres(id) ON DELETE CASCADE,
+  is_primary BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(novel_id, genre_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_novel_genres_novel_id ON novel_genres(novel_id);
+CREATE INDEX IF NOT EXISTS idx_novel_genres_genre_id ON novel_genres(genre_id);
+
+-- Insert default genres
+INSERT INTO genres (name, slug, icon, gradient_start, gradient_end) VALUES
+('Romance', 'romance', 'heart', '#EC4899', '#8B5CF6'),
+('Fantasy', 'fantasy', 'star', '#8B5CF6', '#3B82F6'),
+('Thriller', 'thriller', 'zap', '#DC2626', '#000000'),
+('Mystery', 'mystery', 'search', '#14B8A6', '#000000'),
+('Sci-Fi', 'sci-fi', 'cpu', '#06B6D4', '#8B5CF6'),
+('Adventure', 'adventure', 'compass', '#F59E0B', '#D97706'),
+('Drama', 'drama', 'film', '#6366F1', '#8B5CF6'),
+('Horror', 'horror', 'skull', '#991B1B', '#000000'),
+('Comedy', 'comedy', 'smile', '#FBBF24', '#F59E0B'),
+('Action', 'action', 'target', '#EF4444', '#DC2626')
+ON CONFLICT (slug) DO NOTHING;
+
+-- Migrate existing genre data from novels table
+INSERT INTO novel_genres (novel_id, genre_id, is_primary)
+SELECT n.id, g.id, TRUE
+FROM novels n
+JOIN genres g ON LOWER(g.name) = LOWER(n.genre)
+WHERE n.genre IS NOT NULL AND n.genre != ''
+ON CONFLICT (novel_id, genre_id) DO NOTHING;
+```
 
 **Role System:** A 5-tier hierarchy (Pembaca, Penulis, Editor, Co Admin, Super Admin) with role-based badges and secure upgrade mechanisms.
 

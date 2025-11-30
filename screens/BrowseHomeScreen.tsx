@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Pressable } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
@@ -16,6 +16,7 @@ import { StarIcon } from "@/components/icons/StarIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 import { Novel } from "@/types/models";
@@ -24,11 +25,25 @@ type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
 
 interface GenreItem {
   id: string;
+  slug: string;
   name: string;
-  icon: React.ReactNode;
+  icon: string;
   gradient: readonly [string, string];
   count: number;
 }
+
+const ICON_MAP: Record<string, React.ReactNode> = {
+  heart: <HeartIcon size={14} color="#FFFFFF" />,
+  star: <StarIcon size={14} color="#FFFFFF" />,
+  zap: <ZapIcon size={14} color="#FFFFFF" />,
+  search: <SearchIcon size={14} color="#FFFFFF" />,
+  cpu: <BookOpenIcon size={14} color="#FFFFFF" />,
+  compass: <StarIcon size={14} color="#FFFFFF" />,
+  film: <BookOpenIcon size={14} color="#FFFFFF" />,
+  skull: <ZapIcon size={14} color="#FFFFFF" />,
+  smile: <StarIcon size={14} color="#FFFFFF" />,
+  target: <ZapIcon size={14} color="#FFFFFF" />,
+};
 
 export default function BrowseHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -36,48 +51,77 @@ export default function BrowseHomeScreen() {
   const insets = useSafeAreaInsets();
   const { novels } = useApp();
   const { user } = useAuth();
+  const [genres, setGenres] = useState<GenreItem[]>([]);
+
+  useEffect(() => {
+    fetchGenres();
+  }, []);
+
+  const fetchGenres = async () => {
+    try {
+      const { data: genresData, error: genresError } = await supabase
+        .from("genres")
+        .select("id, name, slug, icon, gradient_start, gradient_end")
+        .order("name");
+
+      if (genresError) {
+        console.log("Genres table not found, using fallback genres");
+        // Fallback to hardcoded genres with counts from novels table
+        const fallbackGenres: GenreItem[] = [
+          { id: "1", slug: "romance", name: "Romance", icon: "heart", gradient: GradientColors.romance.colors, count: novels.filter(n => n.genre.toLowerCase() === "romance").length },
+          { id: "2", slug: "fantasy", name: "Fantasy", icon: "star", gradient: GradientColors.fantasy.colors, count: novels.filter(n => n.genre.toLowerCase() === "fantasy").length },
+          { id: "3", slug: "thriller", name: "Thriller", icon: "zap", gradient: GradientColors.thriller.colors, count: novels.filter(n => n.genre.toLowerCase() === "thriller").length },
+          { id: "4", slug: "mystery", name: "Mystery", icon: "search", gradient: GradientColors.mystery.colors, count: novels.filter(n => n.genre.toLowerCase() === "mystery").length },
+          { id: "5", slug: "sci-fi", name: "Sci-Fi", icon: "cpu", gradient: GradientColors.sciFi.colors, count: novels.filter(n => n.genre.toLowerCase() === "sci-fi").length },
+        ];
+        setGenres(fallbackGenres);
+        return;
+      }
+
+      if (!genresData || genresData.length === 0) {
+        setGenres([]);
+        return;
+      }
+
+      // Get counts for each genre
+      const { data: countsData } = await supabase
+        .from("novel_genres")
+        .select("genre_id");
+
+      const countMap: Record<number, number> = {};
+      if (countsData) {
+        countsData.forEach((item: any) => {
+          countMap[item.genre_id] = (countMap[item.genre_id] || 0) + 1;
+        });
+      }
+
+      const mappedGenres: GenreItem[] = genresData.map((g: any) => ({
+        id: g.id.toString(),
+        slug: g.slug,
+        name: g.name,
+        icon: g.icon || "star",
+        gradient: [g.gradient_start || "#6B7280", g.gradient_end || "#4B5563"] as readonly [string, string],
+        count: countMap[g.id] || 0,
+      }));
+
+      setGenres(mappedGenres);
+    } catch (error) {
+      console.error("Error fetching genres:", error);
+      // Fallback to hardcoded genres
+      const fallbackGenres: GenreItem[] = [
+        { id: "1", slug: "romance", name: "Romance", icon: "heart", gradient: GradientColors.romance.colors, count: novels.filter(n => n.genre.toLowerCase() === "romance").length },
+        { id: "2", slug: "fantasy", name: "Fantasy", icon: "star", gradient: GradientColors.fantasy.colors, count: novels.filter(n => n.genre.toLowerCase() === "fantasy").length },
+        { id: "3", slug: "thriller", name: "Thriller", icon: "zap", gradient: GradientColors.thriller.colors, count: novels.filter(n => n.genre.toLowerCase() === "thriller").length },
+        { id: "4", slug: "mystery", name: "Mystery", icon: "search", gradient: GradientColors.mystery.colors, count: novels.filter(n => n.genre.toLowerCase() === "mystery").length },
+        { id: "5", slug: "sci-fi", name: "Sci-Fi", icon: "cpu", gradient: GradientColors.sciFi.colors, count: novels.filter(n => n.genre.toLowerCase() === "sci-fi").length },
+      ];
+      setGenres(fallbackGenres);
+    }
+  };
 
   const goToSearch = () => {
     navigation.navigate("Search");
   };
-
-  const genres: GenreItem[] = [
-    { 
-      id: "Romance", 
-      name: "Romance", 
-      icon: <HeartIcon size={14} color="#FFFFFF" />,
-      gradient: GradientColors.romance.colors,
-      count: novels.filter(n => n.genre.toLowerCase() === "romance").length
-    },
-    { 
-      id: "Fantasy", 
-      name: "Fantasy", 
-      icon: <StarIcon size={14} color="#FFFFFF" />,
-      gradient: GradientColors.fantasy.colors,
-      count: novels.filter(n => n.genre.toLowerCase() === "fantasy").length
-    },
-    { 
-      id: "Thriller", 
-      name: "Thriller", 
-      icon: <ZapIcon size={14} color="#FFFFFF" />,
-      gradient: GradientColors.thriller.colors,
-      count: novels.filter(n => n.genre.toLowerCase() === "thriller").length
-    },
-    { 
-      id: "Mystery", 
-      name: "Mystery", 
-      icon: <SearchIcon size={14} color="#FFFFFF" />,
-      gradient: GradientColors.mystery.colors,
-      count: novels.filter(n => n.genre.toLowerCase() === "mystery").length
-    },
-    { 
-      id: "Sci-Fi", 
-      name: "Sci-Fi", 
-      icon: <BookOpenIcon size={14} color="#FFFFFF" />,
-      gradient: GradientColors.sciFi.colors,
-      count: novels.filter(n => n.genre.toLowerCase() === "sci-fi").length
-    },
-  ];
 
   // Sedang Trending: Sort by total_reads (most viewed)
   const trendingNovels = [...novels]
@@ -100,14 +144,14 @@ export default function BrowseHomeScreen() {
     });
   }, [navigation]);
 
-  const handleGenrePress = (genreId: string, genreName: string) => {
-    navigation.navigate("Genre", { genreId, genreName });
+  const handleGenrePress = (genreSlug: string, genreName: string) => {
+    navigation.navigate("Genre", { genreId: genreSlug, genreName });
   };
 
   const renderGenreCard = (genre: GenreItem) => (
     <Pressable
       key={genre.id}
-      onPress={() => handleGenrePress(genre.id, genre.name)}
+      onPress={() => handleGenrePress(genre.slug, genre.name)}
       style={({ pressed }) => [
         styles.genreCardWrapper,
         { opacity: pressed ? 0.8 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }
@@ -120,7 +164,7 @@ export default function BrowseHomeScreen() {
         style={styles.genreCard}
       >
         <View style={styles.genreIconContainer}>
-          {genre.icon}
+          {ICON_MAP[genre.icon] || <StarIcon size={14} color="#FFFFFF" />}
         </View>
         <View style={styles.genreInfo}>
           <ThemedText style={styles.genreName} lightColor="#FFFFFF" darkColor="#FFFFFF">

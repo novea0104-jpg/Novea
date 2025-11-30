@@ -14,9 +14,14 @@ import { useApp } from "@/contexts/AppContext";
 import { supabase } from "@/utils/supabase";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
 import { Spacing, Typography, BorderRadius, GradientColors } from "@/constants/theme";
-import type { Genre } from "@/types/models";
 
-const GENRES: Genre[] = ["Romance", "Fantasy", "Thriller", "Mystery", "Adventure"];
+interface GenreOption {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+const MAX_GENRES = 3;
 
 export default function EditNovelScreen() {
   const { theme } = useTheme();
@@ -29,7 +34,8 @@ export default function EditNovelScreen() {
   const novel = novels.find((n) => n.id === novelId);
 
   const [title, setTitle] = useState("");
-  const [genre, setGenre] = useState<Genre | "">("");
+  const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+  const [availableGenres, setAvailableGenres] = useState<GenreOption[]>([]);
   const [description, setDescription] = useState("");
   const [coverUri, setCoverUri] = useState<string>("");
   const [existingCoverUrl, setExistingCoverUrl] = useState<string>("");
@@ -37,15 +43,98 @@ export default function EditNovelScreen() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
+    fetchGenres();
+  }, []);
+
+  useEffect(() => {
     if (novel) {
       setTitle(novel.title);
-      setGenre(novel.genre as Genre);
       setDescription(novel.synopsis || "");
       if (novel.coverImage) {
         setExistingCoverUrl(novel.coverImage);
       }
+      fetchNovelGenres();
     }
-  }, [novel]);
+  }, [novel, availableGenres]);
+
+  const fetchGenres = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("genres")
+        .select("id, name, slug")
+        .order("name");
+      
+      if (error) {
+        console.log("Genres table not found, using fallback genres");
+        const fallbackGenres: GenreOption[] = [
+          { id: 1, name: "Romance", slug: "romance" },
+          { id: 2, name: "Fantasy", slug: "fantasy" },
+          { id: 3, name: "Thriller", slug: "thriller" },
+          { id: 4, name: "Mystery", slug: "mystery" },
+          { id: 5, name: "Sci-Fi", slug: "sci-fi" },
+          { id: 6, name: "Adventure", slug: "adventure" },
+          { id: 7, name: "Drama", slug: "drama" },
+          { id: 8, name: "Horror", slug: "horror" },
+          { id: 9, name: "Comedy", slug: "comedy" },
+          { id: 10, name: "Action", slug: "action" },
+        ];
+        setAvailableGenres(fallbackGenres);
+        return;
+      }
+      setAvailableGenres(data || []);
+    } catch (error) {
+      console.error("Error fetching genres:", error);
+      const fallbackGenres: GenreOption[] = [
+        { id: 1, name: "Romance", slug: "romance" },
+        { id: 2, name: "Fantasy", slug: "fantasy" },
+        { id: 3, name: "Thriller", slug: "thriller" },
+        { id: 4, name: "Mystery", slug: "mystery" },
+        { id: 5, name: "Sci-Fi", slug: "sci-fi" },
+      ];
+      setAvailableGenres(fallbackGenres);
+    }
+  };
+
+  const fetchNovelGenres = async () => {
+    if (!novelId || availableGenres.length === 0) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("novel_genres")
+        .select("genre_id, is_primary")
+        .eq("novel_id", parseInt(novelId))
+        .order("is_primary", { ascending: false });
+      
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        setSelectedGenres(data.map((d: any) => d.genre_id));
+      } else if (novel?.genre) {
+        // Fallback to legacy genre field
+        const matchingGenre = availableGenres.find(
+          g => g.name.toLowerCase() === novel.genre.toLowerCase()
+        );
+        if (matchingGenre) {
+          setSelectedGenres([matchingGenre.id]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching novel genres:", error);
+    }
+  };
+
+  const toggleGenre = (genreId: number) => {
+    setSelectedGenres(prev => {
+      if (prev.includes(genreId)) {
+        return prev.filter(id => id !== genreId);
+      }
+      if (prev.length >= MAX_GENRES) {
+        Alert.alert("Maksimal 3 Genre", "Kamu hanya bisa memilih maksimal 3 genre untuk setiap novel.");
+        return prev;
+      }
+      return [...prev, genreId];
+    });
+  };
 
   async function pickCoverImage() {
     try {
@@ -78,8 +167,8 @@ export default function EditNovelScreen() {
       return;
     }
 
-    if (!genre) {
-      Alert.alert("Error", "Pilih genre novel!");
+    if (selectedGenres.length === 0) {
+      Alert.alert("Error", "Pilih minimal 1 genre novel!");
       return;
     }
 
@@ -115,11 +204,14 @@ export default function EditNovelScreen() {
         setIsUploadingImage(false);
       }
 
+      // Get primary genre name for legacy field
+      const primaryGenre = availableGenres.find(g => g.id === selectedGenres[0]);
+
       const { error } = await supabase
         .from('novels')
         .update({
           title: title.trim(),
-          genre: genre,
+          genre: primaryGenre?.name || "Fantasy",
           description: description.trim(),
           cover_url: coverUrl,
           updated_at: new Date().toISOString(),
@@ -127,6 +219,26 @@ export default function EditNovelScreen() {
         .eq('id', novelIdNum);
 
       if (error) throw error;
+
+      // Delete existing genre relations and insert new ones
+      await supabase
+        .from('novel_genres')
+        .delete()
+        .eq('novel_id', novelIdNum);
+
+      const genreInserts = selectedGenres.map((genreId, index) => ({
+        novel_id: novelIdNum,
+        genre_id: genreId,
+        is_primary: index === 0,
+      }));
+
+      const { error: genreError } = await supabase
+        .from('novel_genres')
+        .insert(genreInserts);
+
+      if (genreError) {
+        console.error('Error inserting genres:', genreError);
+      }
 
       await refreshNovels();
 
@@ -211,36 +323,52 @@ export default function EditNovelScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Genre</ThemedText>
+            <ThemedText style={styles.label}>
+              Genre ({selectedGenres.length}/{MAX_GENRES})
+            </ThemedText>
+            <ThemedText style={[styles.genreHint, { color: theme.textMuted }]}>
+              Pilih 1-3 genre. Genre pertama akan menjadi genre utama.
+            </ThemedText>
             <View style={styles.genreGrid}>
-              {GENRES.map((g) => (
-                <Pressable
-                  key={g}
-                  onPress={() => setGenre(g)}
-                  style={[
-                    styles.genreChip,
-                    { backgroundColor: theme.backgroundSecondary },
-                    genre === g && styles.genreChipActive,
-                  ]}
-                >
-                  {genre === g && (
-                    <LinearGradient
-                      colors={GradientColors.purplePink.colors}
-                      start={GradientColors.purplePink.start}
-                      end={GradientColors.purplePink.end}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  )}
-                  <ThemedText
+              {availableGenres.map((g) => {
+                const isSelected = selectedGenres.includes(g.id);
+                const selectionIndex = selectedGenres.indexOf(g.id);
+                return (
+                  <Pressable
+                    key={g.id}
+                    onPress={() => toggleGenre(g.id)}
                     style={[
-                      styles.genreChipText,
-                      genre === g && { color: "#FFFFFF" },
+                      styles.genreChip,
+                      { backgroundColor: theme.backgroundSecondary },
+                      isSelected && styles.genreChipActive,
                     ]}
                   >
-                    {g}
-                  </ThemedText>
-                </Pressable>
-              ))}
+                    {isSelected ? (
+                      <LinearGradient
+                        colors={selectionIndex === 0 ? GradientColors.purplePink.colors : ["#6B7280", "#4B5563"]}
+                        start={GradientColors.purplePink.start}
+                        end={GradientColors.purplePink.end}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    ) : null}
+                    <View style={styles.genreChipContent}>
+                      {isSelected ? (
+                        <View style={styles.genreOrderBadge}>
+                          <ThemedText style={styles.genreOrderText}>{selectionIndex + 1}</ThemedText>
+                        </View>
+                      ) : null}
+                      <ThemedText
+                        style={[
+                          styles.genreChipText,
+                          isSelected && { color: "#FFFFFF" },
+                        ]}
+                      >
+                        {g.name}
+                      </ThemedText>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
 
@@ -369,6 +497,28 @@ const styles = StyleSheet.create({
   genreChipText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  genreHint: {
+    fontSize: 12,
+    marginBottom: Spacing.xs,
+  },
+  genreChipContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  genreOrderBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  genreOrderText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   submitButton: {
     borderRadius: BorderRadius.full,
