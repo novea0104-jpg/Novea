@@ -1,5 +1,6 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { View, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BrowseStackNavigator from "@/navigation/BrowseStackNavigator";
@@ -16,6 +17,8 @@ import { LibraryIcon } from "@/components/icons/LibraryIcon";
 import { TimelineIcon } from "@/components/icons/TimelineIcon";
 import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
 import { ProfileIcon } from "@/components/icons/ProfileIcon";
+
+const HIDDEN_TAB_BAR_ROUTES = ['Messages', 'MessageThread', 'NewMessage'];
 
 const PROTECTED_TABS = ["LibraryTab", "NotificationsTab", "ProfileTab"];
 
@@ -39,6 +42,13 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
     NotificationsTab: "Masuk untuk melihat notifikasi",
     ProfileTab: "Masuk untuk mengakses profil kamu",
   };
+
+  const currentRoute = state.routes[state.index];
+  const focusedRouteName = getFocusedRouteNameFromRoute(currentRoute);
+  
+  if (focusedRouteName && HIDDEN_TAB_BAR_ROUTES.includes(focusedRouteName)) {
+    return null;
+  }
 
   return (
     <View 
