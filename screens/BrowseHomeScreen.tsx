@@ -139,6 +139,11 @@ export default function BrowseHomeScreen() {
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 20);
 
+  // Novel Gratis: Filter novels with free chapters (coinPerChapter = 0)
+  const freeNovels = [...novels]
+    .filter((n) => n.coinPerChapter === 0)
+    .slice(0, 10);
+
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
@@ -221,6 +226,26 @@ export default function BrowseHomeScreen() {
     </View>
   );
 
+  const renderFreeNovelsSection = () => (
+    <View style={styles.section}>
+      <ThemedText style={styles.sectionTitle}>Novel Gratis</ThemedText>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.carousel}
+      >
+        {freeNovels.map((novel) => (
+          <NovelCard
+            key={novel.id}
+            novel={novel}
+            onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+            showMetadata={false}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+
   return (
     <ThemedView style={styles.container}>
       <View style={[styles.customHeader, { paddingTop: insets.top + Spacing.sm }]}>
@@ -259,6 +284,7 @@ export default function BrowseHomeScreen() {
       >
         {renderNovelSection("Sedang Trending", trendingNovels, "large")}
         {renderNovelSection("Novel Terbaru", newReleases)}
+        {renderEditorsPickSection()}
 
         <View style={styles.section}>
           <ThemedText style={styles.sectionTitle}>Jelajahi Genre</ThemedText>
@@ -271,7 +297,7 @@ export default function BrowseHomeScreen() {
           </ScrollView>
         </View>
 
-        {renderEditorsPickSection()}
+        {renderFreeNovelsSection()}
       </ScrollView>
     </ThemedView>
   );

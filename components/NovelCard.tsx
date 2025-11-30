@@ -12,9 +12,10 @@ interface NovelCardProps {
   novel: Novel;
   onPress: () => void;
   variant?: "large" | "medium" | "small";
+  showMetadata?: boolean;
 }
 
-export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps) {
+export function NovelCard({ novel, onPress, variant = "medium", showMetadata = true }: NovelCardProps) {
   const { theme } = useTheme();
 
   const placeholderImages = {
@@ -53,28 +54,30 @@ export function NovelCard({ novel, onPress, variant = "medium" }: NovelCardProps
           {novel.author}
         </ThemedText>
         
-        <View style={styles.metadataRow}>
-          <View style={styles.metadataItem}>
-            <BookOpenIcon size={10} color={theme.textSecondary} />
-            <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
-              {novel.totalChapters}
-            </ThemedText>
+        {showMetadata ? (
+          <View style={styles.metadataRow}>
+            <View style={styles.metadataItem}>
+              <BookOpenIcon size={10} color={theme.textSecondary} />
+              <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
+                {novel.totalChapters}
+              </ThemedText>
+            </View>
+            
+            <View style={styles.metadataItem}>
+              <EyeIcon size={10} color={theme.textSecondary} />
+              <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
+                {novel.followers > 1000 ? `${(novel.followers / 1000).toFixed(1)}k` : novel.followers}
+              </ThemedText>
+            </View>
+            
+            <View style={styles.metadataItem}>
+              <StarIcon size={10} color="#FCD34D" filled />
+              <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
+                {novel.rating.toFixed(1)}
+              </ThemedText>
+            </View>
           </View>
-          
-          <View style={styles.metadataItem}>
-            <EyeIcon size={10} color={theme.textSecondary} />
-            <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
-              {novel.followers > 1000 ? `${(novel.followers / 1000).toFixed(1)}k` : novel.followers}
-            </ThemedText>
-          </View>
-          
-          <View style={styles.metadataItem}>
-            <StarIcon size={10} color="#FCD34D" filled />
-            <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
-              {novel.rating.toFixed(1)}
-            </ThemedText>
-          </View>
-        </View>
+        ) : null}
       </View>
     </Pressable>
   );
