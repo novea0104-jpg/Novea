@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   },
   headerBanner: {
     marginHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xl,
     marginBottom: Spacing.lg,
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,

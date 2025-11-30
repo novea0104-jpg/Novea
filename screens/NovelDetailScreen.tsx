@@ -20,7 +20,7 @@ import { RoleBadge, UserRole } from "@/components/RoleBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount } from "@/utils/supabase";
+import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -72,6 +72,9 @@ export default function NovelDetailScreen() {
   // Like and follow counts
   const [likeCount, setLikeCount] = useState(0);
   const [followCount, setFollowCount] = useState(0);
+  
+  // Novel genres
+  const [novelGenres, setNovelGenres] = useState<{ id: number; name: string; slug: string; gradient_start: string; gradient_end: string }[]>([]);
 
   // Navigate to user profile
   const navigateToUserProfile = (userId: number | string) => {
@@ -94,7 +97,74 @@ export default function NovelDetailScreen() {
     loadChapters();
     loadReviews();
     loadCounts();
+    loadNovelGenres();
   }, [novelId]);
+  
+  async function loadNovelGenres() {
+    try {
+      // Fetch genres for this novel from novel_genres junction table
+      const { data: novelGenreData, error } = await supabase
+        .from("novel_genres")
+        .select("genre_id, is_primary, genres(id, name, slug, gradient_start, gradient_end)")
+        .eq("novel_id", parseInt(novelId))
+        .order("is_primary", { ascending: false });
+      
+      if (error) {
+        console.log("Novel genres table not found, using fallback");
+        // Fallback to single genre from novel object
+        if (novel?.genre) {
+          const fallbackGenres = getFallbackGenreColors(novel.genre);
+          setNovelGenres([fallbackGenres]);
+        }
+        return;
+      }
+      
+      if (novelGenreData && novelGenreData.length > 0) {
+        const genres = novelGenreData
+          .filter((ng: any) => ng.genres)
+          .map((ng: any) => ({
+            id: ng.genres.id,
+            name: ng.genres.name,
+            slug: ng.genres.slug,
+            gradient_start: ng.genres.gradient_start || "#6B7280",
+            gradient_end: ng.genres.gradient_end || "#4B5563",
+          }));
+        setNovelGenres(genres);
+      } else if (novel?.genre) {
+        // Fallback to single genre
+        const fallbackGenres = getFallbackGenreColors(novel.genre);
+        setNovelGenres([fallbackGenres]);
+      }
+    } catch (error) {
+      console.error("Error loading novel genres:", error);
+      if (novel?.genre) {
+        const fallbackGenres = getFallbackGenreColors(novel.genre);
+        setNovelGenres([fallbackGenres]);
+      }
+    }
+  }
+  
+  function getFallbackGenreColors(genreName: string) {
+    const genreColors: Record<string, { gradient_start: string; gradient_end: string }> = {
+      romance: { gradient_start: "#EC4899", gradient_end: "#8B5CF6" },
+      fantasy: { gradient_start: "#8B5CF6", gradient_end: "#3B82F6" },
+      thriller: { gradient_start: "#DC2626", gradient_end: "#000000" },
+      mystery: { gradient_start: "#14B8A6", gradient_end: "#000000" },
+      "sci-fi": { gradient_start: "#06B6D4", gradient_end: "#8B5CF6" },
+      adventure: { gradient_start: "#F59E0B", gradient_end: "#D97706" },
+      drama: { gradient_start: "#6366F1", gradient_end: "#8B5CF6" },
+      horror: { gradient_start: "#991B1B", gradient_end: "#000000" },
+      comedy: { gradient_start: "#FBBF24", gradient_end: "#F59E0B" },
+      action: { gradient_start: "#EF4444", gradient_end: "#DC2626" },
+    };
+    const colors = genreColors[genreName.toLowerCase()] || { gradient_start: "#6B7280", gradient_end: "#4B5563" };
+    return {
+      id: 0,
+      name: genreName,
+      slug: genreName.toLowerCase(),
+      ...colors,
+    };
+  }
   
   async function loadCounts() {
     const [likes, follows] = await Promise.all([
@@ -294,12 +364,28 @@ export default function NovelDetailScreen() {
                 {ratingStats.averageRating.toFixed(1)} ({ratingStats.totalReviews.toLocaleString()})
               </ThemedText>
             </View>
-            <View style={[styles.tag, { backgroundColor: theme.primary }]}>
-              <ThemedText style={styles.tagText}>{novel.genre}</ThemedText>
-            </View>
             <View style={[styles.tag, { backgroundColor: theme.backgroundSecondary }]}>
               <ThemedText style={styles.tagText}>{novel.status}</ThemedText>
             </View>
+          </View>
+          <View style={styles.genreTags}>
+            {novelGenres.length > 0 ? (
+              novelGenres.map((genre, index) => (
+                <LinearGradient
+                  key={genre.id || index}
+                  colors={[genre.gradient_start, genre.gradient_end]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.genreTag}
+                >
+                  <ThemedText style={styles.genreTagText}>{genre.name}</ThemedText>
+                </LinearGradient>
+              ))
+            ) : (
+              <View style={[styles.tag, { backgroundColor: theme.primary }]}>
+                <ThemedText style={styles.tagText}>{novel.genre}</ThemedText>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -684,6 +770,22 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  genreTags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+  },
+  genreTag: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+  },
+  genreTagText: {
+    fontSize: 11,
     fontWeight: "600",
     color: "#FFFFFF",
   },
