@@ -159,7 +159,7 @@ export default function SearchScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <View style={[styles.searchBar, { paddingTop: insets.top, backgroundColor: theme.backgroundRoot }]}>
+      <View style={[styles.searchBar, { paddingTop: insets.top + 60, backgroundColor: theme.backgroundRoot }]}>
         <View style={[styles.searchInput, { backgroundColor: theme.backgroundDefault }]}>
           <SearchIcon size={20} color={theme.textSecondary} />
           <TextInput
