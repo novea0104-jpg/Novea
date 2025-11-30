@@ -171,6 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ratingCount: ratingCountsMap.get(apiNovel.id) || 0,
         synopsis: apiNovel.description,
         coinPerChapter: apiNovel.chapter_price,
+        freeChapters: apiNovel.free_chapters,
         totalChapters: apiNovel.total_chapters,
         followers: viewCountsMap.get(apiNovel.id) || 0,
         isFollowing: followingSet.has(apiNovel.id.toString()),

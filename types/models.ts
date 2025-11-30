@@ -27,6 +27,7 @@ export interface Novel {
   ratingCount: number;
   synopsis: string;
   coinPerChapter: number;
+  freeChapters: number;
   totalChapters: number;
   followers: number;
   isFollowing?: boolean;

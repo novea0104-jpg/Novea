@@ -139,9 +139,9 @@ export default function BrowseHomeScreen() {
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 20);
 
-  // Novel Gratis: Filter novels with free chapters (coinPerChapter = 0)
+  // Novel Gratis: Filter novels that have free chapters
   const freeNovels = [...novels]
-    .filter((n) => n.coinPerChapter === 0)
+    .filter((n) => n.freeChapters > 0)
     .slice(0, 10);
 
   React.useLayoutEffect(() => {
@@ -353,7 +353,8 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
+    paddingBottom: 120,
+    flexGrow: 1,
   },
   section: {
     marginBottom: Spacing.xl,
