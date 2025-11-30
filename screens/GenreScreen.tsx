@@ -94,7 +94,7 @@ export default function GenreScreen() {
         console.log("Falling back to legacy genre column");
         const { data: novelsData, error: novelsError } = await supabase
           .from("novels")
-          .select("id, title, description, genre, status, cover_url, created_at, updated_at, author_id, total_chapters, total_reads, rating, total_reviews")
+          .select("id, title, description, genre, status, cover_url, created_at, updated_at, author_id, total_chapters, total_reads, rating")
           .ilike("genre", genreId)
           .order("total_reads", { ascending: false });
 
@@ -132,8 +132,8 @@ export default function GenreScreen() {
           totalChapters: novel.total_chapters || 0,
           followers: novel.total_reads || 0,
           rating: novel.rating || 0,
-          ratingCount: novel.total_reviews || 0,
-          totalReviews: novel.total_reviews || 0,
+          ratingCount: 0,
+          totalReviews: 0,
           coinPerChapter: 0,
           createdAt: new Date(novel.created_at),
           updatedAt: new Date(novel.updated_at),
@@ -162,7 +162,7 @@ export default function GenreScreen() {
       // Get novels data
       const { data: novelsData, error: novelsError } = await supabase
         .from("novels")
-        .select("id, title, description, genre, status, cover_url, created_at, updated_at, author_id, total_chapters, total_reads, rating, total_reviews")
+        .select("id, title, description, genre, status, cover_url, created_at, updated_at, author_id, total_chapters, total_reads, rating")
         .in("id", novelIds)
         .order("total_reads", { ascending: false });
 
@@ -202,8 +202,8 @@ export default function GenreScreen() {
         totalChapters: novel.total_chapters || 0,
         followers: novel.total_reads || 0,
         rating: novel.rating || 0,
-        ratingCount: novel.total_reviews || 0,
-        totalReviews: novel.total_reviews || 0,
+        ratingCount: 0,
+        totalReviews: 0,
         coinPerChapter: 0,
         createdAt: new Date(novel.created_at),
         updatedAt: new Date(novel.updated_at),
