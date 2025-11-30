@@ -60,6 +60,8 @@ export default function BrowseHomeScreen() {
         <View style={styles.headerRight}>
           <Pressable
             onPress={() => navigation.navigate("Search")}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            android_ripple={{ color: theme.textMuted, borderless: true, radius: 20 }}
             style={({ pressed }) => [
               styles.iconButton,
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
@@ -68,6 +70,8 @@ export default function BrowseHomeScreen() {
             <SearchIcon size={20} color={theme.text} />
           </Pressable>
           <Pressable
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            android_ripple={{ color: theme.textMuted, borderless: true, radius: 20 }}
             style={({ pressed }) => [
               styles.iconButton,
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1, marginLeft: Spacing.sm },
@@ -156,9 +160,9 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.xs,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.sm,
     alignItems: "center",
     justifyContent: "center",
   },
