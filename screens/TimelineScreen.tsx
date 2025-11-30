@@ -41,7 +41,7 @@ export default function TimelineScreen() {
 
   const loadPosts = useCallback(async () => {
     try {
-      const data = await getTimelineFeed(user?.id || null);
+      const data = await getTimelineFeed(user?.id ? parseInt(user.id) : null);
       setPosts(data);
     } catch (error) {
       console.error("Error loading posts:", error);
@@ -54,11 +54,11 @@ export default function TimelineScreen() {
   const loadUserNovels = useCallback(async () => {
     if (!user?.id) return;
     try {
-      const novels = await getUserNovels(user.id);
+      const novels = await getUserNovels(parseInt(user.id));
       setUserNovels(novels.map(n => ({
         id: n.id,
         title: n.title,
-        coverUrl: n.coverUrl,
+        coverUrl: n.coverUrl || undefined,
       })));
     } catch (error) {
       console.error("Error loading user novels:", error);
@@ -80,7 +80,7 @@ export default function TimelineScreen() {
   const handleCreatePost = async (content: string, imageUrl?: string, novelId?: number): Promise<boolean> => {
     if (!user?.id) return false;
     
-    const result = await createTimelinePost(user.id, content, imageUrl, novelId);
+    const result = await createTimelinePost(parseInt(user.id), content, imageUrl, novelId);
     if (result.success) {
       loadPosts();
       return true;
@@ -91,7 +91,7 @@ export default function TimelineScreen() {
   const handleLikePress = async (postId: number) => {
     if (!user?.id || isGuest) return;
     
-    const result = await toggleTimelinePostLike(user.id, postId);
+    const result = await toggleTimelinePostLike(parseInt(user.id), postId);
     if (!result.error) {
       setPosts(prevPosts =>
         prevPosts.map(post =>
@@ -106,7 +106,7 @@ export default function TimelineScreen() {
   const handleDeletePost = async (postId: number) => {
     if (!user?.id) return;
     
-    const result = await deleteTimelinePost(postId, user.id);
+    const result = await deleteTimelinePost(postId, parseInt(user.id));
     if (result.success) {
       setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
     }
@@ -119,7 +119,7 @@ export default function TimelineScreen() {
   const handleAddComment = async (postId: number, content: string, parentId?: number) => {
     if (!user?.id) return false;
     
-    const result = await addTimelinePostComment(postId, user.id, content, parentId);
+    const result = await addTimelinePostComment(parseInt(user.id), postId, content, parentId);
     if (result) {
       setPosts(prevPosts =>
         prevPosts.map(post =>
@@ -136,7 +136,7 @@ export default function TimelineScreen() {
   const handleDeleteComment = async (postId: number, commentId: number) => {
     if (!user?.id) return;
     
-    const result = await deleteTimelinePostComment(commentId, user.id);
+    const result = await deleteTimelinePostComment(commentId, parseInt(user.id), postId);
     if (result.success) {
       setPosts(prevPosts =>
         prevPosts.map(post =>
@@ -151,7 +151,7 @@ export default function TimelineScreen() {
   const renderPost = ({ item }: { item: TimelinePost }) => (
     <PostCard
       post={item}
-      currentUserId={user?.id}
+      currentUserId={user?.id ? parseInt(user.id) : undefined}
       onLikePress={handleLikePress}
       onDeletePress={handleDeletePost}
       onFetchComments={handleFetchComments}

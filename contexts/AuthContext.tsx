@@ -5,6 +5,7 @@ import { User } from "@/types/models";
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isGuest: boolean;
   isAuthPromptVisible: boolean;
   authPromptMessage: string;
   login: (email: string, password: string) => Promise<void>;
@@ -60,16 +61,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function loadUserProfile(email: string) {
+  async function loadUserProfile(email: string, retryCount = 0) {
     try {
       // Fetch user profile from users table using email
+      // Use maybeSingle() to avoid error when profile doesn't exist yet (during signup)
       const { data: userProfile, error } = await supabase
         .from('users')
         .select('*')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      // Handle case where profile doesn't exist yet (during signup flow)
+      if (error) {
+        // PGRST116 means no rows found - this is expected during signup
+        if (error.code === 'PGRST116') {
+          console.log("Profile not found yet, might be during signup...");
+          return;
+        }
+        throw error;
+      }
 
       if (userProfile) {
         const user: User = {
@@ -83,6 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           bio: userProfile.bio || undefined,
         };
         setUser(user);
+      } else if (retryCount < 3) {
+        // Profile not found, might be creating - retry after a short delay
+        console.log(`Profile not found, retrying... (${retryCount + 1}/3)`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return loadUserProfile(email, retryCount + 1);
       }
     } catch (error) {
       console.error("Error loading user profile:", error);
@@ -291,11 +306,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAuthPromptVisible(false);
   }
 
+  const isGuest = !user;
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isLoading,
+        isGuest,
         isAuthPromptVisible,
         authPromptMessage,
         login,
