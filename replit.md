@@ -34,7 +34,7 @@ Preferred communication style: Simple, everyday language.
 
 **Authentication:** Supabase Auth (email/password) manages user sessions and integrates with the `users` table for profiles.
 
-**Database Schema:** Consists of 7 tables: `users`, `novels`, `chapters`, `reading_progress`, `unlocked_chapters`, `following_novels`, and `coin_transactions`.
+**Database Schema:** Consists of 10 tables: `users`, `novels`, `chapters`, `reading_progress`, `unlocked_chapters`, `following_novels`, `coin_transactions`, `timeline_posts`, `timeline_post_likes`, and `timeline_post_comments`.
 
 **Role System:** A 5-tier hierarchy (Pembaca, Penulis, Editor, Co Admin, Super Admin) with role-based badges and secure upgrade mechanisms.
 
@@ -102,3 +102,42 @@ Preferred communication style: Simple, everyday language.
 - **ESLint**: Code quality
 - **Prettier**: Code formatting
 - **Babel module resolver**: Path aliasing
+
+## Timeline (Linimasa) Feature
+
+**Overview:** Instagram-style social timeline where users can share posts about their reading/writing journey.
+
+**Feed Logic:** Posts are shown from: (1) Admin roles (Super Admin, Co Admin, Editor) - visible to all users, (2) Followed authors (Penulis) - shown based on user's following relationships, (3) User's own posts.
+
+**Components:**
+- `PostCard.tsx`: Displays individual timeline posts with author info, content, like/comment counts, and actions
+- `CreatePostModal.tsx`: Modal for creating new posts with text and optional novel tagging
+- `TimelineScreen.tsx`: Main timeline feed with pull-to-refresh and FAB for creating posts
+
+**Database Tables (need Supabase migration):**
+- `timeline_posts`: id, user_id, content, image_url, novel_id, likes_count, comments_count, created_at, updated_at
+- `timeline_post_likes`: id, user_id, post_id, created_at (UNIQUE user_id, post_id)
+- `timeline_post_comments`: id, user_id, post_id, parent_id, content, created_at
+
+**SQL Functions:**
+- `increment_post_likes(post_id)`: Increments likes_count
+- `decrement_post_likes(post_id)`: Decrements likes_count (minimum 0)
+
+## EAS Build Configuration
+
+**File:** `eas.json` - Configured for Android APK builds via EAS Build.
+
+**Build Profiles:**
+- `preview`: Development APK for testing (buildType: apk)
+- `production`: Production AAB for Play Store (buildType: app-bundle)
+
+**Build Commands:**
+1. Install EAS CLI globally: `npm install -g eas-cli`
+2. Login to Expo: `eas login`
+3. Build preview APK: `eas build --platform android --profile preview`
+4. Build production AAB: `eas build --platform android --profile production`
+
+**Requirements:**
+- Expo account (create at expo.dev)
+- EAS CLI installed globally
+- Valid bundle identifier in app.json
