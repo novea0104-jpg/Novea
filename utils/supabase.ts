@@ -1675,7 +1675,7 @@ export async function searchUsersForPM(
 // ============================================
 
 export interface AdminUser {
-  id: number;
+  id: string;
   email: string;
   name: string;
   avatarUrl: string | null;
@@ -1754,9 +1754,9 @@ export async function getAllUsersAdmin(
 
 // Ban/unban user (for Co Admin and Super Admin)
 export async function toggleUserBan(
-  adminId: number,
+  adminId: string,
   adminRole: string,
-  userId: number,
+  userId: string,
   ban: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -1797,7 +1797,7 @@ export async function toggleUserBan(
 // Delete user (Super Admin only)
 export async function deleteUser(
   adminRole: string,
-  userId: number
+  userId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Only Super Admin can delete users
@@ -1836,9 +1836,9 @@ export async function deleteUser(
 
 // Change user role
 export async function changeUserRole(
-  adminId: number,
+  adminId: string,
   adminRole: string,
-  userId: number,
+  userId: string,
   newRole: string
 ): Promise<{ success: boolean; error?: string }> {
   try {

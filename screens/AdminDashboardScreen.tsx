@@ -27,7 +27,7 @@ import { XIcon } from "@/components/icons/XIcon";
 import { BarChartIcon } from "@/components/icons/BarChartIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { Spacing, Typography, BorderRadius, Colors } from "@/constants/theme";
+import { Spacing, Typography, BorderRadius } from "@/constants/theme";
 import { RoleBadge } from "@/components/RoleBadge";
 import { Avatar } from "@/components/Avatar";
 import {
@@ -288,9 +288,10 @@ export default function AdminDashboardScreen() {
     return (
       <Pressable
         onPress={() => handleTabChange(tab)}
+        android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: false }}
         style={[
           styles.tabButton,
-          { backgroundColor: isActive ? Colors.primary : theme.backgroundSecondary },
+          { backgroundColor: isActive ? theme.primary : theme.backgroundSecondary },
         ]}
       >
         {icon}
@@ -304,32 +305,32 @@ export default function AdminDashboardScreen() {
   const renderStatsTab = () => (
     <View style={styles.statsGrid}>
       <Card elevation={1} style={styles.statCard}>
-        <UsersIcon size={28} color={Colors.primary} />
+        <UsersIcon size={28} color={theme.primary} />
         <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalUsers || 0}</ThemedText>
         <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total User</ThemedText>
         {(stats?.newUsersToday ?? 0) > 0 ? (
-          <ThemedText style={[styles.statBadge, { color: Colors.success }]}>
+          <ThemedText style={[styles.statBadge, { color: theme.success }]}>
             +{stats?.newUsersToday} hari ini
           </ThemedText>
         ) : null}
       </Card>
       <Card elevation={1} style={styles.statCard}>
-        <BookIcon size={28} color={Colors.secondary} />
+        <BookIcon size={28} color={theme.secondary} />
         <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalNovels || 0}</ThemedText>
         <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Novel</ThemedText>
         {(stats?.newNovelsToday ?? 0) > 0 ? (
-          <ThemedText style={[styles.statBadge, { color: Colors.success }]}>
+          <ThemedText style={[styles.statBadge, { color: theme.success }]}>
             +{stats?.newNovelsToday} hari ini
           </ThemedText>
         ) : null}
       </Card>
       <Card elevation={1} style={styles.statCard}>
-        <BarChartIcon size={28} color={Colors.tertiary} />
+        <BarChartIcon size={28} color={theme.link} />
         <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalChapters || 0}</ThemedText>
         <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Chapter</ThemedText>
       </Card>
       <Card elevation={1} style={styles.statCard}>
-        <EyeIcon size={28} color={Colors.info} />
+        <EyeIcon size={28} color={theme.tabIconSelected} />
         <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalViews || 0}</ThemedText>
         <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Views</ThemedText>
       </Card>
@@ -337,7 +338,10 @@ export default function AdminDashboardScreen() {
   );
 
   const renderUserItem = ({ item }: { item: AdminUser }) => (
-    <Pressable onPress={() => { setSelectedUser(item); setShowUserModal(true); }}>
+    <Pressable 
+      onPress={() => { setSelectedUser(item); setShowUserModal(true); }}
+      android_ripple={{ color: 'rgba(255,255,255,0.1)', borderless: false }}
+    >
       <Card elevation={1} style={styles.listItem}>
         <Avatar
           uri={item.avatarUrl}
@@ -355,11 +359,11 @@ export default function AdminDashboardScreen() {
             {item.email}
           </ThemedText>
           <View style={styles.listItemMeta}>
-            <ThemedText style={[styles.coinText, { color: Colors.warning }]}>
+            <ThemedText style={[styles.coinText, { color: theme.warning }]}>
               {item.coinBalance} koin
             </ThemedText>
             {item.isBanned ? (
-              <View style={[styles.bannedBadge, { backgroundColor: Colors.error }]}>
+              <View style={[styles.bannedBadge, { backgroundColor: theme.error }]}>
                 <ThemedText style={styles.bannedText}>BANNED</ThemedText>
               </View>
             ) : null}
@@ -370,7 +374,10 @@ export default function AdminDashboardScreen() {
   );
 
   const renderNovelItem = ({ item }: { item: AdminNovel }) => (
-    <Pressable onPress={() => { setSelectedNovel(item); setShowNovelModal(true); }}>
+    <Pressable 
+      onPress={() => { setSelectedNovel(item); setShowNovelModal(true); }}
+      android_ripple={{ color: 'rgba(255,255,255,0.1)', borderless: false }}
+    >
       <Card elevation={1} style={styles.listItem}>
         <View style={[styles.novelIcon, { backgroundColor: theme.backgroundSecondary }]}>
           <BookIcon size={24} color={theme.text} />
@@ -399,7 +406,7 @@ export default function AdminDashboardScreen() {
               {item.chaptersCount} chapter
             </ThemedText>
             {!item.isPublished ? (
-              <View style={[styles.unpublishedBadge, { backgroundColor: Colors.warning }]}>
+              <View style={[styles.unpublishedBadge, { backgroundColor: theme.warning }]}>
                 <ThemedText style={styles.unpublishedText}>Draft</ThemedText>
               </View>
             ) : null}
@@ -422,10 +429,13 @@ export default function AdminDashboardScreen() {
         onRequestClose={() => setShowUserModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
             <View style={styles.modalHeader}>
               <ThemedText style={Typography.h3}>Detail User</ThemedText>
-              <Pressable onPress={() => setShowUserModal(false)}>
+              <Pressable 
+                onPress={() => setShowUserModal(false)}
+                android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
+              >
                 <XIcon size={24} color={theme.text} />
               </Pressable>
             </View>
@@ -446,13 +456,13 @@ export default function AdminDashboardScreen() {
                 </View>
                 <View style={styles.detailRow}>
                   <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>Koin</ThemedText>
-                  <ThemedText style={[styles.detailValue, { color: Colors.warning }]}>
+                  <ThemedText style={[styles.detailValue, { color: theme.warning }]}>
                     {selectedUser.coinBalance}
                   </ThemedText>
                 </View>
                 <View style={styles.detailRow}>
                   <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>Status</ThemedText>
-                  <ThemedText style={[styles.detailValue, { color: selectedUser.isBanned ? Colors.error : Colors.success }]}>
+                  <ThemedText style={[styles.detailValue, { color: selectedUser.isBanned ? theme.error : theme.success }]}>
                     {selectedUser.isBanned ? 'Banned' : 'Aktif'}
                   </ThemedText>
                 </View>
@@ -469,11 +479,12 @@ export default function AdminDashboardScreen() {
                         key={role.value}
                         onPress={() => handleChangeRole(selectedUser.id, role.value)}
                         disabled={actionLoading || selectedUser.role === role.value}
+                        android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: false }}
                         style={[
                           styles.roleOption,
                           {
                             backgroundColor: selectedUser.role === role.value
-                              ? Colors.primary
+                              ? theme.primary
                               : theme.backgroundSecondary,
                             opacity: selectedUser.role === role.value ? 0.6 : 1,
                           },
@@ -493,20 +504,20 @@ export default function AdminDashboardScreen() {
 
                   <View style={styles.actionButtons}>
                     <Button
-                      title={selectedUser.isBanned ? 'Unban User' : 'Ban User'}
                       onPress={() => handleBanUser(selectedUser.id, !selectedUser.isBanned)}
-                      variant={selectedUser.isBanned ? 'secondary' : 'primary'}
-                      loading={actionLoading}
+                      disabled={actionLoading}
                       style={styles.actionButton}
-                    />
+                    >
+                      {selectedUser.isBanned ? 'Unban User' : 'Ban User'}
+                    </Button>
                     {isSuperAdmin ? (
                       <Button
-                        title="Hapus User"
                         onPress={() => handleDeleteUser(selectedUser.id)}
-                        variant="danger"
-                        loading={actionLoading}
+                        disabled={actionLoading}
                         style={styles.actionButton}
-                      />
+                      >
+                        Hapus User
+                      </Button>
                     ) : null}
                   </View>
                 </View>
@@ -535,10 +546,13 @@ export default function AdminDashboardScreen() {
         onRequestClose={() => setShowNovelModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
             <View style={styles.modalHeader}>
               <ThemedText style={Typography.h3}>Detail Novel</ThemedText>
-              <Pressable onPress={() => setShowNovelModal(false)}>
+              <Pressable 
+                onPress={() => setShowNovelModal(false)}
+                android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
+              >
                 <XIcon size={24} color={theme.text} />
               </Pressable>
             </View>
@@ -575,7 +589,7 @@ export default function AdminDashboardScreen() {
                 </View>
                 <View style={styles.detailRow}>
                   <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>Published</ThemedText>
-                  <ThemedText style={[styles.detailValue, { color: selectedNovel.isPublished ? Colors.success : Colors.warning }]}>
+                  <ThemedText style={[styles.detailValue, { color: selectedNovel.isPublished ? theme.success : theme.warning }]}>
                     {selectedNovel.isPublished ? 'Ya' : 'Tidak'}
                   </ThemedText>
                 </View>
@@ -583,19 +597,19 @@ export default function AdminDashboardScreen() {
 
               <View style={styles.actionButtons}>
                 <Button
-                  title={selectedNovel.isPublished ? 'Unpublish' : 'Publish'}
                   onPress={() => handleTogglePublish(selectedNovel.id, selectedNovel.isPublished)}
-                  variant="secondary"
-                  loading={actionLoading}
+                  disabled={actionLoading}
                   style={styles.actionButton}
-                />
+                >
+                  {selectedNovel.isPublished ? 'Unpublish' : 'Publish'}
+                </Button>
                 <Button
-                  title="Hapus Novel"
                   onPress={() => handleDeleteNovel(selectedNovel.id)}
-                  variant="danger"
-                  loading={actionLoading}
+                  disabled={actionLoading}
                   style={styles.actionButton}
-                />
+                >
+                  Hapus Novel
+                </Button>
               </View>
             </ScrollView>
           </View>
@@ -607,7 +621,7 @@ export default function AdminDashboardScreen() {
   if (loading) {
     return (
       <ThemedView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={theme.primary} />
         <ThemedText style={[styles.loadingText, { color: theme.textSecondary }]}>
           Memuat dashboard...
         </ThemedText>
@@ -626,7 +640,7 @@ export default function AdminDashboardScreen() {
       {activeTab === 'stats' ? (
         <ScreenScrollView
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
           }
         >
           <View style={styles.content}>
@@ -659,14 +673,14 @@ export default function AdminDashboardScreen() {
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.listContent}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
             }
             onEndReached={handleLoadMoreUsers}
             onEndReachedThreshold={0.5}
             ListFooterComponent={
               loadingMore ? (
                 <View style={styles.loadingMore}>
-                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <ActivityIndicator size="small" color={theme.primary} />
                 </View>
               ) : null
             }
@@ -700,14 +714,14 @@ export default function AdminDashboardScreen() {
             keyExtractor={(item) => item.id.toString()}
             contentContainerStyle={styles.listContent}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
             }
             onEndReached={handleLoadMoreNovels}
             onEndReachedThreshold={0.5}
             ListFooterComponent={
               loadingMore ? (
                 <View style={styles.loadingMore}>
-                  <ActivityIndicator size="small" color={Colors.primary} />
+                  <ActivityIndicator size="small" color={theme.primary} />
                 </View>
               ) : null
             }
