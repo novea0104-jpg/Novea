@@ -18,14 +18,14 @@ import { TimelinePost, TimelinePostComment } from "@/utils/supabase";
 interface PostCardProps {
   post: TimelinePost;
   currentUserId?: number;
-  onLike: (postId: number) => void;
-  onComment: (postId: number, content: string, parentId?: number) => void;
-  onDelete: (postId: number) => void;
+  onLikePress: (postId: number) => void;
+  onAddComment: (postId: number, content: string, parentId?: number) => Promise<boolean>;
+  onDeletePress: (postId: number) => void;
+  onDeleteComment?: (postId: number, commentId: number) => void;
   onUserPress?: (userId: number) => void;
   onNovelPress?: (novelId: number) => void;
-  comments?: TimelinePostComment[];
-  isLoadingComments?: boolean;
-  onLoadComments?: (postId: number) => void;
+  onFetchComments?: (postId: number) => Promise<TimelinePostComment[]>;
+  isGuest?: boolean;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -152,49 +152,73 @@ function CommentItem({
 export function PostCard({
   post,
   currentUserId,
-  onLike,
-  onComment,
-  onDelete,
+  onLikePress,
+  onAddComment,
+  onDeletePress,
+  onDeleteComment,
   onUserPress,
   onNovelPress,
-  comments = [],
-  isLoadingComments = false,
-  onLoadComments,
+  onFetchComments,
+  isGuest = false,
 }: PostCardProps) {
   const { theme } = useTheme();
   const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<TimelinePostComment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [isLiking, setIsLiking] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   const isOwner = currentUserId === post.userId;
   const canDelete = isOwner;
 
   const handleLike = async () => {
-    if (isLiking) return;
+    if (isLiking || isGuest) return;
     setIsLiking(true);
-    await onLike(post.id);
+    await onLikePress(post.id);
     setIsLiking(false);
   };
 
+  const loadComments = async () => {
+    if (!onFetchComments) return;
+    setIsLoadingComments(true);
+    try {
+      const fetchedComments = await onFetchComments(post.id);
+      setComments(fetchedComments);
+    } catch (error) {
+      console.error("Error loading comments:", error);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
   const handleToggleComments = () => {
-    if (!showComments && onLoadComments) {
-      onLoadComments(post.id);
+    if (!showComments) {
+      loadComments();
     }
     setShowComments(!showComments);
   };
 
-  const handleSubmitComment = () => {
-    if (!commentText.trim()) return;
-    onComment(post.id, commentText.trim(), replyingTo || undefined);
-    setCommentText("");
-    setReplyingTo(null);
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || isSubmittingComment || isGuest) return;
+    setIsSubmittingComment(true);
+    try {
+      const success = await onAddComment(post.id, commentText.trim(), replyingTo || undefined);
+      if (success) {
+        setCommentText("");
+        setReplyingTo(null);
+        loadComments();
+      }
+    } finally {
+      setIsSubmittingComment(false);
+    }
   };
 
   const handleDelete = () => {
     if (Platform.OS === "web") {
       if (confirm("Yakin ingin menghapus postingan ini?")) {
-        onDelete(post.id);
+        onDeletePress(post.id);
       }
     } else {
       Alert.alert(
@@ -202,19 +226,24 @@ export function PostCard({
         "Yakin ingin menghapus postingan ini?",
         [
           { text: "Batal", style: "cancel" },
-          { text: "Hapus", style: "destructive", onPress: () => onDelete(post.id) },
+          { text: "Hapus", style: "destructive", onPress: () => onDeletePress(post.id) },
         ]
       );
     }
   };
 
   const handleReply = (parentId: number) => {
+    if (isGuest) return;
     setReplyingTo(parentId);
   };
 
   const handleDeleteComment = (commentId: number) => {
+    if (!onDeleteComment) return;
+    
     if (Platform.OS === "web") {
       if (confirm("Yakin ingin menghapus komentar ini?")) {
+        onDeleteComment(post.id, commentId);
+        loadComments();
       }
     } else {
       Alert.alert(
@@ -222,7 +251,14 @@ export function PostCard({
         "Yakin ingin menghapus komentar ini?",
         [
           { text: "Batal", style: "cancel" },
-          { text: "Hapus", style: "destructive" },
+          { 
+            text: "Hapus", 
+            style: "destructive", 
+            onPress: () => {
+              onDeleteComment(post.id, commentId);
+              loadComments();
+            } 
+          },
         ]
       );
     }
