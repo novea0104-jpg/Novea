@@ -1669,3 +1669,402 @@ export async function searchUsersForPM(
     return [];
   }
 }
+
+// ============================================
+// ADMIN FUNCTIONS
+// ============================================
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  name: string;
+  avatarUrl: string | null;
+  role: string;
+  coinBalance: number;
+  isBanned: boolean;
+  createdAt: string;
+  novelsCount?: number;
+}
+
+export interface AdminNovel {
+  id: number;
+  title: string;
+  authorId: number;
+  authorName: string;
+  genre: string;
+  status: string;
+  isPublished: boolean;
+  viewCount: number;
+  likesCount: number;
+  chaptersCount: number;
+  createdAt: string;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalNovels: number;
+  totalChapters: number;
+  totalViews: number;
+  newUsersToday: number;
+  newNovelsToday: number;
+}
+
+// Get all users for admin
+export async function getAllUsersAdmin(
+  adminRole: string,
+  page: number = 1,
+  limit: number = 20,
+  searchQuery?: string
+): Promise<{ users: AdminUser[]; total: number }> {
+  try {
+    let query = supabase
+      .from('users')
+      .select('*', { count: 'exact' });
+
+    if (searchQuery && searchQuery.trim()) {
+      query = query.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
+    }
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
+
+    if (error) {
+      console.error('Error fetching users:', error);
+      return { users: [], total: 0 };
+    }
+
+    const users: AdminUser[] = (data || []).map((u: any) => ({
+      id: u.id,
+      email: u.email,
+      name: u.name,
+      avatarUrl: u.avatar_url,
+      role: u.role || 'pembaca',
+      coinBalance: u.coin_balance || 0,
+      isBanned: u.is_banned || false,
+      createdAt: u.created_at,
+    }));
+
+    return { users, total: count || 0 };
+  } catch (error) {
+    console.error('Error in getAllUsersAdmin:', error);
+    return { users: [], total: 0 };
+  }
+}
+
+// Ban/unban user (for Co Admin and Super Admin)
+export async function toggleUserBan(
+  adminId: number,
+  adminRole: string,
+  userId: number,
+  ban: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Check if admin has permission
+    if (adminRole !== 'super_admin' && adminRole !== 'co_admin') {
+      return { success: false, error: 'Tidak memiliki izin' };
+    }
+
+    // Get target user's role
+    const { data: targetUser } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    // Co Admin cannot ban Super Admin
+    if (adminRole === 'co_admin' && targetUser?.role === 'super_admin') {
+      return { success: false, error: 'Tidak dapat melakukan aksi pada Super Admin' };
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update({ is_banned: ban })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error toggling user ban:', error);
+      return { success: false, error: 'Gagal mengubah status ban' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in toggleUserBan:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Delete user (Super Admin only)
+export async function deleteUser(
+  adminRole: string,
+  userId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Only Super Admin can delete users
+    if (adminRole !== 'super_admin') {
+      return { success: false, error: 'Hanya Super Admin yang dapat menghapus user' };
+    }
+
+    // Get target user's role
+    const { data: targetUser } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    // Cannot delete Super Admin
+    if (targetUser?.role === 'super_admin') {
+      return { success: false, error: 'Tidak dapat menghapus Super Admin' };
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error deleting user:', error);
+      return { success: false, error: 'Gagal menghapus user' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in deleteUser:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Change user role
+export async function changeUserRole(
+  adminId: number,
+  adminRole: string,
+  userId: number,
+  newRole: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Check permissions
+    if (adminRole !== 'super_admin' && adminRole !== 'co_admin') {
+      return { success: false, error: 'Tidak memiliki izin' };
+    }
+
+    // Get target user's current role
+    const { data: targetUser } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    // Co Admin restrictions
+    if (adminRole === 'co_admin') {
+      // Cannot modify Super Admin
+      if (targetUser?.role === 'super_admin') {
+        return { success: false, error: 'Tidak dapat mengubah role Super Admin' };
+      }
+      // Cannot promote to Super Admin
+      if (newRole === 'super_admin') {
+        return { success: false, error: 'Tidak dapat mempromosikan ke Super Admin' };
+      }
+      // Cannot promote to Co Admin (only Super Admin can)
+      if (newRole === 'co_admin') {
+        return { success: false, error: 'Hanya Super Admin yang dapat mempromosikan ke Co Admin' };
+      }
+    }
+
+    const { error } = await supabase
+      .from('users')
+      .update({ role: newRole })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error changing user role:', error);
+      return { success: false, error: 'Gagal mengubah role' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in changeUserRole:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Get all novels for admin
+export async function getAllNovelsAdmin(
+  page: number = 1,
+  limit: number = 20,
+  searchQuery?: string
+): Promise<{ novels: AdminNovel[]; total: number }> {
+  try {
+    let query = supabase
+      .from('novels')
+      .select(`
+        *,
+        author:author_id (id, name)
+      `, { count: 'exact' });
+
+    if (searchQuery && searchQuery.trim()) {
+      query = query.ilike('title', `%${searchQuery}%`);
+    }
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range((page - 1) * limit, page * limit - 1);
+
+    if (error) {
+      console.error('Error fetching novels:', error);
+      return { novels: [], total: 0 };
+    }
+
+    // Get chapter counts and view counts for each novel
+    const novels: AdminNovel[] = await Promise.all(
+      (data || []).map(async (n: any) => {
+        const { count: chaptersCount } = await supabase
+          .from('chapters')
+          .select('*', { count: 'exact', head: true })
+          .eq('novel_id', n.id);
+
+        const { count: viewCount } = await supabase
+          .from('novel_views')
+          .select('*', { count: 'exact', head: true })
+          .eq('novel_id', n.id);
+
+        const { count: likesCount } = await supabase
+          .from('novel_likes')
+          .select('*', { count: 'exact', head: true })
+          .eq('novel_id', n.id);
+
+        return {
+          id: n.id,
+          title: n.title,
+          authorId: n.author_id,
+          authorName: n.author?.name || 'Unknown',
+          genre: n.genre || '',
+          status: n.status || 'ongoing',
+          isPublished: n.is_published !== false,
+          viewCount: viewCount || 0,
+          likesCount: likesCount || 0,
+          chaptersCount: chaptersCount || 0,
+          createdAt: n.created_at,
+        };
+      })
+    );
+
+    return { novels, total: count || 0 };
+  } catch (error) {
+    console.error('Error in getAllNovelsAdmin:', error);
+    return { novels: [], total: 0 };
+  }
+}
+
+// Delete novel (for all admin roles)
+export async function deleteNovelAdmin(
+  novelId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Delete all chapters first
+    await supabase
+      .from('chapters')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete novel genres
+    await supabase
+      .from('novel_genres')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete novel views
+    await supabase
+      .from('novel_views')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete novel likes
+    await supabase
+      .from('novel_likes')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete the novel
+    const { error } = await supabase
+      .from('novels')
+      .delete()
+      .eq('id', novelId);
+
+    if (error) {
+      console.error('Error deleting novel:', error);
+      return { success: false, error: 'Gagal menghapus novel' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in deleteNovelAdmin:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Toggle novel publish status
+export async function toggleNovelPublishAdmin(
+  novelId: number,
+  isPublished: boolean
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('novels')
+      .update({ is_published: isPublished })
+      .eq('id', novelId);
+
+    if (error) {
+      console.error('Error toggling novel publish:', error);
+      return { success: false, error: 'Gagal mengubah status novel' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in toggleNovelPublishAdmin:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Get admin dashboard stats
+export async function getAdminStats(): Promise<AdminStats> {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString();
+
+    const [
+      { count: totalUsers },
+      { count: totalNovels },
+      { count: totalChapters },
+      { count: totalViews },
+      { count: newUsersToday },
+      { count: newNovelsToday },
+    ] = await Promise.all([
+      supabase.from('users').select('*', { count: 'exact', head: true }),
+      supabase.from('novels').select('*', { count: 'exact', head: true }),
+      supabase.from('chapters').select('*', { count: 'exact', head: true }),
+      supabase.from('novel_views').select('*', { count: 'exact', head: true }),
+      supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
+      supabase.from('novels').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
+    ]);
+
+    return {
+      totalUsers: totalUsers || 0,
+      totalNovels: totalNovels || 0,
+      totalChapters: totalChapters || 0,
+      totalViews: totalViews || 0,
+      newUsersToday: newUsersToday || 0,
+      newNovelsToday: newNovelsToday || 0,
+    };
+  } catch (error) {
+    console.error('Error in getAdminStats:', error);
+    return {
+      totalUsers: 0,
+      totalNovels: 0,
+      totalChapters: 0,
+      totalViews: 0,
+      newUsersToday: 0,
+      newNovelsToday: 0,
+    };
+  }
+}
