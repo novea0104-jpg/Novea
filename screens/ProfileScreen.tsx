@@ -21,7 +21,7 @@ import { CoinIcon } from "@/components/icons/CoinIcon";
 import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserFollowStats, FollowStats } from "@/utils/supabase";
+import { getUserFollowStats, FollowStats, getTotalUnreadCount } from "@/utils/supabase";
 import { formatRupiah, NOVOIN_TO_RUPIAH } from "@/constants/pricing";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
@@ -34,6 +34,7 @@ export default function ProfileScreen() {
   const { user, logout, upgradeToWriter, showAuthPrompt } = useAuth();
   const [followStats, setFollowStats] = useState<FollowStats>({ followersCount: 0, followingCount: 0 });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -50,10 +51,18 @@ export default function ProfileScreen() {
     }
   }, [user]);
 
+  const loadUnreadCount = useCallback(async () => {
+    if (user) {
+      const count = await getTotalUnreadCount(parseInt(user.id));
+      setUnreadMessageCount(count);
+    }
+  }, [user]);
+
   useFocusEffect(
     useCallback(() => {
       loadFollowStats();
-    }, [loadFollowStats])
+      loadUnreadCount();
+    }, [loadFollowStats, loadUnreadCount])
   );
 
   if (!user) {
@@ -87,7 +96,7 @@ export default function ProfileScreen() {
     message: <MessageSquareIcon size={20} color={theme.text} />,
   };
 
-  const MenuItem = ({ icon, title, subtitle, onPress }: any) => (
+  const MenuItem = ({ icon, title, subtitle, onPress, badge }: any) => (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
@@ -108,7 +117,16 @@ export default function ProfileScreen() {
           ) : null}
         </View>
       </View>
-      <ChevronRightIcon size={18} color={theme.textMuted} />
+      <View style={styles.menuItemRight}>
+        {badge && badge > 0 ? (
+          <View style={styles.menuBadge}>
+            <ThemedText style={styles.menuBadgeText}>
+              {badge > 99 ? '99+' : badge}
+            </ThemedText>
+          </View>
+        ) : null}
+        <ChevronRightIcon size={18} color={theme.textMuted} />
+      </View>
     </Pressable>
   );
 
@@ -210,6 +228,7 @@ export default function ProfileScreen() {
           title="Pesan Pribadi"
           subtitle="Chat dengan pengguna lain"
           onPress={() => navigation.navigate("Messages")}
+          badge={unreadMessageCount}
         />
         {isAdmin ? (
           <MenuItem
@@ -392,6 +411,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.md,
     flex: 1,
+  },
+  menuItemRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  menuBadge: {
+    backgroundColor: "#EF4444",
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 6,
+  },
+  menuBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
   },
   menuItemText: {
     fontSize: 16,
