@@ -208,7 +208,7 @@ export default function MessageThreadScreen() {
         />
       )}
       
-      <View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary, paddingBottom: tabBarHeight + Spacing.sm }]}>
+      <View style={[styles.inputContainer, { backgroundColor: theme.backgroundSecondary, marginBottom: tabBarHeight, paddingBottom: Spacing.md }]}>
         <TextInput
           style={[styles.textInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
           placeholder="Tulis pesan..."
