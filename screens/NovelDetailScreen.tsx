@@ -314,8 +314,9 @@ export default function NovelDetailScreen() {
   const placeholderImage = coverImageSource[novel.genre.toLowerCase() as keyof typeof coverImageSource];
   const imageSource = novel.coverImage ? { uri: novel.coverImage } : placeholderImage;
 
-  const renderChapter = ({ item }: any) => {
+  const renderChapter = ({ item, index }: { item: Chapter; index: number }) => {
     const isUnlocked = item.isFree || unlockedChapters.has(item.id);
+    const chapterNumber = item.chapterNumber || (index + 1);
     
     return (
       <Pressable
@@ -325,16 +326,21 @@ export default function NovelDetailScreen() {
           { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
         ]}
       >
-        <View style={styles.chapterLeft}>
-          <ThemedText style={styles.chapterTitle}>{item.title}</ThemedText>
+        <View style={[styles.chapterNumberBox, { backgroundColor: theme.backgroundSecondary }]}>
+          <ThemedText style={[styles.chapterNumberText, { color: theme.primary }]}>
+            {chapterNumber}
+          </ThemedText>
+        </View>
+        <View style={styles.chapterMiddle}>
+          <ThemedText style={styles.chapterTitle} numberOfLines={1}>{item.title}</ThemedText>
           <ThemedText style={[styles.chapterMeta, { color: theme.textSecondary }]}>
-            {item.wordCount.toLocaleString()} words
+            {item.wordCount.toLocaleString()} kata
           </ThemedText>
         </View>
         <View style={styles.chapterRight}>
           {item.isFree ? (
             <View style={[styles.freeBadge, { backgroundColor: theme.success }]}>
-              <ThemedText style={styles.freeBadgeText}>FREE</ThemedText>
+              <ThemedText style={styles.freeBadgeText}>GRATIS</ThemedText>
             </View>
           ) : isUnlocked ? (
             <CheckCircleIcon size={20} color={theme.success} />
@@ -841,23 +847,34 @@ const styles = StyleSheet.create({
   chapterItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     padding: Spacing.md,
-    borderRadius: BorderRadius.sm,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.md,
   },
-  chapterLeft: {
+  chapterNumberBox: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.sm,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  chapterNumberText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  chapterMiddle: {
     flex: 1,
   },
   chapterTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    marginBottom: Spacing.xs,
+    marginBottom: 2,
   },
   chapterMeta: {
     fontSize: 12,
   },
   chapterRight: {
-    marginLeft: Spacing.md,
+    marginLeft: Spacing.sm,
   },
   freeBadge: {
     paddingHorizontal: Spacing.sm,

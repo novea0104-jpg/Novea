@@ -55,7 +55,12 @@ export default function ReaderScreen() {
         </View>
       ),
       headerLeft: () => (
-        <Pressable onPress={() => navigation.goBack()} style={styles.headerButton}>
+        <Pressable 
+          onPress={() => navigation.goBack()} 
+          style={styles.headerButton}
+          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
+        >
           <XIcon size={24} color={theme.text} />
         </Pressable>
       ),
