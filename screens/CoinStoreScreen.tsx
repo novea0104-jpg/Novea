@@ -257,7 +257,7 @@ export default function CoinStoreScreen() {
         onRequestClose={() => setIsPaymentModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <ThemedView style={[styles.modalContent, { backgroundColor: theme.background }]}>
+          <ThemedView style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
             <View style={styles.modalHeader}>
               <ThemedText style={[Typography.h2, { fontWeight: "700" }]}>Pilih Pembayaran</ThemedText>
               <Pressable onPress={() => setIsPaymentModalVisible(false)}>
@@ -301,13 +301,12 @@ export default function CoinStoreScreen() {
                   </ThemedText>
                 </View>
 
-                <Button
-                  variant="secondary"
+                <Pressable
                   onPress={handleSimulatePurchase}
-                  style={{ marginTop: Spacing.sm }}
+                  style={[styles.simulateButton, { backgroundColor: theme.backgroundSecondary }]}
                 >
-                  Test: Simulasi Pembelian Sukses
-                </Button>
+                  <ThemedText style={styles.simulateButtonText}>Test: Simulasi Pembelian Sukses</ThemedText>
+                </Pressable>
               </>
             )}
           </ThemedView>
@@ -493,6 +492,16 @@ const styles = StyleSheet.create({
   },
   sandboxNoteText: {
     fontSize: 12,
+    fontWeight: "600",
+  },
+  simulateButton: {
+    marginTop: Spacing.sm,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+  },
+  simulateButtonText: {
+    fontSize: 14,
     fontWeight: "600",
   },
 });

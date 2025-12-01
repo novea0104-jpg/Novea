@@ -21,7 +21,7 @@ localPort = 34971
 externalPort = 8099
 
 [[ports]]
-localPort = 35811
+localPort = 35657
 externalPort = 8081
 
 [[ports]]
@@ -139,6 +139,3 @@ value = "0"
 [userenv]
 
 [userenv.shared]
-EXPO_PUBLIC_DUITKU_MERCHANT_CODE = "${DUITKU_MERCHANT_CODE}"
-EXPO_PUBLIC_DUITKU_SANDBOX = "true"
-EXPO_PUBLIC_DUITKU_API_KEY = "${DUITKU_API_KEY}"

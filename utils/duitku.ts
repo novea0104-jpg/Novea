@@ -1,14 +1,13 @@
 import * as Crypto from 'expo-crypto';
-import Constants from 'expo-constants';
 
 const DUITKU_SANDBOX_URL = 'https://sandbox.duitku.com/webapi/api/merchant';
 const DUITKU_PRODUCTION_URL = 'https://passport.duitku.com/webapi/api/merchant';
 
-const IS_SANDBOX = Constants.expoConfig?.extra?.duitkuSandbox !== 'false';
+const IS_SANDBOX = process.env.EXPO_PUBLIC_DUITKU_SANDBOX !== 'false';
 const BASE_URL = IS_SANDBOX ? DUITKU_SANDBOX_URL : DUITKU_PRODUCTION_URL;
 
-const MERCHANT_CODE = Constants.expoConfig?.extra?.duitkuMerchantCode || '';
-const API_KEY = Constants.expoConfig?.extra?.duitkuApiKey || '';
+const MERCHANT_CODE = process.env.EXPO_PUBLIC_DUITKU_MERCHANT_CODE || '';
+const API_KEY = process.env.EXPO_PUBLIC_DUITKU_API_KEY || '';
 
 export interface PaymentMethod {
   paymentMethod: string;
