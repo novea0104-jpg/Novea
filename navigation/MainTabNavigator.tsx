@@ -18,7 +18,7 @@ import { TimelineIcon } from "@/components/icons/TimelineIcon";
 import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
 import { ProfileIcon } from "@/components/icons/ProfileIcon";
 
-const HIDDEN_TAB_BAR_ROUTES = ['Messages', 'MessageThread', 'NewMessage'];
+const HIDDEN_TAB_BAR_ROUTES = ['Messages', 'MessageThread', 'NewMessage', 'NovelDetail', 'Reader'];
 
 const PROTECTED_TABS = ["LibraryTab", "NotificationsTab", "ProfileTab"];
 
