@@ -283,20 +283,25 @@ export default function AdminDashboardScreen() {
     setLoadingMore(false);
   };
 
-  const renderTabButton = (tab: TabType, label: string, icon: React.ReactNode) => {
+  const renderTabButton = (tab: TabType, label: string, IconComponent: React.ComponentType<{ size: number; color: string }>) => {
     if (tab === 'users' && !canManageUsers) return null;
     const isActive = activeTab === tab;
+    const iconColor = isActive ? '#FFFFFF' : theme.text;
+    const bgColor = isActive ? theme.primary : theme.backgroundSecondary;
+    const textColor = isActive ? '#FFFFFF' : theme.text;
+    
     return (
       <Pressable
+        key={`tab-${tab}-${isActive}`}
         onPress={() => handleTabChange(tab)}
         android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: false }}
         style={[
           styles.tabButton,
-          { backgroundColor: isActive ? theme.primary : theme.backgroundSecondary },
+          { backgroundColor: bgColor },
         ]}
       >
-        {icon}
-        <ThemedText style={[styles.tabLabel, { color: isActive ? '#FFFFFF' : theme.text }]}>
+        <IconComponent size={18} color={iconColor} />
+        <ThemedText style={[styles.tabLabel, { color: textColor }]}>
           {label}
         </ThemedText>
       </Pressable>
@@ -633,9 +638,9 @@ export default function AdminDashboardScreen() {
   return (
     <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.md }]}>
       <View style={styles.tabsContainer}>
-        {renderTabButton('stats', 'Statistik', <BarChartIcon size={18} color={activeTab === 'stats' ? '#FFFFFF' : theme.text} />)}
-        {renderTabButton('users', 'Users', <UsersIcon size={18} color={activeTab === 'users' ? '#FFFFFF' : theme.text} />)}
-        {renderTabButton('novels', 'Novel', <BookIcon size={18} color={activeTab === 'novels' ? '#FFFFFF' : theme.text} />)}
+        {renderTabButton('stats', 'Statistik', BarChartIcon)}
+        {renderTabButton('users', 'Users', UsersIcon)}
+        {renderTabButton('novels', 'Novel', BookIcon)}
       </View>
 
       {activeTab === 'stats' ? (
