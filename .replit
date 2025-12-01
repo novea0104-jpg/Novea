@@ -135,3 +135,10 @@ value = "1"
 path = "/*"
 name = "expo-sfv-version"
 value = "0"
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_DUITKU_MERCHANT_CODE = "${DUITKU_MERCHANT_CODE}"
+EXPO_PUBLIC_DUITKU_SANDBOX = "true"
+EXPO_PUBLIC_DUITKU_API_KEY = "${DUITKU_API_KEY}"
