@@ -5,7 +5,6 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { XIcon } from "@/components/icons/XIcon";
-import { SettingsIcon } from "@/components/icons/SettingsIcon";
 import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
 import { LockIcon } from "@/components/icons/LockIcon";
 import { ChevronLeftIcon } from "@/components/icons/ChevronLeftIcon";
@@ -60,11 +59,7 @@ export default function ReaderScreen() {
           <XIcon size={24} color={theme.text} />
         </Pressable>
       ),
-      headerRight: () => (
-        <Pressable onPress={() => {}} style={styles.headerButton}>
-          <SettingsIcon size={24} color={theme.text} />
-        </Pressable>
-      ),
+      headerRight: () => null,
     });
   }, [navigation, showHeader, theme, novel, currentChapter]);
 
