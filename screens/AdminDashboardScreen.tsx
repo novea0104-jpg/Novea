@@ -53,7 +53,6 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: 'penulis', label: 'Penulis' },
   { value: 'editor', label: 'Editor' },
   { value: 'co_admin', label: 'Co Admin' },
-  { value: 'super_admin', label: 'Super Admin' },
 ];
 
 export default function AdminDashboardScreen() {
@@ -263,9 +262,9 @@ export default function AdminDashboardScreen() {
   };
 
   const getAvailableRoles = (): typeof ROLE_OPTIONS => {
-    if (isSuperAdmin) return ROLE_OPTIONS;
+    if (isSuperAdmin) return ROLE_OPTIONS; // super_admin already removed from ROLE_OPTIONS
     if (isCoAdmin) {
-      return ROLE_OPTIONS.filter(r => r.value !== 'super_admin' && r.value !== 'co_admin');
+      return ROLE_OPTIONS.filter(r => r.value !== 'co_admin'); // Co Admin can't promote to Co Admin
     }
     return [];
   };

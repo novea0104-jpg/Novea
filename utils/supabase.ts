@@ -1709,7 +1709,7 @@ export interface AdminStats {
   newNovelsToday: number;
 }
 
-// Get all users for admin
+// Get all users for admin (excludes super_admin users for security)
 export async function getAllUsersAdmin(
   adminRole: string,
   page: number = 1,
@@ -1719,7 +1719,8 @@ export async function getAllUsersAdmin(
   try {
     let query = supabase
       .from('users')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact' })
+      .neq('role', 'super_admin'); // Hide super_admin users from list
 
     if (searchQuery && searchQuery.trim()) {
       query = query.or(`name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
@@ -1847,6 +1848,11 @@ export async function changeUserRole(
       return { success: false, error: 'Tidak memiliki izin' };
     }
 
+    // SECURITY: No one can promote to super_admin via admin dashboard
+    if (newRole === 'super_admin') {
+      return { success: false, error: 'Promosi ke Super Admin tidak diizinkan' };
+    }
+
     // Get target user's current role
     const { data: targetUser } = await supabase
       .from('users')
@@ -1854,16 +1860,13 @@ export async function changeUserRole(
       .eq('id', userId)
       .single();
 
+    // Cannot modify Super Admin users
+    if (targetUser?.role === 'super_admin') {
+      return { success: false, error: 'Tidak dapat mengubah role Super Admin' };
+    }
+
     // Co Admin restrictions
     if (adminRole === 'co_admin') {
-      // Cannot modify Super Admin
-      if (targetUser?.role === 'super_admin') {
-        return { success: false, error: 'Tidak dapat mengubah role Super Admin' };
-      }
-      // Cannot promote to Super Admin
-      if (newRole === 'super_admin') {
-        return { success: false, error: 'Tidak dapat mempromosikan ke Super Admin' };
-      }
       // Cannot promote to Co Admin (only Super Admin can)
       if (newRole === 'co_admin') {
         return { success: false, error: 'Hanya Super Admin yang dapat mempromosikan ke Co Admin' };
