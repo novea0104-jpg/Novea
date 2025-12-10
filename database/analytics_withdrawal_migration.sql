@@ -229,9 +229,70 @@ SELECT
 FROM generate_series(1, 50);
 */
 
--- 12. Grant permissions (adjust as needed)
--- These are handled by RLS policies
+-- 12. Enable RLS and create policies
+ALTER TABLE writer_bank_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE withdrawal_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE writer_earnings ENABLE ROW LEVEL SECURITY;
+
+-- Policies for writer_bank_accounts
+CREATE POLICY "Users can view their own bank accounts"
+ON writer_bank_accounts FOR SELECT
+USING (auth.uid()::text = user_id::text OR user_id = (SELECT id FROM users WHERE email = auth.email()));
+
+CREATE POLICY "Users can insert their own bank accounts"
+ON writer_bank_accounts FOR INSERT
+WITH CHECK (user_id = (SELECT id FROM users WHERE email = auth.email()));
+
+CREATE POLICY "Users can update their own bank accounts"
+ON writer_bank_accounts FOR UPDATE
+USING (user_id = (SELECT id FROM users WHERE email = auth.email()));
+
+CREATE POLICY "Users can delete their own bank accounts"
+ON writer_bank_accounts FOR DELETE
+USING (user_id = (SELECT id FROM users WHERE email = auth.email()));
+
+-- Policies for withdrawal_requests
+CREATE POLICY "Users can view their own withdrawals"
+ON withdrawal_requests FOR SELECT
+USING (user_id = (SELECT id FROM users WHERE email = auth.email()));
+
+CREATE POLICY "Users can insert their own withdrawal requests"
+ON withdrawal_requests FOR INSERT
+WITH CHECK (user_id = (SELECT id FROM users WHERE email = auth.email()));
+
+-- Admins can update withdrawal requests (for processing)
+CREATE POLICY "Admins can update withdrawal requests"
+ON withdrawal_requests FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM users 
+    WHERE email = auth.email() 
+    AND role IN ('super_admin', 'co_admin')
+  )
+);
+
+-- Policies for writer_earnings (read-only for writers)
+CREATE POLICY "Writers can view their own earnings"
+ON writer_earnings FOR SELECT
+USING (writer_id = (SELECT id FROM users WHERE email = auth.email()));
+
+-- System can insert earnings (via service role)
+CREATE POLICY "Service role can insert earnings"
+ON writer_earnings FOR INSERT
+WITH CHECK (true);
 
 -- =====================================================
--- Run this migration in Supabase Dashboard SQL Editor
+-- IMPORTANT NOTES:
+-- 
+-- 1. Currency Units:
+--    - writer_balance, total_earnings stored in NOVOIN (coins)
+--    - 1 Novoin = Rp 1,000 (conversion happens in frontend)
+--    - withdrawal amounts in this table are in RUPIAH
+--
+-- 2. For development/testing, you may disable RLS temporarily:
+--    ALTER TABLE writer_bank_accounts DISABLE ROW LEVEL SECURITY;
+--    ALTER TABLE withdrawal_requests DISABLE ROW LEVEL SECURITY;
+--    ALTER TABLE writer_earnings DISABLE ROW LEVEL SECURITY;
+--
+-- 3. Run this migration in Supabase Dashboard SQL Editor
 -- =====================================================

@@ -54,7 +54,8 @@ export interface WithdrawalRequest {
   paidAt: string | null;
 }
 
-export function useWriterAnalytics(writerId: number | undefined) {
+export function useWriterAnalytics(writerIdInput: string | number | undefined) {
+  const writerId = writerIdInput ? (typeof writerIdInput === 'string' ? parseInt(writerIdInput, 10) : writerIdInput) : undefined;
   const [stats, setStats] = useState<WriterStats | null>(null);
   const [dailyEarnings, setDailyEarnings] = useState<DailyEarning[]>([]);
   const [novelPerformance, setNovelPerformance] = useState<NovelPerformance[]>([]);
@@ -336,19 +337,22 @@ export function useWriterAnalytics(writerId: number | undefined) {
     }
   };
 
-  const requestWithdrawal = async (bankAccountId: number, amount: number) => {
+  const requestWithdrawal = async (bankAccountId: number, amountRupiah: number) => {
     if (!writerId) return { success: false, error: "User tidak ditemukan" };
     
     const minWithdrawal = 50000;
     const fee = 2500;
     
-    if (amount < minWithdrawal) {
+    if (amountRupiah < minWithdrawal) {
       return { success: false, error: `Minimal withdrawal Rp ${minWithdrawal.toLocaleString()}` };
     }
 
-    if (!stats || amount > stats.availableBalance) {
+    const availableRupiah = (stats?.availableBalance || 0) * 1000;
+    if (!stats || amountRupiah > availableRupiah) {
       return { success: false, error: "Saldo tidak mencukupi" };
     }
+    
+    const amountNovoin = Math.floor(amountRupiah / 1000);
 
     try {
       const { data, error } = await supabase
@@ -356,9 +360,9 @@ export function useWriterAnalytics(writerId: number | undefined) {
         .insert({
           user_id: writerId,
           bank_account_id: bankAccountId,
-          amount: amount,
+          amount: amountRupiah,
           fee: fee,
-          net_amount: amount - fee,
+          net_amount: amountRupiah - fee,
         })
         .select()
         .single();
@@ -368,7 +372,7 @@ export function useWriterAnalytics(writerId: number | undefined) {
       await supabase
         .from("users")
         .update({
-          pending_withdrawal: (stats?.pendingWithdrawal || 0) + amount,
+          pending_withdrawal: (stats?.pendingWithdrawal || 0) + amountNovoin,
         })
         .eq("id", writerId);
 

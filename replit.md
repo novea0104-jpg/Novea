@@ -105,9 +105,29 @@ ON CONFLICT (novel_id, genre_id) DO NOTHING;
 
 ### Monetization System
 
-**Coin Economy:** A virtual currency system for unlocking chapters. Features include free chapters, paid chapters, coin packages, and balance tracking.
+**Coin Economy:** A virtual currency system (Novoin) for unlocking chapters. 1 Novoin = Rp 1,000. Features include free chapters, paid chapters, coin packages, and balance tracking.
 
-**Writer Monetization:** Writers have access to a dashboard for novel performance, chapter management, publishing tools, and analytics.
+**Payment Gateway:** Duitku integration for Indonesian local payments (QRIS, Virtual Account, E-Wallet). Currently in sandbox mode for testing.
+
+**Writer Monetization:** Writers have access to a comprehensive dashboard:
+- **Sales Analytics:** Professional charts showing daily/weekly earnings, per-novel performance, and revenue trends using react-native-svg
+- **Withdrawal System:** Bank account management and withdrawal requests with status tracking
+- **Revenue Split:** 70% to writer, 30% to platform
+
+### Writer Analytics & Withdrawal System
+
+**Database Tables (run migration in Supabase Dashboard):**
+- `writer_bank_accounts`: Bank account storage for withdrawals
+- `withdrawal_requests`: Withdrawal request tracking with status (pending/processing/approved/rejected/paid)
+- `writer_earnings`: Per-chapter earnings tracking with revenue split
+
+**Migration File:** `database/analytics_withdrawal_migration.sql`
+
+**Chart Components:**
+- `components/charts/AreaChart.tsx`: Line/area charts for time-series data
+- `components/charts/BarChart.tsx`: Bar charts for performance comparison
+
+**Analytics Hook:** `hooks/useWriterAnalytics.ts` - Fetches stats, earnings, novel performance, bank accounts, and withdrawal history from Supabase.
 
 ### Screen Architecture
 
