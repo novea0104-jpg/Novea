@@ -1,11 +1,11 @@
 {
-  "id": "a6f477fe-c290-4d92-b351-bc2901a8282a",
-  "createdAt": "2025-12-10T09:05:18.742Z",
+  "id": "d479c238-11e3-4e43-9ab5-7c24afef246f",
+  "createdAt": "2025-12-10T09:14:22.336Z",
   "runtimeVersion": "exposdk:54.0.0",
   "launchAsset": {
-    "key": "bundle-1765357518742-9288",
+    "key": "bundle-1765358062336-10167",
     "contentType": "application/javascript",
-    "url": "https://noveaindonesia.com/1765357518742-9288/_expo/static/js/android/bundle.js"
+    "url": "https://noveaindonesia.com/1765358062336-10167/_expo/static/js/android/bundle.js"
   },
   "assets": [],
   "metadata": {},

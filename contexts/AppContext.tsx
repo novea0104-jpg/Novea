@@ -275,7 +275,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error("Insufficient coins");
       }
 
-      // Get chapter info to find novel_id
+      // Get chapter info to find novel_id and author_id
       const { data: chapter, error: chapterError } = await supabase
         .from('chapters')
         .select('novel_id')
@@ -283,6 +283,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (chapterError) throw chapterError;
+
+      // Get novel author_id for writer earnings
+      const { data: novel, error: novelError } = await supabase
+        .from('novels')
+        .select('author_id')
+        .eq('id', chapter.novel_id)
+        .single();
+
+      if (novelError) throw novelError;
 
       // Insert into unlocked_chapters
       const { error: unlockError } = await supabase
@@ -295,7 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (unlockError) throw unlockError;
 
-      // Record coin transaction
+      // Record coin transaction for reader
       await supabase
         .from('coin_transactions')
         .insert({
@@ -305,6 +314,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
           description: `Unlocked chapter ${chapterId}`,
           metadata: { chapter_id: parseInt(chapterId) },
         });
+
+      // Record writer earnings (70% writer, 30% platform)
+      const writerShare = Math.floor(cost * 0.70);
+      const platformShare = cost - writerShare;
+
+      await supabase
+        .from('writer_earnings')
+        .insert({
+          writer_id: novel.author_id,
+          novel_id: chapter.novel_id,
+          chapter_id: parseInt(chapterId),
+          reader_id: parseInt(user.id),
+          amount: cost,
+          writer_share: writerShare,
+          platform_share: platformShare,
+        });
+
+      // Update writer's balance in users table
+      // First get current balance, then update
+      const { data: writerData } = await supabase
+        .from('users')
+        .select('writer_balance, total_earnings')
+        .eq('id', novel.author_id)
+        .single();
+
+      const currentBalance = writerData?.writer_balance || 0;
+      const currentTotalEarnings = writerData?.total_earnings || 0;
+
+      await supabase
+        .from('users')
+        .update({
+          writer_balance: currentBalance + writerShare,
+          total_earnings: currentTotalEarnings + writerShare,
+        })
+        .eq('id', novel.author_id);
 
       // Update coin balance (this will update both Supabase and local state)
       await updateCoinBalance(-cost);
