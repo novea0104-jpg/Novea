@@ -305,7 +305,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (unlockError) throw unlockError;
 
       // Record coin transaction for reader
-      await supabase
+      const { error: txError } = await supabase
         .from('coin_transactions')
         .insert({
           user_id: parseInt(user.id),
@@ -315,11 +315,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
           metadata: { chapter_id: parseInt(chapterId) },
         });
 
+      if (txError) {
+        console.error('Error inserting coin transaction:', txError);
+      }
+
       // Record writer earnings (80% writer, 20% platform)
       const writerShare = Math.floor(cost * 0.80);
       const platformShare = cost - writerShare;
 
-      await supabase
+      const { error: earningsError } = await supabase
         .from('writer_earnings')
         .insert({
           writer_id: novel.author_id,
@@ -330,6 +334,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           writer_share: writerShare,
           platform_share: platformShare,
         });
+
+      if (earningsError) {
+        console.error('Error inserting writer earnings:', earningsError);
+      }
 
       // Update writer's balance in users table
       // First get current balance, then update
