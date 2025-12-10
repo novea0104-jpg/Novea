@@ -1709,7 +1709,7 @@ export interface AdminStats {
   newNovelsToday: number;
   totalCoinsPurchased: number;
   totalChapterSales: number;
-  platformRevenue: number; // 50% of total revenue shown to admin
+  platformRevenue: number; // Total revenue in IDR
 }
 
 // Get all users for admin (excludes super_admin users for security)
@@ -2065,7 +2065,7 @@ export async function getAdminStats(): Promise<AdminStats> {
       supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
       supabase.from('novels').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
       supabase.from('coin_transactions').select('amount').eq('type', 'purchase'),
-      supabase.from('coin_transactions').select('amount').eq('type', 'chapter_unlock'),
+      supabase.from('coin_transactions').select('amount').eq('type', 'unlock_chapter'),
     ]);
 
     // Calculate total coins purchased (positive amounts from purchases)
@@ -2074,8 +2074,8 @@ export async function getAdminStats(): Promise<AdminStats> {
     // Calculate total chapter sales (negative amounts spent on chapters, convert to positive)
     const totalChapterSales = (chapterSalesData.data || []).reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
     
-    // Platform revenue: 50% of total coins purchased (1 Novoin = Rp 1,000)
-    const platformRevenue = Math.floor(totalCoinsPurchased * 1000 * 0.5);
+    // Platform revenue: total coins purchased (1 Novoin = Rp 1,000)
+    const platformRevenue = Math.floor(totalCoinsPurchased * 1000);
 
     return {
       totalUsers: totalUsers || 0,

@@ -141,7 +141,7 @@ ON CONFLICT (novel_id, genre_id) DO NOTHING;
 - Total Novels (with new publications today)
 - Total Chapters
 - Total Views
-- Revenue Statistics (50% platform share):
+- Revenue Statistics:
   - Total Koin Terjual (coins purchased by users)
   - Chapter Terbeli (coins spent on chapters)
   - Pendapatan Platform (platform revenue in IDR)

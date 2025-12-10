@@ -468,7 +468,7 @@ export default function AdminDashboardScreen() {
       </View>
 
       <ThemedText style={[Typography.h3, styles.revenueHeader]}>
-        Pendapatan Platform (50%)
+        Statistik Pendapatan
       </ThemedText>
       <Card elevation={1} style={styles.revenueCard}>
         <View style={styles.revenueRow}>
@@ -497,15 +497,12 @@ export default function AdminDashboardScreen() {
         </View>
         <View style={[styles.revenueTotalRow, { borderTopColor: theme.backgroundSecondary }]}>
           <ThemedText style={[styles.revenueTotalLabel, { color: theme.textSecondary }]}>
-            Pendapatan Platform (50%)
+            Pendapatan Platform
           </ThemedText>
           <ThemedText style={[Typography.h2, { color: theme.success }]}>
             {formatCurrency(stats?.platformRevenue || 0)}
           </ThemedText>
         </View>
-        <ThemedText style={[styles.revenueNote, { color: theme.textMuted }]}>
-          * Sisanya dapat dicek di Payment Gateway atau Supabase
-        </ThemedText>
       </Card>
     </View>
   );
