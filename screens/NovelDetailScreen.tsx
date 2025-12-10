@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator, TextInput, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator, TextInput, Alert, Dimensions } from "react-native";
 import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
@@ -46,6 +47,10 @@ export default function NovelDetailScreen() {
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [isLoadingChapters, setIsLoadingChapters] = useState(true);
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+  const [showAllChapters, setShowAllChapters] = useState(false);
+  
+  const CHAPTERS_PREVIEW_COUNT = 10;
+  const screenWidth = Dimensions.get('window').width;
   
   // Reviews state
   const [reviews, setReviews] = useState<NovelReview[]>([]);
@@ -352,10 +357,26 @@ export default function NovelDetailScreen() {
     );
   };
 
+  const coverWidth = screenWidth * 0.4;
+  const coverHeight = coverWidth * 1.5;
+
   return (
     <ScreenScrollView>
       <View style={styles.header}>
-        <Image source={imageSource} style={styles.cover} resizeMode="cover" />
+        <View style={styles.coverBackground}>
+          <Image source={imageSource} style={styles.coverBackgroundImage} resizeMode="cover" blurRadius={25} />
+          <LinearGradient
+            colors={['transparent', theme.backgroundRoot]}
+            style={styles.coverGradientOverlay}
+          />
+        </View>
+        <View style={[styles.coverContainer, { marginTop: 60 }]}>
+          <Image 
+            source={imageSource} 
+            style={[styles.coverImage, { width: coverWidth, height: coverHeight }]} 
+            resizeMode="cover" 
+          />
+        </View>
         <View style={styles.headerInfo}>
           <ThemedText style={[Typography.h1, styles.title]}>{novel.title}</ThemedText>
           <Pressable onPress={() => novel.authorId && navigateToUserProfile(novel.authorId)}>
@@ -477,13 +498,25 @@ export default function NovelDetailScreen() {
             <ActivityIndicator size="large" color={theme.primary} />
           </View>
         ) : (
-          <FlatList
-            data={chapters}
-            renderItem={renderChapter}
-            keyExtractor={(item) => item.id}
-            scrollEnabled={false}
-            contentContainerStyle={styles.chapterList}
-          />
+          <>
+            <FlatList
+              data={showAllChapters ? chapters : chapters.slice(0, CHAPTERS_PREVIEW_COUNT)}
+              renderItem={renderChapter}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+              contentContainerStyle={styles.chapterList}
+            />
+            {chapters.length > CHAPTERS_PREVIEW_COUNT ? (
+              <Pressable 
+                onPress={() => setShowAllChapters(!showAllChapters)} 
+                style={[styles.showAllChaptersButton, { backgroundColor: theme.backgroundSecondary }]}
+              >
+                <ThemedText style={[styles.showAllChaptersText, { color: theme.primary }]}>
+                  {showAllChapters ? 'Sembunyikan' : `Lihat Semua Chapter (${chapters.length})`}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </>
         )}
       </View>
 
@@ -739,17 +772,45 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: Spacing.xl,
   },
-  cover: {
+  coverBackground: {
+    position: "absolute",
+    top: -100,
+    left: -Spacing.xl,
+    right: -Spacing.xl,
+    height: 320,
+    overflow: "hidden",
+  },
+  coverBackgroundImage: {
     width: "100%",
-    height: 240,
-    borderRadius: BorderRadius.sm,
+    height: "100%",
+  },
+  coverGradientOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+  },
+  coverContainer: {
+    alignItems: "center",
     marginBottom: Spacing.lg,
+    zIndex: 1,
+  },
+  coverImage: {
+    borderRadius: BorderRadius.md,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   headerInfo: {
     gap: Spacing.sm,
+    alignItems: "center",
   },
   title: {
     marginBottom: Spacing.xs,
+    textAlign: "center",
   },
   author: {
     fontSize: 16,
@@ -838,6 +899,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   showMoreText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  showAllChaptersButton: {
+    marginTop: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+  },
+  showAllChaptersText: {
     fontSize: 14,
     fontWeight: "600",
   },
