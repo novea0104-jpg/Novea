@@ -211,15 +211,36 @@ export default function ReaderScreen() {
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
   };
 
+  const handleGoBack = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
+
+  const handleOpenChaptersModal = useCallback(() => {
+    setShowChaptersModal(true);
+  }, []);
+
+  const handleOpenCommentsModal = useCallback(() => {
+    setShowCommentsModal(true);
+  }, []);
+
+  const handleOpenSettingsModal = useCallback(() => {
+    setShowSettingsModal(true);
+  }, []);
+
   React.useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      headerTransparent: true,
+      headerTransparent: false,
+      headerStyle: {
+        backgroundColor: theme.backgroundSecondary,
+      },
+      headerShadowVisible: false,
       headerTitle: () => null,
       headerLeft: () => (
         <Pressable 
-          onPress={() => navigation.goBack()} 
+          onPress={handleGoBack} 
           style={styles.headerIconButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
           accessibilityLabel="Tutup"
           accessibilityRole="button"
@@ -230,8 +251,9 @@ export default function ReaderScreen() {
       headerRight: () => (
         <View style={styles.headerRightContainer}>
           <Pressable 
-            onPress={() => setShowChaptersModal(true)}
+            onPress={handleOpenChaptersModal}
             style={styles.headerIconButton}
+            hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
             android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
             accessibilityLabel="Daftar Chapter"
             accessibilityRole="button"
@@ -239,8 +261,9 @@ export default function ReaderScreen() {
             <ListIcon size={22} color={theme.text} />
           </Pressable>
           <Pressable 
-            onPress={() => setShowCommentsModal(true)}
+            onPress={handleOpenCommentsModal}
             style={styles.headerIconButton}
+            hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
             android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
             accessibilityLabel="Komentar"
             accessibilityRole="button"
@@ -255,8 +278,9 @@ export default function ReaderScreen() {
             ) : null}
           </Pressable>
           <Pressable 
-            onPress={() => setShowSettingsModal(true)}
+            onPress={handleOpenSettingsModal}
             style={styles.headerIconButton}
+            hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
             android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
             accessibilityLabel="Pengaturan Bacaan"
             accessibilityRole="button"
@@ -266,7 +290,7 @@ export default function ReaderScreen() {
         </View>
       ),
     });
-  }, [navigation, theme, comments]);
+  }, [navigation, theme, comments, handleGoBack, handleOpenChaptersModal, handleOpenCommentsModal, handleOpenSettingsModal]);
 
   async function loadChapterData() {
     setIsLoading(true);
@@ -376,7 +400,7 @@ export default function ReaderScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: insets.top + 60,
+            paddingTop: Spacing.lg,
             paddingBottom: insets.bottom + 100,
           },
         ]}
