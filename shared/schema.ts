@@ -168,14 +168,16 @@ export const timelinePostComments = pgTable("timeline_post_comments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Chapter Comments - comments on individual chapters
+// Chapter Comments - comments on individual chapters with reply support
 export const chapterComments = pgTable("chapter_comments", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   chapterId: integer("chapter_id").references(() => chapters.id).notNull(),
   novelId: integer("novel_id").references(() => novels.id).notNull(),
+  parentCommentId: integer("parent_comment_id"), // For replies - references another comment
   content: text("content").notNull(),
   likesCount: integer("likes_count").default(0).notNull(),
+  repliesCount: integer("replies_count").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
