@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, NativeScrollEvent, NativeSyntheticEvent, TextInput, Image, Modal, FlatList, Keyboard } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, TextInput, Image, Modal, FlatList, Keyboard } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ThemedView } from "@/components/ThemedView";
@@ -60,7 +60,6 @@ export default function ReaderScreen() {
   const { novelId, chapterId } = route.params as { novelId: string; chapterId: string };
   const novel = novels.find((n) => n.id === novelId);
 
-  const [showHeader, setShowHeader] = useState(true);
   const [fontSize, setFontSize] = useState(18);
   const [fontFamily, setFontFamily] = useState(FONT_FAMILIES[0].fontFamily);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -214,7 +213,7 @@ export default function ReaderScreen() {
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
-      headerShown: showHeader,
+      headerShown: true,
       headerTransparent: true,
       headerTitle: () => null,
       headerLeft: () => (
@@ -267,7 +266,7 @@ export default function ReaderScreen() {
         </View>
       ),
     });
-  }, [navigation, showHeader, theme, comments]);
+  }, [navigation, theme, comments]);
 
   async function loadChapterData() {
     setIsLoading(true);
@@ -294,41 +293,6 @@ export default function ReaderScreen() {
     }
   }
 
-  const toggleHeader = () => {
-    setShowHeader(prev => !prev);
-  };
-
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
-  const isScrollingRef = useRef(false);
-
-  const handleTouchStart = (e: any) => {
-    const touch = e.nativeEvent;
-    touchStartRef.current = {
-      x: touch.pageX,
-      y: touch.pageY,
-      time: Date.now(),
-    };
-    isScrollingRef.current = false;
-  };
-
-  const handleTouchEnd = (e: any) => {
-    if (!touchStartRef.current || isScrollingRef.current) return;
-
-    const touch = e.nativeEvent;
-    const deltaX = Math.abs(touch.pageX - touchStartRef.current.x);
-    const deltaY = Math.abs(touch.pageY - touchStartRef.current.y);
-    const deltaTime = Date.now() - touchStartRef.current.time;
-
-    if (deltaX < 10 && deltaY < 10 && deltaTime < 200) {
-      toggleHeader();
-    }
-
-    touchStartRef.current = null;
-  };
-
-  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    isScrollingRef.current = true;
-  };
 
   if (!novel || isLoading) {
     return (
@@ -412,7 +376,7 @@ export default function ReaderScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: showHeader ? insets.top + 80 : insets.top + Spacing.xl,
+            paddingTop: insets.top + 60,
             paddingBottom: insets.bottom + 100,
           },
         ]}
@@ -421,9 +385,6 @@ export default function ReaderScreen() {
         overScrollMode="never"
         bounces={Platform.OS === 'ios'}
         decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onScroll={handleScroll}
       >
         <ThemedText style={[styles.chapterTitle, Typography.h3]}>
           {currentChapter.title}
