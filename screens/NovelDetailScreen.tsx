@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
+import { MarkdownText } from "@/components/MarkdownText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { StarIcon } from "@/components/icons/StarIcon";
@@ -472,11 +473,11 @@ export default function NovelDetailScreen() {
 
       <View style={styles.section}>
         <ThemedText style={[Typography.h3, styles.sectionTitle]}>Sinopsis</ThemedText>
-        <ThemedText style={[styles.synopsis, { color: theme.textSecondary }]}>
+        <MarkdownText style={[styles.synopsis, { color: theme.textSecondary }]}>
           {isSynopsisExpanded 
             ? novel.synopsis 
             : novel.synopsis.split('\n')[0]}
-        </ThemedText>
+        </MarkdownText>
         {novel.synopsis.split('\n').length > 1 && (
           <Pressable 
             onPress={() => setIsSynopsisExpanded(!isSynopsisExpanded)}

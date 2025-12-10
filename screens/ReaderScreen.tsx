@@ -4,6 +4,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import { MarkdownText } from "@/components/MarkdownText";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { XIcon } from "@/components/icons/XIcon";
@@ -416,9 +417,9 @@ export default function ReaderScreen() {
         <ThemedText style={[styles.chapterTitle, Typography.h3]}>
           {currentChapter.title}
         </ThemedText>
-        <ThemedText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8, fontFamily }]}>
+        <MarkdownText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8, fontFamily }]}>
           {currentChapter.content}
-        </ThemedText>
+        </MarkdownText>
 
         <View style={styles.chapterEndDivider}>
           <View style={[styles.dividerLine, { backgroundColor: theme.textMuted }]} />
@@ -1050,11 +1051,12 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xl,
   },
   commentInputContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: "column",
     padding: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    gap: Spacing.sm,
+    paddingBottom: Spacing.xl,
+    borderTopLeftRadius: BorderRadius.lg,
+    borderTopRightRadius: BorderRadius.lg,
+    gap: Spacing.xs,
   },
   commentAvatarSmall: {
     width: 32,

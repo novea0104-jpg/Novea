@@ -5,6 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import { ImageIcon } from "@/components/icons/ImageIcon";
 import { SaveIcon } from "@/components/icons/SaveIcon";
 import { LinearGradient } from "expo-linear-gradient";
@@ -374,15 +375,12 @@ export default function EditNovelScreen() {
 
           <View style={styles.inputGroup}>
             <ThemedText style={styles.label}>Sinopsis</ThemedText>
-            <TextInput
-              style={[styles.textArea, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              placeholder="Ceritakan tentang novel kamu..."
-              placeholderTextColor={theme.textMuted}
+            <RichTextEditor
               value={description}
               onChangeText={setDescription}
-              multiline
-              numberOfLines={6}
-              textAlignVertical="top"
+              placeholder="Ceritakan tentang novel kamu..."
+              minHeight={150}
+              maxHeight={300}
             />
           </View>
 

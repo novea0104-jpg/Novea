@@ -5,6 +5,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
+import { RichTextEditor } from "@/components/RichTextEditor";
+import { stripMarkdown } from "@/components/MarkdownText";
 import { SaveIcon } from "@/components/icons/SaveIcon";
 import { SendIcon } from "@/components/icons/SendIcon";
 import { LockIcon } from "@/components/icons/LockIcon";
@@ -36,7 +38,7 @@ export default function EditChapterScreen() {
   const [isFetchingChapter, setIsFetchingChapter] = useState(false);
   const [chapterNumber, setChapterNumber] = useState(1);
 
-  const wordCount = content.trim().split(/\s+/).filter(Boolean).length;
+  const wordCount = stripMarkdown(content).trim().split(/\s+/).filter(Boolean).length;
   const priceInNovoin = priceRupiah ? rupiahToNovoin(parseInt(priceRupiah.replace(/\D/g, ""), 10) || 0) : 0;
 
   useEffect(() => {
@@ -263,19 +265,12 @@ export default function EditChapterScreen() {
                 {wordCount.toLocaleString()} kata
               </ThemedText>
             </View>
-            <TextInput
+            <RichTextEditor
               value={content}
               onChangeText={setContent}
               placeholder="Tulis konten chapter di sini..."
-              placeholderTextColor={theme.textMuted}
-              style={[
-                styles.input,
-                styles.textArea,
-                { backgroundColor: theme.backgroundSecondary, color: theme.text },
-              ]}
-              multiline
-              numberOfLines={20}
-              textAlignVertical="top"
+              minHeight={300}
+              maxHeight={500}
             />
           </View>
 
