@@ -18,6 +18,8 @@ import { UserIcon } from "@/components/icons/UserIcon";
 import { TypeIcon } from "@/components/icons/TypeIcon";
 import { SettingsIcon } from "@/components/icons/SettingsIcon";
 import { PlusIcon } from "@/components/icons/PlusIcon";
+import { ListIcon } from "@/components/icons/ListIcon";
+import { LockIcon as LockSmallIcon } from "@/components/icons/LockIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/contexts/AppContext";
@@ -70,6 +72,7 @@ export default function ReaderScreen() {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showChaptersModal, setShowChaptersModal] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChapterComment | null>(null);
   const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
 
@@ -213,24 +216,14 @@ export default function ReaderScreen() {
     navigation.setOptions({
       headerShown: showHeader,
       headerTransparent: true,
-      headerTitle: () => (
-        <View style={styles.headerTitleContainer} pointerEvents="none">
-          <ThemedText style={styles.headerNovelTitle} numberOfLines={1}>
-            {novel?.title || ""}
-          </ThemedText>
-          {currentChapter ? (
-            <ThemedText style={[styles.headerChapterTitle, { color: theme.textSecondary }]} numberOfLines={1}>
-              {currentChapter.title}
-            </ThemedText>
-          ) : null}
-        </View>
-      ),
+      headerTitle: () => null,
       headerLeft: () => (
         <Pressable 
           onPress={() => navigation.goBack()} 
-          style={styles.headerButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 20 }}
+          style={styles.headerIconButton}
+          android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
+          accessibilityLabel="Tutup"
+          accessibilityRole="button"
         >
           <XIcon size={24} color={theme.text} />
         </Pressable>
@@ -238,11 +231,20 @@ export default function ReaderScreen() {
       headerRight: () => (
         <View style={styles.headerRightContainer}>
           <Pressable 
-            onPress={() => {
-              setShowCommentsModal(true);
-            }} 
+            onPress={() => setShowChaptersModal(true)}
             style={styles.headerIconButton}
-            android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 20 }}
+            android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
+            accessibilityLabel="Daftar Chapter"
+            accessibilityRole="button"
+          >
+            <ListIcon size={22} color={theme.text} />
+          </Pressable>
+          <Pressable 
+            onPress={() => setShowCommentsModal(true)}
+            style={styles.headerIconButton}
+            android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
+            accessibilityLabel="Komentar"
+            accessibilityRole="button"
           >
             <MessageCircleIcon size={22} color={theme.text} />
             {comments.filter(c => !c.parentCommentId).length > 0 ? (
@@ -254,18 +256,18 @@ export default function ReaderScreen() {
             ) : null}
           </Pressable>
           <Pressable 
-            onPress={() => {
-              setShowSettingsModal(true);
-            }} 
+            onPress={() => setShowSettingsModal(true)}
             style={styles.headerIconButton}
-            android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 20 }}
+            android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
+            accessibilityLabel="Pengaturan Bacaan"
+            accessibilityRole="button"
           >
             <TypeIcon size={22} color={theme.text} />
           </Pressable>
         </View>
       ),
     });
-  }, [navigation, showHeader, theme, novel, currentChapter, comments]);
+  }, [navigation, showHeader, theme, comments]);
 
   async function loadChapterData() {
     setIsLoading(true);
@@ -815,6 +817,107 @@ export default function ReaderScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <Modal
+        visible={showChaptersModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowChaptersModal(false)}
+      >
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.modalContainer, { backgroundColor: theme.backgroundRoot }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.backgroundSecondary }]}>
+              <View>
+                <ThemedText style={styles.modalTitle}>Daftar Chapter</ThemedText>
+                {novel ? (
+                  <ThemedText style={[styles.chaptersModalSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                    {novel.title}
+                  </ThemedText>
+                ) : null}
+              </View>
+              <Pressable
+                onPress={() => setShowChaptersModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <FlatList
+              data={chapters}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.chaptersListModal}
+              renderItem={({ item: chapter }) => {
+                const isCurrentChapter = chapter.id === chapterId;
+                const isUnlocked = chapter.isFree || unlockedChapters.has(chapter.id);
+                
+                return (
+                  <Pressable
+                    onPress={() => {
+                      if (isUnlocked && chapter.id !== chapterId) {
+                        setShowChaptersModal(false);
+                        navigation.setParams({ chapterId: chapter.id } as any);
+                        setCurrentChapter(null);
+                        setIsLoading(true);
+                      }
+                    }}
+                    disabled={!isUnlocked}
+                    style={({ pressed }) => [
+                      styles.chapterListItem,
+                      { backgroundColor: isCurrentChapter ? theme.primary + '20' : theme.backgroundSecondary },
+                      pressed && isUnlocked && { opacity: 0.7 },
+                    ]}
+                  >
+                    <View style={styles.chapterListItemContent}>
+                      <View style={styles.chapterListItemLeft}>
+                        <View style={[
+                          styles.chapterNumberBadge,
+                          { backgroundColor: isCurrentChapter ? theme.primary : theme.backgroundRoot }
+                        ]}>
+                          <ThemedText style={[
+                            styles.chapterNumberText,
+                            { color: isCurrentChapter ? '#FFFFFF' : theme.text }
+                          ]}>
+                            {chapter.chapterNumber}
+                          </ThemedText>
+                        </View>
+                        <View style={styles.chapterListItemInfo}>
+                          <ThemedText 
+                            style={[
+                              styles.chapterListItemTitle,
+                              isCurrentChapter && { color: theme.primary }
+                            ]} 
+                            numberOfLines={1}
+                          >
+                            {chapter.title}
+                          </ThemedText>
+                          {!isUnlocked && novel ? (
+                            <View style={styles.chapterLockedRow}>
+                              <LockSmallIcon size={12} color={theme.textMuted} />
+                              <ThemedText style={[styles.chapterPriceText, { color: theme.textMuted }]}>
+                                {novel.coinPerChapter} Novoin
+                              </ThemedText>
+                            </View>
+                          ) : null}
+                        </View>
+                      </View>
+                      {isCurrentChapter ? (
+                        <View style={[styles.currentBadge, { backgroundColor: theme.primary }]}>
+                          <ThemedText style={styles.currentBadgeText}>Dibaca</ThemedText>
+                        </View>
+                      ) : !isUnlocked ? (
+                        <LockSmallIcon size={18} color={theme.textMuted} />
+                      ) : (
+                        <ChevronRightIcon size={18} color={theme.textMuted} />
+                      )}
+                    </View>
+                  </Pressable>
+                );
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -1225,5 +1328,65 @@ const styles = StyleSheet.create({
   },
   previewText: {
     lineHeight: 28,
+  },
+  chaptersModalSubtitle: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  chaptersListModal: {
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  chapterListItem: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  chapterListItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  chapterListItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    flex: 1,
+  },
+  chapterNumberBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  chapterNumberText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  chapterListItemInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  chapterListItemTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  chapterLockedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  chapterPriceText: {
+    fontSize: 11,
+  },
+  currentBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+  },
+  currentBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
 });
