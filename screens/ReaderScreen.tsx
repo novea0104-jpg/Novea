@@ -59,10 +59,10 @@ export default function ReaderScreen() {
   }, [chapterId, novelId]);
 
   useEffect(() => {
-    if (chapterId && showComments) {
+    if (chapterId) {
       loadComments();
     }
-  }, [chapterId, showComments]);
+  }, [chapterId]);
 
   const loadComments = useCallback(async () => {
     setCommentsLoading(true);
