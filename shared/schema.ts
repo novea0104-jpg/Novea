@@ -168,6 +168,18 @@ export const timelinePostComments = pgTable("timeline_post_comments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Chapter Comments - comments on individual chapters
+export const chapterComments = pgTable("chapter_comments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  chapterId: integer("chapter_id").references(() => chapters.id).notNull(),
+  novelId: integer("novel_id").references(() => novels.id).notNull(),
+  content: text("content").notNull(),
+  likesCount: integer("likes_count").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   novels: many(novels),
