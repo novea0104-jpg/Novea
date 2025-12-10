@@ -11,7 +11,6 @@ import { PlusIcon } from "@/components/icons/PlusIcon";
 import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
 import { TrendingUpIcon } from "@/components/icons/TrendingUpIcon";
 import { BarChartIcon } from "@/components/icons/BarChartIcon";
-import { DollarIcon } from "@/components/icons/DollarIcon";
 import { CreditCardIcon } from "@/components/icons/CreditCardIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
@@ -184,38 +183,41 @@ export default function WriterCenterScreen() {
         <View style={styles.dashboardSection}>
           <ThemedText style={Typography.h2}>Dashboard Penulis</ThemedText>
           
-          <View style={styles.dashboardGrid}>
-            <DashboardCard
-              icon="bar-chart-2"
-              title="Analitik"
-              description={"Lihat statistik\ndan trafik novelmu"}
-              onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "analytics" })}
-              theme={theme}
-            />
-            
-            <DashboardCard
-              icon="dollar-sign"
-              title="Pendapatan"
-              description={"Kelola penghasilan\ndari novelmu"}
-              onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "earnings" })}
-              theme={theme}
-            />
-          </View>
+          <Pressable
+            onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "analytics" })}
+            style={({ pressed }) => [
+              styles.dashboardRowButton,
+              { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
+            ]}
+          >
+            <View style={styles.dashboardRowContent}>
+              <View style={[styles.dashboardRowIconCircle, { backgroundColor: theme.primary + '20' }]}>
+                <BarChartIcon size={20} color={theme.primary} />
+              </View>
+              <View style={styles.dashboardRowInfo}>
+                <ThemedText style={styles.dashboardRowTitle}>Analitik & Pendapatan</ThemedText>
+                <ThemedText style={[styles.dashboardRowDescription, { color: theme.textSecondary }]}>
+                  Lihat statistik, trafik, dan penghasilan novelmu
+                </ThemedText>
+              </View>
+              <ChevronRightIcon size={20} color={theme.textMuted} />
+            </View>
+          </Pressable>
           
           <Pressable
             onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "withdrawal" })}
             style={({ pressed }) => [
-              styles.withdrawButton,
+              styles.dashboardRowButton,
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <View style={styles.withdrawContent}>
-              <View style={[styles.withdrawIconCircle, { backgroundColor: theme.success + '20' }]}>
+            <View style={styles.dashboardRowContent}>
+              <View style={[styles.dashboardRowIconCircle, { backgroundColor: theme.success + '20' }]}>
                 <CreditCardIcon size={20} color={theme.success} />
               </View>
-              <View style={styles.withdrawInfo}>
-                <ThemedText style={styles.withdrawTitle}>Tarik Dana (Withdraw)</ThemedText>
-                <ThemedText style={[styles.withdrawDescription, { color: theme.textSecondary }]}>
+              <View style={styles.dashboardRowInfo}>
+                <ThemedText style={styles.dashboardRowTitle}>Tarik Dana (Withdraw)</ThemedText>
+                <ThemedText style={[styles.dashboardRowDescription, { color: theme.textSecondary }]}>
                   Tarik pendapatan ke rekening bankmu
                 </ThemedText>
               </View>
@@ -237,33 +239,6 @@ function StatCard({ IconComponent, label, value, theme }: { IconComponent: React
       <ThemedText style={styles.statValue}>{value}</ThemedText>
       <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>{label}</ThemedText>
     </Card>
-  );
-}
-
-function DashboardCard({ icon, title, description, onPress, theme }: { icon: string; title: string; description: string; onPress: () => void; theme: any }) {
-  const getIconComponent = () => {
-    switch (icon) {
-      case "bar-chart-2":
-        return <BarChartIcon size={24} color={theme.primary} />;
-      case "dollar-sign":
-        return <DollarIcon size={24} color={theme.primary} />;
-      default:
-        return <BookIcon size={24} color={theme.primary} />;
-    }
-  };
-
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [{ opacity: pressed ? 0.7 : 1 }]}>
-      <Card elevation={1} style={styles.dashboardCard}>
-        <View style={[styles.dashboardIconCircle, { backgroundColor: theme.primary + '20' }]}>
-          {getIconComponent()}
-        </View>
-        <ThemedText style={styles.dashboardTitle}>{title}</ThemedText>
-        <ThemedText style={[styles.dashboardDescription, { color: theme.textSecondary }]} numberOfLines={2}>
-          {description}
-        </ThemedText>
-      </Card>
-    </Pressable>
   );
 }
 
@@ -407,81 +382,31 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
     gap: Spacing.md,
   },
-  dashboardGrid: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  dashboardCard: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.md,
-    gap: Spacing.sm,
-    minWidth: 140,
-  },
-  dashboardIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: Spacing.xs,
-  },
-  dashboardTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  dashboardDescription: {
-    fontSize: 12,
-    textAlign: "center",
-    lineHeight: 16,
-  },
-  comingSoonBadgeSmall: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-    marginTop: Spacing.xs,
-  },
-  comingSoonTextSmall: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  withdrawButton: {
+  dashboardRowButton: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
-    marginTop: Spacing.sm,
   },
-  withdrawContent: {
+  dashboardRowContent: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.md,
   },
-  withdrawIconCircle: {
+  dashboardRowIconCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: "center",
     alignItems: "center",
   },
-  withdrawInfo: {
+  dashboardRowInfo: {
     flex: 1,
     gap: 2,
   },
-  withdrawTitle: {
+  dashboardRowTitle: {
     fontSize: 15,
     fontWeight: "600",
   },
-  withdrawDescription: {
+  dashboardRowDescription: {
     fontSize: 12,
-  },
-  comingSoonBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.sm,
-  },
-  comingSoonText: {
-    fontSize: 11,
-    fontWeight: "600",
   },
 });
