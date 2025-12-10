@@ -214,7 +214,7 @@ export default function ReaderScreen() {
       headerShown: showHeader,
       headerTransparent: true,
       headerTitle: () => (
-        <View style={styles.headerTitleContainer}>
+        <View style={styles.headerTitleContainer} pointerEvents="none">
           <ThemedText style={styles.headerNovelTitle} numberOfLines={1}>
             {novel?.title || ""}
           </ThemedText>
@@ -229,8 +229,8 @@ export default function ReaderScreen() {
         <Pressable 
           onPress={() => navigation.goBack()} 
           style={styles.headerButton}
-          hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 24 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 20 }}
         >
           <XIcon size={24} color={theme.text} />
         </Pressable>
@@ -238,13 +238,15 @@ export default function ReaderScreen() {
       headerRight: () => (
         <View style={styles.headerRightContainer}>
           <Pressable 
-            onPress={() => setShowCommentsModal(true)} 
+            onPress={() => {
+              setShowCommentsModal(true);
+            }} 
             style={styles.headerIconButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 20 }}
           >
             <MessageCircleIcon size={22} color={theme.text} />
             {comments.filter(c => !c.parentCommentId).length > 0 ? (
-              <View style={[styles.headerBadge, { backgroundColor: theme.primary }]}>
+              <View style={[styles.headerBadge, { backgroundColor: theme.primary }]} pointerEvents="none">
                 <ThemedText style={styles.headerBadgeText}>
                   {comments.filter(c => !c.parentCommentId).length > 99 ? '99+' : comments.filter(c => !c.parentCommentId).length}
                 </ThemedText>
@@ -252,9 +254,11 @@ export default function ReaderScreen() {
             ) : null}
           </Pressable>
           <Pressable 
-            onPress={() => setShowSettingsModal(true)} 
+            onPress={() => {
+              setShowSettingsModal(true);
+            }} 
             style={styles.headerIconButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            android_ripple={{ color: 'rgba(255,255,255,0.3)', borderless: true, radius: 20 }}
           >
             <TypeIcon size={22} color={theme.text} />
           </Pressable>
@@ -824,8 +828,8 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     alignItems: "center",
-    flex: 1,
-    paddingHorizontal: Spacing.md,
+    maxWidth: "50%",
+    paddingHorizontal: Spacing.sm,
   },
   headerNovelTitle: {
     fontSize: 14,
@@ -1057,10 +1061,13 @@ const styles = StyleSheet.create({
   headerRightContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   headerIconButton: {
-    padding: Spacing.sm,
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
     position: "relative",
   },
   headerBadge: {
