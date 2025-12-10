@@ -26,6 +26,9 @@ import { EyeIcon } from "@/components/icons/EyeIcon";
 import { HeartIcon } from "@/components/icons/HeartIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { BarChartIcon } from "@/components/icons/BarChartIcon";
+import { CoinIcon } from "@/components/icons/CoinIcon";
+import { EditIcon } from "@/components/icons/EditIcon";
+import { LockIcon } from "@/components/icons/LockIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, Typography, BorderRadius } from "@/constants/theme";
@@ -40,9 +43,14 @@ import {
   changeUserRole,
   deleteNovelAdmin,
   toggleNovelPublishAdmin,
+  updateNovelAdmin,
+  getChaptersAdmin,
+  updateChapterAdmin,
+  deleteChapterAdmin,
   AdminUser,
   AdminNovel,
   AdminStats,
+  AdminChapter,
 } from "@/utils/supabase";
 
 type TabType = 'stats' | 'users' | 'novels';
@@ -83,6 +91,18 @@ export default function AdminDashboardScreen() {
   const [showNovelModal, setShowNovelModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  
+  // Chapter management states
+  const [chapters, setChapters] = useState<AdminChapter[]>([]);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
+  const [selectedChapter, setSelectedChapter] = useState<AdminChapter | null>(null);
+  const [showChapterModal, setShowChapterModal] = useState(false);
+  const [showEditNovelModal, setShowEditNovelModal] = useState(false);
+  const [editNovelTitle, setEditNovelTitle] = useState('');
+  const [editNovelSynopsis, setEditNovelSynopsis] = useState('');
+  const [editChapterTitle, setEditChapterTitle] = useState('');
+  const [editChapterContent, setEditChapterContent] = useState('');
+  const [editChapterIsFree, setEditChapterIsFree] = useState(false);
   
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
@@ -283,6 +303,110 @@ export default function AdminDashboardScreen() {
     setLoadingMore(false);
   };
 
+  // Load chapters for a novel
+  const loadChapters = async (novelId: number) => {
+    setChaptersLoading(true);
+    const data = await getChaptersAdmin(novelId);
+    setChapters(data);
+    setChaptersLoading(false);
+  };
+
+  // Open edit novel modal
+  const handleOpenEditNovel = () => {
+    if (!selectedNovel) return;
+    setEditNovelTitle(selectedNovel.title);
+    setEditNovelSynopsis('');
+    setShowEditNovelModal(true);
+  };
+
+  // Save novel edit
+  const handleSaveNovel = async () => {
+    if (!selectedNovel) return;
+    setActionLoading(true);
+    const result = await updateNovelAdmin(selectedNovel.id, {
+      title: editNovelTitle,
+    });
+    setActionLoading(false);
+    if (result.success) {
+      setNovels(prev => prev.map(n => n.id === selectedNovel.id ? { ...n, title: editNovelTitle } : n));
+      setSelectedNovel({ ...selectedNovel, title: editNovelTitle });
+      setShowEditNovelModal(false);
+      Alert.alert('Berhasil', 'Novel telah diupdate');
+    } else {
+      Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+    }
+  };
+
+  // Open chapter for editing
+  const handleOpenChapter = (chapter: AdminChapter) => {
+    setSelectedChapter(chapter);
+    setEditChapterTitle(chapter.title);
+    setEditChapterContent(chapter.content);
+    setEditChapterIsFree(chapter.isFree);
+    setShowChapterModal(true);
+  };
+
+  // Save chapter edit
+  const handleSaveChapter = async () => {
+    if (!selectedChapter || !selectedNovel) return;
+    setActionLoading(true);
+    const result = await updateChapterAdmin(selectedChapter.id, {
+      title: editChapterTitle,
+      content: editChapterContent,
+      isFree: editChapterIsFree,
+    });
+    setActionLoading(false);
+    if (result.success) {
+      setChapters(prev => prev.map(c => c.id === selectedChapter.id ? { 
+        ...c, 
+        title: editChapterTitle, 
+        content: editChapterContent,
+        isFree: editChapterIsFree 
+      } : c));
+      setShowChapterModal(false);
+      Alert.alert('Berhasil', 'Chapter telah diupdate');
+    } else {
+      Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+    }
+  };
+
+  // Delete chapter
+  const handleDeleteChapter = async (chapterId: number) => {
+    Alert.alert(
+      'Konfirmasi Hapus',
+      'Apakah Anda yakin ingin menghapus chapter ini?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            const result = await deleteChapterAdmin(chapterId);
+            setActionLoading(false);
+            if (result.success) {
+              setChapters(prev => prev.filter(c => c.id !== chapterId));
+              setShowChapterModal(false);
+              Alert.alert('Berhasil', 'Chapter telah dihapus');
+            } else {
+              Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const renderTabButton = (tab: TabType, label: string, IconComponent: React.ComponentType<{ size: number; color: string }>) => {
     if (tab === 'users' && !canManageUsers) return null;
     const isActive = activeTab === tab;
@@ -309,36 +433,79 @@ export default function AdminDashboardScreen() {
   };
 
   const renderStatsTab = () => (
-    <View style={styles.statsGrid}>
-      <Card elevation={1} style={styles.statCard}>
-        <UsersIcon size={28} color={theme.primary} />
-        <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalUsers || 0}</ThemedText>
-        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total User</ThemedText>
-        {(stats?.newUsersToday ?? 0) > 0 ? (
-          <ThemedText style={[styles.statBadge, { color: theme.success }]}>
-            +{stats?.newUsersToday} hari ini
+    <View>
+      <View style={styles.statsGrid}>
+        <Card elevation={1} style={styles.statCard}>
+          <UsersIcon size={28} color={theme.primary} />
+          <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalUsers || 0}</ThemedText>
+          <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total User</ThemedText>
+          {(stats?.newUsersToday ?? 0) > 0 ? (
+            <ThemedText style={[styles.statBadge, { color: theme.success }]}>
+              +{stats?.newUsersToday} hari ini
+            </ThemedText>
+          ) : null}
+        </Card>
+        <Card elevation={1} style={styles.statCard}>
+          <BookIcon size={28} color={theme.secondary} />
+          <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalNovels || 0}</ThemedText>
+          <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Novel</ThemedText>
+          {(stats?.newNovelsToday ?? 0) > 0 ? (
+            <ThemedText style={[styles.statBadge, { color: theme.success }]}>
+              +{stats?.newNovelsToday} hari ini
+            </ThemedText>
+          ) : null}
+        </Card>
+        <Card elevation={1} style={styles.statCard}>
+          <BarChartIcon size={28} color={theme.link} />
+          <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalChapters || 0}</ThemedText>
+          <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Chapter</ThemedText>
+        </Card>
+        <Card elevation={1} style={styles.statCard}>
+          <EyeIcon size={28} color={theme.tabIconSelected} />
+          <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalViews || 0}</ThemedText>
+          <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Views</ThemedText>
+        </Card>
+      </View>
+
+      <ThemedText style={[Typography.h3, styles.revenueHeader]}>
+        Pendapatan Platform (50%)
+      </ThemedText>
+      <Card elevation={1} style={styles.revenueCard}>
+        <View style={styles.revenueRow}>
+          <View style={styles.revenueItem}>
+            <CoinIcon size={24} color={theme.warning} />
+            <View style={styles.revenueItemContent}>
+              <ThemedText style={[styles.revenueLabel, { color: theme.textSecondary }]}>
+                Total Koin Terjual
+              </ThemedText>
+              <ThemedText style={[Typography.h3, { color: theme.warning }]}>
+                {stats?.totalCoinsPurchased || 0} Novoin
+              </ThemedText>
+            </View>
+          </View>
+          <View style={styles.revenueItem}>
+            <CoinIcon size={24} color={theme.success} />
+            <View style={styles.revenueItemContent}>
+              <ThemedText style={[styles.revenueLabel, { color: theme.textSecondary }]}>
+                Chapter Terbeli
+              </ThemedText>
+              <ThemedText style={[Typography.h3, { color: theme.success }]}>
+                {stats?.totalChapterSales || 0} Novoin
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+        <View style={[styles.revenueTotalRow, { borderTopColor: theme.backgroundSecondary }]}>
+          <ThemedText style={[styles.revenueTotalLabel, { color: theme.textSecondary }]}>
+            Pendapatan Platform (50%)
           </ThemedText>
-        ) : null}
-      </Card>
-      <Card elevation={1} style={styles.statCard}>
-        <BookIcon size={28} color={theme.secondary} />
-        <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalNovels || 0}</ThemedText>
-        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Novel</ThemedText>
-        {(stats?.newNovelsToday ?? 0) > 0 ? (
-          <ThemedText style={[styles.statBadge, { color: theme.success }]}>
-            +{stats?.newNovelsToday} hari ini
+          <ThemedText style={[Typography.h2, { color: theme.success }]}>
+            {formatCurrency(stats?.platformRevenue || 0)}
           </ThemedText>
-        ) : null}
-      </Card>
-      <Card elevation={1} style={styles.statCard}>
-        <BarChartIcon size={28} color={theme.link} />
-        <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalChapters || 0}</ThemedText>
-        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Chapter</ThemedText>
-      </Card>
-      <Card elevation={1} style={styles.statCard}>
-        <EyeIcon size={28} color={theme.tabIconSelected} />
-        <ThemedText style={[Typography.h2, styles.statValue]}>{stats?.totalViews || 0}</ThemedText>
-        <ThemedText style={[styles.statLabel, { color: theme.textSecondary }]}>Total Views</ThemedText>
+        </View>
+        <ThemedText style={[styles.revenueNote, { color: theme.textMuted }]}>
+          * Sisanya dapat dicek di Payment Gateway atau Supabase
+        </ThemedText>
       </Card>
     </View>
   );
@@ -549,14 +716,14 @@ export default function AdminDashboardScreen() {
         visible={showNovelModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowNovelModal(false)}
+        onRequestClose={() => { setShowNovelModal(false); setChapters([]); }}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault, maxHeight: '90%' }]}>
             <View style={styles.modalHeader}>
               <ThemedText style={Typography.h3}>Detail Novel</ThemedText>
               <Pressable 
-                onPress={() => setShowNovelModal(false)}
+                onPress={() => { setShowNovelModal(false); setChapters([]); }}
                 android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
               >
                 <XIcon size={24} color={theme.text} />
@@ -564,9 +731,18 @@ export default function AdminDashboardScreen() {
             </View>
 
             <ScrollView style={styles.modalBody}>
-              <ThemedText style={[Typography.h2, styles.novelDetailTitle]}>
-                {selectedNovel.title}
-              </ThemedText>
+              <View style={styles.novelTitleRow}>
+                <ThemedText style={[Typography.h2, styles.novelDetailTitle]} numberOfLines={2}>
+                  {selectedNovel.title}
+                </ThemedText>
+                <Pressable 
+                  onPress={handleOpenEditNovel}
+                  style={styles.editIconButton}
+                  android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
+                >
+                  <EditIcon size={20} color={theme.primary} />
+                </Pressable>
+              </View>
               
               <View style={styles.userDetailInfo}>
                 <View style={styles.detailRow}>
@@ -580,10 +756,6 @@ export default function AdminDashboardScreen() {
                 <View style={styles.detailRow}>
                   <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>Status</ThemedText>
                   <ThemedText style={styles.detailValue}>{selectedNovel.status}</ThemedText>
-                </View>
-                <View style={styles.detailRow}>
-                  <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>Chapters</ThemedText>
-                  <ThemedText style={styles.detailValue}>{selectedNovel.chaptersCount}</ThemedText>
                 </View>
                 <View style={styles.detailRow}>
                   <ThemedText style={[styles.detailLabel, { color: theme.textSecondary }]}>Views</ThemedText>
@@ -615,6 +787,174 @@ export default function AdminDashboardScreen() {
                   style={styles.actionButton}
                 >
                   Hapus Novel
+                </Button>
+              </View>
+
+              <View style={styles.chapterSection}>
+                <View style={styles.chapterSectionHeader}>
+                  <ThemedText style={Typography.h3}>
+                    Daftar Chapter ({selectedNovel.chaptersCount})
+                  </ThemedText>
+                  <Button
+                    onPress={() => loadChapters(selectedNovel.id)}
+                    disabled={chaptersLoading}
+                    style={styles.loadChaptersButton}
+                  >
+                    {chaptersLoading ? 'Memuat...' : chapters.length > 0 ? 'Refresh' : 'Muat Chapter'}
+                  </Button>
+                </View>
+
+                {chaptersLoading ? (
+                  <ActivityIndicator size="small" color={theme.primary} style={styles.chapterLoading} />
+                ) : chapters.length > 0 ? (
+                  <View style={styles.chapterList}>
+                    {chapters.map((chapter) => (
+                      <Pressable
+                        key={chapter.id}
+                        onPress={() => handleOpenChapter(chapter)}
+                        android_ripple={{ color: 'rgba(255,255,255,0.1)', borderless: false }}
+                        style={[styles.chapterItem, { backgroundColor: theme.backgroundSecondary }]}
+                      >
+                        <View style={styles.chapterItemContent}>
+                          <ThemedText style={styles.chapterItemTitle} numberOfLines={1}>
+                            Ch. {chapter.chapterNumber}: {chapter.title}
+                          </ThemedText>
+                          <View style={styles.chapterItemMeta}>
+                            {chapter.isFree ? (
+                              <ThemedText style={[styles.chapterFreeTag, { color: theme.success }]}>Gratis</ThemedText>
+                            ) : (
+                              <View style={styles.chapterLockedTag}>
+                                <LockIcon size={12} color={theme.warning} />
+                                <ThemedText style={[styles.chapterLockedText, { color: theme.warning }]}>Berbayar</ThemedText>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        <EditIcon size={18} color={theme.textMuted} />
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const renderEditNovelModal = () => (
+    <Modal
+      visible={showEditNovelModal}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setShowEditNovelModal(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={styles.modalHeader}>
+            <ThemedText style={Typography.h3}>Edit Novel</ThemedText>
+            <Pressable 
+              onPress={() => setShowEditNovelModal(false)}
+              android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
+            >
+              <XIcon size={24} color={theme.text} />
+            </Pressable>
+          </View>
+
+          <ScrollView style={styles.modalBody}>
+            <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Judul Novel</ThemedText>
+            <TextInput
+              style={[styles.textInput, { color: theme.text, backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
+              value={editNovelTitle}
+              onChangeText={setEditNovelTitle}
+              placeholder="Judul novel"
+              placeholderTextColor={theme.textMuted}
+            />
+
+            <View style={styles.actionButtons}>
+              <Button
+                onPress={handleSaveNovel}
+                disabled={actionLoading}
+                style={styles.actionButton}
+              >
+                {actionLoading ? 'Menyimpan...' : 'Simpan'}
+              </Button>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  const renderChapterModal = () => {
+    if (!selectedChapter) return null;
+
+    return (
+      <Modal
+        visible={showChapterModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowChapterModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault, maxHeight: '90%' }]}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={Typography.h3}>Edit Chapter {selectedChapter.chapterNumber}</ThemedText>
+              <Pressable 
+                onPress={() => setShowChapterModal(false)}
+                android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
+              >
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView style={styles.modalBody}>
+              <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Judul Chapter</ThemedText>
+              <TextInput
+                style={[styles.textInput, { color: theme.text, backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
+                value={editChapterTitle}
+                onChangeText={setEditChapterTitle}
+                placeholder="Judul chapter"
+                placeholderTextColor={theme.textMuted}
+              />
+
+              <ThemedText style={[styles.inputLabel, { color: theme.textSecondary, marginTop: Spacing.md }]}>Konten</ThemedText>
+              <TextInput
+                style={[styles.textInputMultiline, { color: theme.text, backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
+                value={editChapterContent}
+                onChangeText={setEditChapterContent}
+                placeholder="Konten chapter"
+                placeholderTextColor={theme.textMuted}
+                multiline
+                numberOfLines={10}
+                textAlignVertical="top"
+              />
+
+              <Pressable
+                onPress={() => setEditChapterIsFree(!editChapterIsFree)}
+                style={styles.checkboxRow}
+              >
+                <View style={[styles.checkbox, { borderColor: theme.primary, backgroundColor: editChapterIsFree ? theme.primary : 'transparent' }]}>
+                  {editChapterIsFree ? <ThemedText style={styles.checkmark}>✓</ThemedText> : null}
+                </View>
+                <ThemedText style={styles.checkboxLabel}>Chapter Gratis</ThemedText>
+              </Pressable>
+
+              <View style={styles.actionButtons}>
+                <Button
+                  onPress={handleSaveChapter}
+                  disabled={actionLoading}
+                  style={styles.actionButton}
+                >
+                  {actionLoading ? 'Menyimpan...' : 'Simpan Chapter'}
+                </Button>
+                <Button
+                  onPress={() => handleDeleteChapter(selectedChapter.id)}
+                  disabled={actionLoading}
+                  style={styles.actionButton}
+                >
+                  Hapus Chapter
                 </Button>
               </View>
             </ScrollView>
@@ -745,6 +1085,8 @@ export default function AdminDashboardScreen() {
 
       {renderUserModal()}
       {renderNovelModal()}
+      {renderEditNovelModal()}
+      {renderChapterModal()}
     </ThemedView>
   );
 }
@@ -1016,5 +1358,153 @@ const styles = StyleSheet.create({
   novelDetailTitle: {
     marginBottom: Spacing.xl,
     textAlign: 'center',
+    flex: 1,
+  },
+  revenueHeader: {
+    marginBottom: Spacing.md,
+  },
+  revenueCard: {
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  revenueRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  revenueItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  revenueItemContent: {
+    flex: 1,
+  },
+  revenueLabel: {
+    fontSize: 12,
+    marginBottom: Spacing.xs,
+  },
+  revenueTotalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+  },
+  revenueTotalLabel: {
+    fontSize: 14,
+  },
+  revenueNote: {
+    fontSize: 11,
+    marginTop: Spacing.md,
+    fontStyle: 'italic',
+  },
+  novelTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  editIconButton: {
+    padding: Spacing.sm,
+  },
+  chapterSection: {
+    marginTop: Spacing.xl,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  chapterSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  loadChaptersButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  chapterLoading: {
+    padding: Spacing.lg,
+  },
+  chapterList: {
+    gap: Spacing.sm,
+  },
+  chapterItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  chapterItemContent: {
+    flex: 1,
+    marginRight: Spacing.md,
+  },
+  chapterItemTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: Spacing.xs,
+  },
+  chapterItemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  chapterFreeTag: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  chapterLockedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  chapterLockedText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  inputLabel: {
+    fontSize: 14,
+    marginBottom: Spacing.sm,
+  },
+  textInput: {
+    fontSize: 16,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  textInputMultiline: {
+    fontSize: 16,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    minHeight: 150,
+    textAlignVertical: 'top',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+    gap: Spacing.md,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    fontSize: 16,
   },
 });

@@ -1707,6 +1707,9 @@ export interface AdminStats {
   totalViews: number;
   newUsersToday: number;
   newNovelsToday: number;
+  totalCoinsPurchased: number;
+  totalChapterSales: number;
+  platformRevenue: number; // 50% of total revenue shown to admin
 }
 
 // Get all users for admin (excludes super_admin users for security)
@@ -2052,6 +2055,8 @@ export async function getAdminStats(): Promise<AdminStats> {
       { count: totalViews },
       { count: newUsersToday },
       { count: newNovelsToday },
+      coinPurchaseData,
+      chapterSalesData,
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }),
       supabase.from('novels').select('*', { count: 'exact', head: true }),
@@ -2059,7 +2064,18 @@ export async function getAdminStats(): Promise<AdminStats> {
       supabase.from('novel_views').select('*', { count: 'exact', head: true }),
       supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
       supabase.from('novels').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
+      supabase.from('coin_transactions').select('amount').eq('type', 'purchase'),
+      supabase.from('coin_transactions').select('amount').eq('type', 'chapter_unlock'),
     ]);
+
+    // Calculate total coins purchased (positive amounts from purchases)
+    const totalCoinsPurchased = (coinPurchaseData.data || []).reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+    
+    // Calculate total chapter sales (negative amounts spent on chapters, convert to positive)
+    const totalChapterSales = (chapterSalesData.data || []).reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+    
+    // Platform revenue: 50% of total coins purchased (1 Novoin = Rp 1,000)
+    const platformRevenue = Math.floor(totalCoinsPurchased * 1000 * 0.5);
 
     return {
       totalUsers: totalUsers || 0,
@@ -2068,6 +2084,9 @@ export async function getAdminStats(): Promise<AdminStats> {
       totalViews: totalViews || 0,
       newUsersToday: newUsersToday || 0,
       newNovelsToday: newNovelsToday || 0,
+      totalCoinsPurchased,
+      totalChapterSales,
+      platformRevenue,
     };
   } catch (error) {
     console.error('Error in getAdminStats:', error);
@@ -2078,6 +2097,135 @@ export async function getAdminStats(): Promise<AdminStats> {
       totalViews: 0,
       newUsersToday: 0,
       newNovelsToday: 0,
+      totalCoinsPurchased: 0,
+      totalChapterSales: 0,
+      platformRevenue: 0,
     };
+  }
+}
+
+// Admin chapter interface
+export interface AdminChapter {
+  id: number;
+  novelId: number;
+  chapterNumber: number;
+  title: string;
+  content: string;
+  isFree: boolean;
+  createdAt: string;
+}
+
+// Get chapters for admin (by novel)
+export async function getChaptersAdmin(
+  novelId: number
+): Promise<AdminChapter[]> {
+  try {
+    const { data, error } = await supabase
+      .from('chapters')
+      .select('*')
+      .eq('novel_id', novelId)
+      .order('chapter_number', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching chapters:', error);
+      return [];
+    }
+
+    return (data || []).map(c => ({
+      id: c.id,
+      novelId: c.novel_id,
+      chapterNumber: c.chapter_number,
+      title: c.title,
+      content: c.content,
+      isFree: c.is_free,
+      createdAt: c.created_at,
+    }));
+  } catch (error) {
+    console.error('Error in getChaptersAdmin:', error);
+    return [];
+  }
+}
+
+// Update novel admin
+export async function updateNovelAdmin(
+  novelId: number,
+  updates: { title?: string; synopsis?: string; genre?: string; status?: string; coinPerChapter?: number }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const updateData: any = {};
+    if (updates.title !== undefined) updateData.title = updates.title;
+    if (updates.synopsis !== undefined) updateData.synopsis = updates.synopsis;
+    if (updates.genre !== undefined) updateData.genre = updates.genre;
+    if (updates.status !== undefined) updateData.status = updates.status;
+    if (updates.coinPerChapter !== undefined) updateData.coin_per_chapter = updates.coinPerChapter;
+
+    const { error } = await supabase
+      .from('novels')
+      .update(updateData)
+      .eq('id', novelId);
+
+    if (error) {
+      console.error('Error updating novel:', error);
+      return { success: false, error: 'Gagal mengupdate novel' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in updateNovelAdmin:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Update chapter admin
+export async function updateChapterAdmin(
+  chapterId: number,
+  updates: { title?: string; content?: string; isFree?: boolean }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const updateData: any = {};
+    if (updates.title !== undefined) updateData.title = updates.title;
+    if (updates.content !== undefined) updateData.content = updates.content;
+    if (updates.isFree !== undefined) updateData.is_free = updates.isFree;
+
+    const { error } = await supabase
+      .from('chapters')
+      .update(updateData)
+      .eq('id', chapterId);
+
+    if (error) {
+      console.error('Error updating chapter:', error);
+      return { success: false, error: 'Gagal mengupdate chapter' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in updateChapterAdmin:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
+  }
+}
+
+// Delete chapter admin
+export async function deleteChapterAdmin(
+  chapterId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Delete related data first
+    await supabase.from('unlocked_chapters').delete().eq('chapter_id', chapterId);
+    await supabase.from('chapter_comments').delete().eq('chapter_id', chapterId);
+    
+    const { error } = await supabase
+      .from('chapters')
+      .delete()
+      .eq('id', chapterId);
+
+    if (error) {
+      console.error('Error deleting chapter:', error);
+      return { success: false, error: 'Gagal menghapus chapter' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error in deleteChapterAdmin:', error);
+    return { success: false, error: 'Terjadi kesalahan' };
   }
 }

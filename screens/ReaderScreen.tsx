@@ -343,7 +343,10 @@ export default function ReaderScreen() {
     );
   }
 
-  const isUnlocked = currentChapter.isFree || unlockedChapters.has(chapterId);
+  // Author, Admin, Editor always have access to chapters (bypass lock)
+  const isAuthor = user?.id === novel.authorId;
+  const isAdminOrEditor = user?.role === 'super_admin' || user?.role === 'co_admin' || user?.role === 'editor';
+  const isUnlocked = currentChapter.isFree || unlockedChapters.has(chapterId) || isAuthor || isAdminOrEditor;
   const currentIndex = chapters.findIndex(c => c.id === chapterId);
   const hasNext = currentIndex >= 0 && currentIndex < chapters.length - 1;
   const hasPrev = currentIndex > 0;

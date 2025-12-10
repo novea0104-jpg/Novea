@@ -132,6 +132,48 @@ ON CONFLICT (novel_id, genre_id) DO NOTHING;
 
 **Analytics Hook:** `hooks/useWriterAnalytics.ts` - Fetches stats, earnings, novel performance, bank accounts, and withdrawal history from Supabase.
 
+### Admin Dashboard System
+
+**Access:** Available to Editor, Co Admin, and Super Admin roles via Profile screen.
+
+**Statistics Tab:** Displays comprehensive platform analytics including:
+- Total Users (with new registrations today)
+- Total Novels (with new publications today)
+- Total Chapters
+- Total Views
+- Revenue Statistics (50% platform share):
+  - Total Koin Terjual (coins purchased by users)
+  - Chapter Terbeli (coins spent on chapters)
+  - Pendapatan Platform (platform revenue in IDR)
+
+**User Management (Co Admin & Super Admin only):**
+- Search users by name/email
+- View user details (avatar, role, coins, ban status)
+- Change user roles (role hierarchy enforced)
+- Ban/unban users
+- Delete users (Super Admin only)
+
+**Novel/Chapter Management:**
+- View all novels with metadata
+- Edit novel titles
+- Publish/unpublish novels
+- Delete novels
+- View chapter list per novel
+- Edit chapters (title, content, free/paid status)
+- Delete chapters
+
+**Admin Functions (utils/supabase.ts):**
+- `getAdminStats()`: Fetch platform statistics including revenue
+- `updateNovelAdmin()`: Update novel metadata
+- `getChaptersAdmin()`: Get all chapters for a novel
+- `updateChapterAdmin()`: Update chapter content and settings
+- `deleteChapterAdmin()`: Delete a chapter
+
+**Chapter Reading Bypass:**
+- Authors can read their own locked chapters without unlocking
+- Admin and Editor roles can read all locked chapters without unlocking
+- Implemented in NovelDetailScreen and ReaderScreen
+
 ### Screen Architecture
 
 **Browse Flow:** Home (carousels), Search (filters), Novel Detail (synopsis, chapters), and Reader (customizable reading experience). Browse home screen features a custom header with the Novea gradient logo (32x32px) from `assets/images/novea-logo.png` and "ovea" text (22px bold) with a compact 4px gap.
