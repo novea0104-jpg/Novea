@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
@@ -28,6 +28,7 @@ import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 
 type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
+type ScreenRouteProp = RouteProp<ProfileStackParamList, "WriterDashboard">;
 
 const BANK_LIST = [
   { code: "BCA", name: "Bank Central Asia" },
@@ -42,9 +43,13 @@ const BANK_LIST = [
 
 export default function WriterDashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<ScreenRouteProp>();
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
   const { user } = useAuth();
+  
+  const initialTab = route.params?.initialTab;
+  const defaultTab = initialTab === "withdrawal" ? "withdrawal" : "analytics";
   
   const {
     stats,
@@ -59,7 +64,7 @@ export default function WriterDashboardScreen() {
     requestWithdrawal,
   } = useWriterAnalytics(user?.id);
 
-  const [activeTab, setActiveTab] = useState<"analytics" | "withdrawal">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "withdrawal">(defaultTab);
   const [showAddBankModal, setShowAddBankModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [selectedBank, setSelectedBank] = useState<typeof BANK_LIST[0] | null>(null);

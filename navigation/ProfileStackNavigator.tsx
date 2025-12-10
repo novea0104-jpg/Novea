@@ -25,7 +25,7 @@ export type ProfileStackParamList = {
   Profile: undefined;
   EditProfile: undefined;
   CoinStore: undefined;
-  WriterDashboard: undefined;
+  WriterDashboard: { initialTab?: "analytics" | "earnings" | "withdrawal" } | undefined;
   WriterCenter: undefined;
   CreateNovel: undefined;
   ManageChapters: { novelId: string };

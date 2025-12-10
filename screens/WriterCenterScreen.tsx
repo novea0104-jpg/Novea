@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Image, ActivityIndicator, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Image, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -93,6 +93,7 @@ export default function WriterCenterScreen() {
         synopsis: n.description,
         coinPerChapter: n.chapter_price,
         totalChapters: n.total_chapters,
+        freeChapters: n.free_chapters || 0,
         followers: viewCountsMap.get(n.id) || 0,
         lastUpdated: new Date(n.updated_at),
         createdAt: new Date(n.created_at),
@@ -188,23 +189,21 @@ export default function WriterCenterScreen() {
               icon="bar-chart-2"
               title="Analitik"
               description="Lihat statistik dan trafik novelmu"
-              onPress={() => Alert.alert("Coming Soon", "Fitur analitik akan segera hadir!")}
+              onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "analytics" })}
               theme={theme}
-              isComingSoon
             />
             
             <DashboardCard
               icon="dollar-sign"
               title="Pendapatan"
               description="Kelola penghasilan dari novelmu"
-              onPress={() => Alert.alert("Coming Soon", "Fitur pendapatan akan segera hadir!")}
+              onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "earnings" })}
               theme={theme}
-              isComingSoon
             />
           </View>
           
           <Pressable
-            onPress={() => Alert.alert("Coming Soon", "Fitur penarikan dana akan segera hadir!")}
+            onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "withdrawal" })}
             style={({ pressed }) => [
               styles.withdrawButton,
               { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
@@ -220,11 +219,7 @@ export default function WriterCenterScreen() {
                   Tarik pendapatan ke rekening bankmu
                 </ThemedText>
               </View>
-              <View style={[styles.comingSoonBadge, { backgroundColor: theme.warning + '20' }]}>
-                <ThemedText style={[styles.comingSoonText, { color: theme.warning }]}>
-                  Soon
-                </ThemedText>
-              </View>
+              <ChevronRightIcon size={20} color={theme.textMuted} />
             </View>
           </Pressable>
         </View>
@@ -245,7 +240,7 @@ function StatCard({ IconComponent, label, value, theme }: { IconComponent: React
   );
 }
 
-function DashboardCard({ icon, title, description, onPress, theme, isComingSoon }: { icon: string; title: string; description: string; onPress: () => void; theme: any; isComingSoon?: boolean }) {
+function DashboardCard({ icon, title, description, onPress, theme }: { icon: string; title: string; description: string; onPress: () => void; theme: any }) {
   const getIconComponent = () => {
     switch (icon) {
       case "bar-chart-2":
@@ -267,13 +262,6 @@ function DashboardCard({ icon, title, description, onPress, theme, isComingSoon 
         <ThemedText style={[styles.dashboardDescription, { color: theme.textSecondary }]} numberOfLines={2}>
           {description}
         </ThemedText>
-        {isComingSoon ? (
-          <View style={[styles.comingSoonBadgeSmall, { backgroundColor: theme.warning + '20' }]}>
-            <ThemedText style={[styles.comingSoonTextSmall, { color: theme.warning }]}>
-              Coming Soon
-            </ThemedText>
-          </View>
-        ) : null}
       </Card>
     </Pressable>
   );
