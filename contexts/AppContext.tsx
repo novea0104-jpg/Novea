@@ -315,8 +315,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           metadata: { chapter_id: parseInt(chapterId) },
         });
 
-      // Record writer earnings (70% writer, 30% platform)
-      const writerShare = Math.floor(cost * 0.70);
+      // Record writer earnings (80% writer, 20% platform)
+      const writerShare = Math.floor(cost * 0.80);
       const platformShare = cost - writerShare;
 
       await supabase

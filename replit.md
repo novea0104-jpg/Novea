@@ -112,7 +112,7 @@ ON CONFLICT (novel_id, genre_id) DO NOTHING;
 **Writer Monetization:** Writers have access to a comprehensive dashboard:
 - **Sales Analytics:** Professional charts showing daily/weekly earnings, per-novel performance, and revenue trends using react-native-svg
 - **Withdrawal System:** Bank account management and withdrawal requests with status tracking
-- **Revenue Split:** 70% to writer, 30% to platform
+- **Revenue Split:** 80% to writer, 20% to platform
 
 ### Writer Analytics & Withdrawal System
 
