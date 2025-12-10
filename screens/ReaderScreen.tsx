@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, NativeScrollEvent, NativeSyntheticEvent, TextInput, Image, KeyboardAvoidingView } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, NativeScrollEvent, NativeSyntheticEvent, TextInput, Image, Modal, FlatList, Keyboard } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
@@ -14,6 +15,9 @@ import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
 import { SendIcon } from "@/components/icons/SendIcon";
 import { TrashIcon } from "@/components/icons/TrashIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
+import { TypeIcon } from "@/components/icons/TypeIcon";
+import { SettingsIcon } from "@/components/icons/SettingsIcon";
+import { PlusIcon } from "@/components/icons/PlusIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/contexts/AppContext";
@@ -22,13 +26,24 @@ import { supabase } from "@/utils/supabase";
 import { Spacing, BorderRadius, Typography, Colors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
 
+const FONT_FAMILIES = [
+  { id: 'system', name: 'Default', fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' },
+  { id: 'serif', name: 'Serif', fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif' },
+  { id: 'mono', name: 'Monospace', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+];
+
+const FONT_SIZES = [14, 16, 18, 20, 22, 24];
+
 interface ChapterComment {
   id: number;
   userId: number;
   userName: string;
   userAvatar: string | null;
   content: string;
+  parentCommentId: number | null;
+  repliesCount: number;
   createdAt: Date;
+  replies?: ChapterComment[];
 }
 
 export default function ReaderScreen() {
@@ -45,6 +60,7 @@ export default function ReaderScreen() {
 
   const [showHeader, setShowHeader] = useState(true);
   const [fontSize, setFontSize] = useState(18);
+  const [fontFamily, setFontFamily] = useState(FONT_FAMILIES[0].fontFamily);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,7 +68,44 @@ export default function ReaderScreen() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ChapterComment | null>(null);
+  const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    loadReaderSettings();
+  }, []);
+
+  const loadReaderSettings = async () => {
+    try {
+      const savedFontSize = await AsyncStorage.getItem('reader_font_size');
+      const savedFontFamily = await AsyncStorage.getItem('reader_font_family');
+      if (savedFontSize) setFontSize(parseInt(savedFontSize));
+      if (savedFontFamily) setFontFamily(savedFontFamily);
+    } catch (e) {
+      console.log('Error loading reader settings:', e);
+    }
+  };
+
+  const saveReaderSettings = async (size: number, family: string) => {
+    try {
+      await AsyncStorage.setItem('reader_font_size', size.toString());
+      await AsyncStorage.setItem('reader_font_family', family);
+    } catch (e) {
+      console.log('Error saving reader settings:', e);
+    }
+  };
+
+  const handleFontSizeChange = (size: number) => {
+    setFontSize(size);
+    saveReaderSettings(size, fontFamily);
+  };
+
+  const handleFontFamilyChange = (family: string) => {
+    setFontFamily(family);
+    saveReaderSettings(fontSize, family);
+  };
 
   useEffect(() => {
     loadChapterData();
@@ -88,6 +141,8 @@ export default function ReaderScreen() {
         userName: c.users?.name || 'Anonim',
         userAvatar: c.users?.avatar_url || null,
         content: c.content,
+        parentCommentId: c.parent_comment_id || null,
+        repliesCount: c.replies_count || 0,
         createdAt: new Date(c.created_at),
       }));
 
@@ -180,9 +235,33 @@ export default function ReaderScreen() {
           <XIcon size={24} color={theme.text} />
         </Pressable>
       ),
-      headerRight: () => null,
+      headerRight: () => (
+        <View style={styles.headerRightContainer}>
+          <Pressable 
+            onPress={() => setShowCommentsModal(true)} 
+            style={styles.headerIconButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <MessageCircleIcon size={22} color={theme.text} />
+            {comments.filter(c => !c.parentCommentId).length > 0 ? (
+              <View style={[styles.headerBadge, { backgroundColor: theme.primary }]}>
+                <ThemedText style={styles.headerBadgeText}>
+                  {comments.filter(c => !c.parentCommentId).length > 99 ? '99+' : comments.filter(c => !c.parentCommentId).length}
+                </ThemedText>
+              </View>
+            ) : null}
+          </Pressable>
+          <Pressable 
+            onPress={() => setShowSettingsModal(true)} 
+            style={styles.headerIconButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <TypeIcon size={22} color={theme.text} />
+          </Pressable>
+        </View>
+      ),
     });
-  }, [navigation, showHeader, theme, novel, currentChapter]);
+  }, [navigation, showHeader, theme, novel, currentChapter, comments]);
 
   async function loadChapterData() {
     setIsLoading(true);
@@ -343,7 +422,7 @@ export default function ReaderScreen() {
         <ThemedText style={[styles.chapterTitle, Typography.h3]}>
           {currentChapter.title}
         </ThemedText>
-        <ThemedText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8 }]}>
+        <ThemedText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8, fontFamily }]}>
           {currentChapter.content}
         </ThemedText>
 
@@ -355,114 +434,6 @@ export default function ReaderScreen() {
           <View style={[styles.dividerLine, { backgroundColor: theme.textMuted }]} />
         </View>
 
-        <Pressable
-          onPress={() => setShowComments(!showComments)}
-          style={[styles.commentsToggle, { backgroundColor: theme.backgroundSecondary }]}
-        >
-          <MessageCircleIcon size={20} color={theme.primary} />
-          <ThemedText style={[styles.commentsToggleText, { color: theme.text }]}>
-            {showComments ? 'Sembunyikan Komentar' : 'Lihat Komentar'}
-          </ThemedText>
-          <View style={[styles.commentsBadge, { backgroundColor: theme.primary }]}>
-            <ThemedText style={styles.commentsBadgeText}>{comments.length}</ThemedText>
-          </View>
-        </Pressable>
-
-        {showComments ? (
-          <View style={styles.commentsSection}>
-            {user ? (
-              <View style={[styles.commentInputContainer, { backgroundColor: theme.backgroundSecondary }]}>
-                <View style={[styles.commentAvatarSmall, { backgroundColor: theme.primary + '30' }]}>
-                  {user.avatarUrl ? (
-                    <Image source={{ uri: user.avatarUrl }} style={styles.commentAvatarImage} />
-                  ) : (
-                    <UserIcon size={16} color={theme.primary} />
-                  )}
-                </View>
-                <TextInput
-                  style={[styles.commentInput, { color: theme.text, backgroundColor: theme.backgroundRoot }]}
-                  placeholder="Tulis komentar..."
-                  placeholderTextColor={theme.textMuted}
-                  value={newComment}
-                  onChangeText={setNewComment}
-                  multiline
-                  maxLength={500}
-                />
-                <Pressable
-                  onPress={submitComment}
-                  disabled={!newComment.trim() || submittingComment}
-                  style={({ pressed }) => [
-                    styles.sendButton,
-                    { backgroundColor: newComment.trim() ? theme.primary : theme.backgroundSecondary },
-                    pressed && { opacity: 0.7 },
-                  ]}
-                >
-                  {submittingComment ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <SendIcon size={18} color={newComment.trim() ? "#FFFFFF" : theme.textMuted} />
-                  )}
-                </Pressable>
-              </View>
-            ) : (
-              <Card elevation={1} style={styles.loginPrompt}>
-                <ThemedText style={[styles.loginPromptText, { color: theme.textSecondary }]}>
-                  Login untuk berkomentar
-                </ThemedText>
-              </Card>
-            )}
-
-            {commentsLoading ? (
-              <View style={styles.commentsLoading}>
-                <ActivityIndicator size="small" color={theme.primary} />
-              </View>
-            ) : comments.length === 0 ? (
-              <View style={styles.noComments}>
-                <MessageCircleIcon size={32} color={theme.textMuted} />
-                <ThemedText style={[styles.noCommentsText, { color: theme.textSecondary }]}>
-                  Belum ada komentar
-                </ThemedText>
-                <ThemedText style={[styles.noCommentsSubtext, { color: theme.textMuted }]}>
-                  Jadilah yang pertama berkomentar!
-                </ThemedText>
-              </View>
-            ) : (
-              <View style={styles.commentsList}>
-                {comments.map((comment) => (
-                  <View key={comment.id} style={[styles.commentCard, { backgroundColor: theme.backgroundSecondary }]}>
-                    <View style={[styles.commentAvatar, { backgroundColor: theme.primary + '20' }]}>
-                      {comment.userAvatar ? (
-                        <Image source={{ uri: comment.userAvatar }} style={styles.commentAvatarImage} />
-                      ) : (
-                        <UserIcon size={18} color={theme.primary} />
-                      )}
-                    </View>
-                    <View style={styles.commentContent}>
-                      <View style={styles.commentHeader}>
-                        <ThemedText style={styles.commentUserName}>{comment.userName}</ThemedText>
-                        <ThemedText style={[styles.commentTime, { color: theme.textMuted }]}>
-                          {formatTimeAgo(comment.createdAt)}
-                        </ThemedText>
-                      </View>
-                      <ThemedText style={[styles.commentText, { color: theme.textSecondary }]}>
-                        {comment.content}
-                      </ThemedText>
-                    </View>
-                    {user && parseInt(user.id) === comment.userId ? (
-                      <Pressable
-                        onPress={() => deleteComment(comment.id)}
-                        style={styles.deleteButton}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <TrashIcon size={16} color={theme.error} />
-                      </Pressable>
-                    ) : null}
-                  </View>
-                ))}
-              </View>
-            )}
-          </View>
-        ) : null}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
@@ -507,6 +478,339 @@ export default function ReaderScreen() {
           <ChevronRightIcon size={18} color={hasNext ? "#FFFFFF" : theme.textMuted} />
         </Pressable>
       </View>
+
+      <Modal
+        visible={showCommentsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => {
+          setShowCommentsModal(false);
+          setReplyingTo(null);
+          setNewComment("");
+        }}
+      >
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
+          <View style={[styles.modalContainer, { backgroundColor: theme.backgroundRoot }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.backgroundSecondary }]}>
+              <ThemedText style={styles.modalTitle}>Komentar</ThemedText>
+              <Pressable
+                onPress={() => {
+                  setShowCommentsModal(false);
+                  setReplyingTo(null);
+                  setNewComment("");
+                }}
+                style={styles.modalCloseButton}
+              >
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <FlatList
+              data={comments.filter(c => !c.parentCommentId)}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.commentsListModal}
+              ListEmptyComponent={
+                commentsLoading ? (
+                  <View style={styles.commentsLoading}>
+                    <ActivityIndicator size="small" color={theme.primary} />
+                  </View>
+                ) : (
+                  <View style={styles.noComments}>
+                    <MessageCircleIcon size={48} color={theme.textMuted} />
+                    <ThemedText style={[styles.noCommentsText, { color: theme.textSecondary }]}>
+                      Belum ada komentar
+                    </ThemedText>
+                    <ThemedText style={[styles.noCommentsSubtext, { color: theme.textMuted }]}>
+                      Jadilah yang pertama berkomentar!
+                    </ThemedText>
+                  </View>
+                )
+              }
+              renderItem={({ item: comment }) => (
+                <View style={styles.commentThread}>
+                  <View style={[styles.commentCard, { backgroundColor: theme.backgroundSecondary }]}>
+                    <View style={[styles.commentAvatar, { backgroundColor: theme.primary + '20' }]}>
+                      {comment.userAvatar ? (
+                        <Image source={{ uri: comment.userAvatar }} style={styles.commentAvatarImage} />
+                      ) : (
+                        <UserIcon size={18} color={theme.primary} />
+                      )}
+                    </View>
+                    <View style={styles.commentContent}>
+                      <View style={styles.commentHeader}>
+                        <ThemedText style={styles.commentUserName}>{comment.userName}</ThemedText>
+                        <ThemedText style={[styles.commentTime, { color: theme.textMuted }]}>
+                          {formatTimeAgo(comment.createdAt)}
+                        </ThemedText>
+                      </View>
+                      <ThemedText style={[styles.commentText, { color: theme.textSecondary }]}>
+                        {comment.content}
+                      </ThemedText>
+                      <View style={styles.commentActions}>
+                        {user ? (
+                          <Pressable
+                            onPress={() => setReplyingTo(comment)}
+                            style={styles.replyButton}
+                          >
+                            <ThemedText style={[styles.replyButtonText, { color: theme.primary }]}>
+                              Balas
+                            </ThemedText>
+                          </Pressable>
+                        ) : null}
+                        {comment.repliesCount > 0 ? (
+                          <Pressable
+                            onPress={() => {
+                              setExpandedReplies(prev => {
+                                const next = new Set(prev);
+                                if (next.has(comment.id)) {
+                                  next.delete(comment.id);
+                                } else {
+                                  next.add(comment.id);
+                                }
+                                return next;
+                              });
+                            }}
+                            style={styles.viewRepliesButton}
+                          >
+                            <ThemedText style={[styles.viewRepliesText, { color: theme.textMuted }]}>
+                              {expandedReplies.has(comment.id) ? 'Sembunyikan' : `${comment.repliesCount} balasan`}
+                            </ThemedText>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    </View>
+                    {user && parseInt(user.id) === comment.userId ? (
+                      <Pressable
+                        onPress={() => deleteComment(comment.id)}
+                        style={styles.deleteButton}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <TrashIcon size={16} color={theme.error} />
+                      </Pressable>
+                    ) : null}
+                  </View>
+
+                  {expandedReplies.has(comment.id) ? (
+                    <View style={styles.repliesContainer}>
+                      {comments
+                        .filter(c => c.parentCommentId === comment.id)
+                        .map(reply => (
+                          <View key={reply.id} style={[styles.replyCard, { backgroundColor: theme.backgroundSecondary }]}>
+                            <View style={[styles.commentAvatarSmall, { backgroundColor: theme.primary + '20' }]}>
+                              {reply.userAvatar ? (
+                                <Image source={{ uri: reply.userAvatar }} style={styles.commentAvatarImage} />
+                              ) : (
+                                <UserIcon size={14} color={theme.primary} />
+                              )}
+                            </View>
+                            <View style={styles.commentContent}>
+                              <View style={styles.commentHeader}>
+                                <ThemedText style={[styles.commentUserName, { fontSize: 12 }]}>{reply.userName}</ThemedText>
+                                <ThemedText style={[styles.commentTime, { color: theme.textMuted }]}>
+                                  {formatTimeAgo(reply.createdAt)}
+                                </ThemedText>
+                              </View>
+                              <ThemedText style={[styles.commentText, { color: theme.textSecondary, fontSize: 13 }]}>
+                                {reply.content}
+                              </ThemedText>
+                            </View>
+                            {user && parseInt(user.id) === reply.userId ? (
+                              <Pressable
+                                onPress={() => deleteComment(reply.id)}
+                                style={styles.deleteButton}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                              >
+                                <TrashIcon size={14} color={theme.error} />
+                              </Pressable>
+                            ) : null}
+                          </View>
+                        ))}
+                    </View>
+                  ) : null}
+                </View>
+              )}
+            />
+
+            {user ? (
+              <View style={[styles.commentInputContainer, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.backgroundSecondary }]}>
+                {replyingTo ? (
+                  <View style={styles.replyingToBar}>
+                    <ThemedText style={[styles.replyingToText, { color: theme.textMuted }]} numberOfLines={1}>
+                      Membalas {replyingTo.userName}
+                    </ThemedText>
+                    <Pressable onPress={() => setReplyingTo(null)}>
+                      <XIcon size={16} color={theme.textMuted} />
+                    </Pressable>
+                  </View>
+                ) : null}
+                <View style={styles.commentInputRow}>
+                  <View style={[styles.commentAvatarSmall, { backgroundColor: theme.primary + '30' }]}>
+                    {user.avatarUrl ? (
+                      <Image source={{ uri: user.avatarUrl }} style={styles.commentAvatarImage} />
+                    ) : (
+                      <UserIcon size={16} color={theme.primary} />
+                    )}
+                  </View>
+                  <TextInput
+                    style={[styles.commentInput, { color: theme.text, backgroundColor: theme.backgroundRoot }]}
+                    placeholder={replyingTo ? "Tulis balasan..." : "Tulis komentar..."}
+                    placeholderTextColor={theme.textMuted}
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    multiline
+                    maxLength={500}
+                  />
+                  <Pressable
+                    onPress={async () => {
+                      if (!newComment.trim()) return;
+                      setSubmittingComment(true);
+                      try {
+                        const insertData: any = {
+                          user_id: parseInt(user.id),
+                          chapter_id: parseInt(chapterId),
+                          novel_id: parseInt(novelId),
+                          content: newComment.trim(),
+                        };
+                        if (replyingTo) {
+                          insertData.parent_comment_id = replyingTo.id;
+                        }
+                        const { error } = await supabase.from('chapter_comments').insert(insertData);
+                        if (error) throw error;
+                        if (replyingTo) {
+                          await supabase.rpc('increment_comment_replies', { comment_id: replyingTo.id });
+                          setExpandedReplies(prev => new Set(prev).add(replyingTo.id));
+                        }
+                        setNewComment("");
+                        setReplyingTo(null);
+                        Keyboard.dismiss();
+                        await loadComments();
+                      } catch (error) {
+                        console.error('Error submitting comment:', error);
+                      } finally {
+                        setSubmittingComment(false);
+                      }
+                    }}
+                    disabled={!newComment.trim() || submittingComment}
+                    style={({ pressed }) => [
+                      styles.sendButton,
+                      { backgroundColor: newComment.trim() ? theme.primary : theme.backgroundRoot },
+                      pressed && { opacity: 0.7 },
+                    ]}
+                  >
+                    {submittingComment ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <SendIcon size={18} color={newComment.trim() ? "#FFFFFF" : theme.textMuted} />
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <View style={[styles.loginPromptModal, { backgroundColor: theme.backgroundSecondary }]}>
+                <ThemedText style={[styles.loginPromptText, { color: theme.textSecondary }]}>
+                  Login untuk berkomentar
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showSettingsModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowSettingsModal(false)}
+      >
+        <Pressable 
+          style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+          onPress={() => setShowSettingsModal(false)}
+        >
+          <Pressable 
+            style={[styles.settingsModalContainer, { backgroundColor: theme.backgroundRoot }]}
+            onPress={() => {}}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: theme.backgroundSecondary }]}>
+              <ThemedText style={styles.modalTitle}>Pengaturan Bacaan</ThemedText>
+              <Pressable
+                onPress={() => setShowSettingsModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <View style={styles.settingsContent}>
+              <View style={styles.settingSection}>
+                <ThemedText style={[styles.settingLabel, { color: theme.textSecondary }]}>
+                  Ukuran Huruf
+                </ThemedText>
+                <View style={styles.fontSizeControls}>
+                  {FONT_SIZES.map((size) => (
+                    <Pressable
+                      key={size}
+                      onPress={() => handleFontSizeChange(size)}
+                      style={[
+                        styles.fontSizeButton,
+                        { 
+                          backgroundColor: fontSize === size ? theme.primary : theme.backgroundSecondary,
+                          borderColor: fontSize === size ? theme.primary : theme.backgroundSecondary,
+                        },
+                      ]}
+                    >
+                      <ThemedText style={[
+                        styles.fontSizeButtonText,
+                        { color: fontSize === size ? '#FFFFFF' : theme.text }
+                      ]}>
+                        {size}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.settingSection}>
+                <ThemedText style={[styles.settingLabel, { color: theme.textSecondary }]}>
+                  Jenis Huruf
+                </ThemedText>
+                <View style={styles.fontFamilyControls}>
+                  {FONT_FAMILIES.map((font) => (
+                    <Pressable
+                      key={font.id}
+                      onPress={() => handleFontFamilyChange(font.fontFamily)}
+                      style={[
+                        styles.fontFamilyButton,
+                        { 
+                          backgroundColor: fontFamily === font.fontFamily ? theme.primary : theme.backgroundSecondary,
+                        },
+                      ]}
+                    >
+                      <ThemedText style={[
+                        styles.fontFamilyButtonText,
+                        { 
+                          color: fontFamily === font.fontFamily ? '#FFFFFF' : theme.text,
+                          fontFamily: font.fontFamily,
+                        }
+                      ]}>
+                        {font.name}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+
+              <View style={[styles.previewSection, { backgroundColor: theme.backgroundSecondary }]}>
+                <ThemedText style={[styles.previewLabel, { color: theme.textMuted }]}>
+                  Pratinjau
+                </ThemedText>
+                <ThemedText style={[styles.previewText, { fontSize, fontFamily, color: theme.text }]}>
+                  Selamat datang di dunia novel digital. Ini adalah contoh teks untuk pratinjau.
+                </ThemedText>
+              </View>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ThemedView>
   );
 }
@@ -749,5 +1053,170 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: Spacing.xs,
     alignSelf: "flex-start",
+  },
+  headerRightContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  headerIconButton: {
+    padding: Spacing.sm,
+    position: "relative",
+  },
+  headerBadge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  headerBadgeText: {
+    fontSize: 9,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalContainer: {
+    height: "80%",
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+  },
+  settingsModalContainer: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing["3xl"],
+    borderRadius: BorderRadius.xl,
+    maxHeight: "60%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  modalCloseButton: {
+    padding: Spacing.xs,
+  },
+  commentsListModal: {
+    padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  commentThread: {
+    gap: Spacing.sm,
+  },
+  commentActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    marginTop: Spacing.xs,
+  },
+  replyButton: {
+    paddingVertical: Spacing.xs,
+  },
+  replyButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  viewRepliesButton: {
+    paddingVertical: Spacing.xs,
+  },
+  viewRepliesText: {
+    fontSize: 12,
+  },
+  repliesContainer: {
+    marginLeft: Spacing["2xl"],
+    gap: Spacing.sm,
+  },
+  replyCard: {
+    flexDirection: "row",
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.sm,
+  },
+  replyingToBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
+  },
+  replyingToText: {
+    fontSize: 12,
+    flex: 1,
+  },
+  commentInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.sm,
+  },
+  loginPromptModal: {
+    alignItems: "center",
+    paddingVertical: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(128, 128, 128, 0.2)",
+  },
+  settingsContent: {
+    padding: Spacing.lg,
+    gap: Spacing.xl,
+  },
+  settingSection: {
+    gap: Spacing.md,
+  },
+  settingLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  fontSizeControls: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flexWrap: "wrap",
+  },
+  fontSizeButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    minWidth: 44,
+    alignItems: "center",
+  },
+  fontSizeButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  fontFamilyControls: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    flexWrap: "wrap",
+  },
+  fontFamilyButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+  },
+  fontFamilyButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  previewSection: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  previewLabel: {
+    fontSize: 12,
+    marginBottom: Spacing.sm,
+  },
+  previewText: {
+    lineHeight: 28,
   },
 });
