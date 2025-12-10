@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
   updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
@@ -197,6 +198,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function resetPassword(email: string) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://noveaindonesia.com/reset-password',
+    });
+    
+    if (error) {
+      console.error('Reset password error:', error);
+      throw new Error(error.message || 'Gagal mengirim email reset password');
+    }
+  }
+
   async function upgradeToWriter() {
     if (!user) return;
     
@@ -319,6 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         logout,
+        resetPassword,
         upgradeToWriter,
         updateCoinBalance,
         updateProfile,

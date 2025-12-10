@@ -32,7 +32,10 @@ Preferred communication style: Simple, everyday language.
 
 **Database:** PostgreSQL hosted on Supabase, with `@supabase/supabase-js` for client-side interaction. Row Level Security (RLS) is used for authorization.
 
-**Authentication:** Supabase Auth (email/password) manages user sessions and integrates with the `users` table for profiles.
+**Authentication:** Supabase Auth (email/password) manages user sessions and integrates with the `users` table for profiles. Features include:
+- **Forgot Password:** Uses Supabase's `resetPasswordForEmail()` to send password reset links. The reset flow redirects to `https://noveaindonesia.com/reset-password`.
+- **Remember Email:** Optional email saving using `expo-secure-store` (native) or localStorage (web) for user convenience. Only email is saved, never passwords.
+- **Session Persistence:** Supabase Auth automatically persists sessions across app restarts.
 
 **Database Schema:** Consists of 12 tables: `users`, `novels`, `chapters`, `reading_progress`, `unlocked_chapters`, `following_novels`, `coin_transactions`, `timeline_posts`, `timeline_post_likes`, `timeline_post_comments`, `genres`, and `novel_genres`.
 

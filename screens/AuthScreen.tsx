@@ -1,7 +1,8 @@
-import React, { useState } from "react";
-import { View, StyleSheet, TextInput, Alert, Pressable, ScrollView, Image } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, TextInput, Alert, Pressable, ScrollView, Image, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import * as SecureStore from "expo-secure-store";
 import { ThemedText } from "@/components/ThemedText";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { MailIcon } from "@/components/icons/MailIcon";
@@ -15,6 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/hooks/useTheme";
 import { Colors, Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 
+const SAVED_EMAIL_KEY = "novea_saved_email";
+
 interface AuthScreenProps {
   onClose?: () => void;
 }
@@ -27,10 +30,62 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
-  const { login, signup } = useAuth();
+  const { login, signup, resetPassword } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    loadSavedEmail();
+  }, []);
+
+  const loadSavedEmail = async () => {
+    try {
+      if (Platform.OS === "web") {
+        const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY);
+        if (savedEmail) {
+          setEmail(savedEmail);
+          setRememberEmail(true);
+        }
+      } else {
+        const savedEmail = await SecureStore.getItemAsync(SAVED_EMAIL_KEY);
+        if (savedEmail) {
+          setEmail(savedEmail);
+          setRememberEmail(true);
+        }
+      }
+    } catch (error) {
+      console.log("Error loading saved email:", error);
+    }
+  };
+
+  const saveEmail = async (emailToSave: string) => {
+    try {
+      if (Platform.OS === "web") {
+        localStorage.setItem(SAVED_EMAIL_KEY, emailToSave);
+      } else {
+        await SecureStore.setItemAsync(SAVED_EMAIL_KEY, emailToSave);
+      }
+    } catch (error) {
+      console.log("Error saving email:", error);
+    }
+  };
+
+  const clearSavedEmail = async () => {
+    try {
+      if (Platform.OS === "web") {
+        localStorage.removeItem(SAVED_EMAIL_KEY);
+      } else {
+        await SecureStore.deleteItemAsync(SAVED_EMAIL_KEY);
+      }
+    } catch (error) {
+      console.log("Error clearing saved email:", error);
+    }
+  };
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -76,9 +131,17 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
     try {
       if (isLogin) {
         await login(email.trim(), password);
+        if (rememberEmail) {
+          await saveEmail(email.trim());
+        } else {
+          await clearSavedEmail();
+        }
         onClose?.();
       } else {
         await signup(email.trim(), password, name.trim());
+        if (rememberEmail) {
+          await saveEmail(email.trim());
+        }
         Alert.alert(
           "Berhasil",
           "Akun berhasil dibuat! Selamat datang di Novea.",
@@ -89,6 +152,34 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
       Alert.alert("Kesalahan", error.message || "Terjadi kesalahan");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail.trim()) {
+      Alert.alert("Kesalahan", "Masukkan alamat email kamu");
+      return;
+    }
+
+    if (!validateEmail(forgotPasswordEmail)) {
+      Alert.alert("Kesalahan", "Masukkan alamat email yang valid");
+      return;
+    }
+
+    setIsSendingReset(true);
+
+    try {
+      await resetPassword(forgotPasswordEmail.trim());
+      Alert.alert(
+        "Email Terkirim",
+        "Kami telah mengirimkan link reset password ke email kamu. Silakan cek inbox atau folder spam.",
+        [{ text: "OK", onPress: () => setShowForgotPassword(false) }]
+      );
+      setForgotPasswordEmail("");
+    } catch (error: any) {
+      Alert.alert("Kesalahan", error.message || "Gagal mengirim email reset password");
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -278,6 +369,38 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
             </View>
           )}
 
+          {/* Remember Email and Forgot Password Row */}
+          <View style={styles.optionsRow}>
+            <Pressable 
+              style={styles.rememberMeRow}
+              onPress={() => setRememberEmail(!rememberEmail)}
+            >
+              <View style={[
+                styles.checkbox,
+                { borderColor: rememberEmail ? GradientColors.purplePink.colors[0] : theme.textSecondary },
+                rememberEmail && { backgroundColor: GradientColors.purplePink.colors[0] }
+              ]}>
+                {rememberEmail ? (
+                  <ThemedText style={styles.checkmark}>✓</ThemedText>
+                ) : null}
+              </View>
+              <ThemedText style={[styles.rememberMeText, { color: theme.textSecondary }]}>
+                Ingat email
+              </ThemedText>
+            </Pressable>
+
+            {isLogin ? (
+              <Pressable onPress={() => {
+                setForgotPasswordEmail(email);
+                setShowForgotPassword(true);
+              }}>
+                <ThemedText style={[styles.forgotPasswordText, { color: GradientColors.purplePink.colors[0] }]}>
+                  Lupa kata sandi?
+                </ThemedText>
+              </Pressable>
+            ) : null}
+          </View>
+
           {/* Submit Button */}
           <Pressable
             onPress={handleSubmit}
@@ -324,6 +447,71 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
       <ThemedText style={[styles.footer, { color: theme.textMuted }]}>
         Dengan melanjutkan, kamu menyetujui Ketentuan Layanan dan Kebijakan Privasi Novea
       </ThemedText>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword ? (
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setShowForgotPassword(false)}
+        >
+          <Pressable 
+            style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <ThemedText style={styles.modalTitle}>Lupa Kata Sandi</ThemedText>
+              <Pressable onPress={() => setShowForgotPassword(false)}>
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <ThemedText style={[styles.modalDescription, { color: theme.textSecondary }]}>
+              Masukkan alamat email yang terdaftar. Kami akan mengirimkan link untuk mengatur ulang kata sandi kamu.
+            </ThemedText>
+
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Email</ThemedText>
+              <View style={[styles.inputWrapper, { backgroundColor: theme.backgroundRoot, borderColor: theme.cardBorder }]}>
+                <View style={styles.inputIcon}>
+                  <MailIcon size={20} color={theme.textSecondary} />
+                </View>
+                <TextInput
+                  style={[styles.input, { color: theme.text }]}
+                  placeholder="Masukkan email kamu"
+                  placeholderTextColor={theme.textMuted}
+                  value={forgotPasswordEmail}
+                  onChangeText={setForgotPasswordEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isSendingReset}
+                />
+              </View>
+            </View>
+
+            <Pressable
+              onPress={handleForgotPassword}
+              disabled={isSendingReset}
+              style={({ pressed }) => [
+                styles.submitButton,
+                pressed && styles.submitButtonPressed,
+                { marginTop: Spacing.lg }
+              ]}
+            >
+              <LinearGradient
+                colors={GradientColors.purplePink.colors}
+                start={GradientColors.purplePink.start}
+                end={GradientColors.purplePink.end}
+                style={styles.submitButtonGradient}
+              >
+                <ThemedText style={styles.submitButtonText}>
+                  {isSendingReset ? "Mengirim..." : "Kirim Link Reset"}
+                </ThemedText>
+              </LinearGradient>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      ) : null}
     </ScrollView>
   );
 }
@@ -463,5 +651,67 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 10,
+  },
+  optionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: Spacing.xs,
+  },
+  rememberMeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkmark: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  rememberMeText: {
+    fontSize: 14,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: "100%",
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  modalDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: Spacing.xl,
   },
 });
