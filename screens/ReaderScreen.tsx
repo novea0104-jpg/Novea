@@ -794,8 +794,8 @@ export default function ReaderScreen() {
                 <ThemedText style={[styles.previewLabel, { color: theme.textMuted }]}>
                   Pratinjau
                 </ThemedText>
-                <ThemedText style={[styles.previewText, { fontSize, fontFamily, color: theme.text }]}>
-                  Selamat datang di dunia novel digital. Ini adalah contoh teks untuk pratinjau.
+                <ThemedText style={[styles.previewText, { fontSize, fontFamily, color: theme.text }]} numberOfLines={3}>
+                  {currentChapter?.content?.split('\n').find(p => p.trim().length > 0)?.trim() || 'Tidak ada konten tersedia.'}
                 </ThemedText>
               </View>
             </View>
