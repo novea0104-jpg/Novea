@@ -188,7 +188,7 @@ export default function WriterCenterScreen() {
             <DashboardCard
               icon="bar-chart-2"
               title="Analitik"
-              description="Lihat statistik dan trafik novelmu"
+              description={"Lihat statistik\ndan trafik novelmu"}
               onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "analytics" })}
               theme={theme}
             />
@@ -196,7 +196,7 @@ export default function WriterCenterScreen() {
             <DashboardCard
               icon="dollar-sign"
               title="Pendapatan"
-              description="Kelola penghasilan dari novelmu"
+              description={"Kelola penghasilan\ndari novelmu"}
               onPress={() => (navigation as any).navigate("WriterDashboard", { initialTab: "earnings" })}
               theme={theme}
             />
