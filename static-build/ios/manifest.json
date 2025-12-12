@@ -1,11 +1,11 @@
 {
-  "id": "39dedd77-82f3-4187-8446-781faf6f9217",
-  "createdAt": "2025-12-10T10:23:23.214Z",
+  "id": "0becdc22-a0b6-4851-93a8-19fa434e6e95",
+  "createdAt": "2025-12-12T12:07:23.716Z",
   "runtimeVersion": "exposdk:54.0.0",
   "launchAsset": {
-    "key": "bundle-1765362203214-19660",
+    "key": "bundle-1765541243716-6008",
     "contentType": "application/javascript",
-    "url": "https://noveaindonesia.com/1765362203214-19660/_expo/static/js/ios/bundle.js"
+    "url": "https://noveaindonesia.com/1765541243716-6008/_expo/static/js/ios/bundle.js"
   },
   "assets": [],
   "metadata": {},
@@ -38,7 +38,10 @@
         },
         "edgeToEdgeEnabled": true,
         "predictiveBackGestureEnabled": false,
-        "package": "com.novea.app"
+        "package": "com.novea.app",
+        "permissions": [
+          "com.android.vending.BILLING"
+        ]
       },
       "web": {
         "output": "single",
@@ -58,7 +61,8 @@
             }
           }
         ],
-        "expo-web-browser"
+        "expo-web-browser",
+        "react-native-iap"
       ],
       "experiments": {
         "reactCompiler": true
@@ -82,6 +86,10 @@
           "expo-web-browser": {
             "name": "expo-web-browser",
             "version": "15.0.9"
+          },
+          "react-native-iap": {
+            "name": "react-native-iap",
+            "version": "14.5.0"
           }
         }
       },
@@ -108,6 +116,6 @@
       },
       "mainModuleName": "index"
     },
-    "scopeKey": "@anonymous/novea-a5bf62d5-3ec4-4678-a266-17e6e4c21b54"
+    "scopeKey": "@anonymous/novea-bfe4cd94-acac-42bc-a4e5-881b6798ab16"
   }
 }
