@@ -134,7 +134,12 @@ async function handlePurchaseUpdate(purchase: Purchase) {
   }
 
   try {
-    const result = await validateAndProcessPurchase(purchase, userId);
+    const result = await validatePurchaseServerSide(
+      parseInt(userId),
+      productId,
+      purchase.purchaseToken || '',
+      purchase.transactionId || ''
+    );
     
     if (result.success && result.totalCoins > 0) {
       if (purchase.purchaseToken) {
@@ -167,6 +172,42 @@ async function handlePurchaseUpdate(purchase: Purchase) {
       callback.onError(err.message || 'Gagal memproses pembelian');
       currentPurchaseCallback = null;
     }
+  }
+}
+
+interface ValidateResult {
+  success: boolean;
+  totalCoins: number;
+  newBalance?: number;
+  error?: string;
+  message?: string;
+}
+
+async function validatePurchaseServerSide(
+  userId: number,
+  productId: string,
+  purchaseToken: string,
+  transactionId: string
+): Promise<ValidateResult> {
+  try {
+    const { data, error } = await supabase.functions.invoke('validate-purchase', {
+      body: {
+        userId,
+        productId,
+        purchaseToken,
+        transactionId,
+      },
+    });
+
+    if (error) {
+      console.error('Edge function error:', error);
+      return { success: false, totalCoins: 0, error: error.message };
+    }
+
+    return data as ValidateResult;
+  } catch (error: any) {
+    console.error('Error calling validate-purchase:', error);
+    return { success: false, totalCoins: 0, error: error.message || 'Server validation failed' };
   }
 }
 
@@ -218,88 +259,6 @@ export async function purchaseProduct(
     console.error('Error requesting purchase:', error);
     currentPurchaseCallback = null;
     onError(error.message || 'Gagal memulai pembelian');
-  }
-}
-
-interface ValidateResult {
-  success: boolean;
-  totalCoins: number;
-  error?: string;
-}
-
-async function validateAndProcessPurchase(purchase: Purchase, userId: string): Promise<ValidateResult> {
-  try {
-    const productId = purchase.productId as NovoinProductId;
-    const coinInfo = PRODUCT_COIN_MAP[productId];
-    
-    if (!coinInfo) {
-      return { success: false, totalCoins: 0, error: 'Produk tidak dikenal' };
-    }
-
-    const totalCoins = coinInfo.coins + coinInfo.bonus;
-    const referenceId = purchase.transactionId || purchase.purchaseToken || '';
-
-    if (!referenceId) {
-      return { success: false, totalCoins: 0, error: 'ID transaksi tidak valid' };
-    }
-
-    const { data: existingTx } = await supabase
-      .from('coin_transactions')
-      .select('id')
-      .eq('reference_id', referenceId)
-      .maybeSingle();
-
-    if (existingTx) {
-      console.log('Transaction already processed:', referenceId);
-      return { success: true, totalCoins: 0, error: 'Transaksi sudah diproses' };
-    }
-
-    const { error: transactionError } = await supabase
-      .from('coin_transactions')
-      .insert({
-        user_id: parseInt(userId),
-        type: 'purchase',
-        amount: totalCoins,
-        description: `Pembelian ${totalCoins} Novoin via Google Play`,
-        reference_id: referenceId,
-      });
-
-    if (transactionError) {
-      if (transactionError.code === '23505') {
-        console.log('Duplicate transaction detected:', referenceId);
-        return { success: true, totalCoins: 0, error: 'Transaksi sudah diproses' };
-      }
-      console.error('Error recording transaction:', transactionError);
-      return { success: false, totalCoins: 0, error: 'Gagal mencatat transaksi' };
-    }
-
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('coin_balance')
-      .eq('id', parseInt(userId))
-      .single();
-
-    if (userError || !user) {
-      console.error('Error fetching user:', userError);
-      return { success: false, totalCoins: 0, error: 'Gagal mengambil data pengguna' };
-    }
-
-    const newBalance = user.coin_balance + totalCoins;
-
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ coin_balance: newBalance })
-      .eq('id', parseInt(userId));
-
-    if (updateError) {
-      console.error('Error updating coin balance:', updateError);
-      return { success: false, totalCoins: 0, error: 'Gagal memperbarui saldo' };
-    }
-
-    return { success: true, totalCoins };
-  } catch (error: any) {
-    console.error('Error validating purchase:', error);
-    return { success: false, totalCoins: 0, error: error.message || 'Terjadi kesalahan' };
   }
 }
 

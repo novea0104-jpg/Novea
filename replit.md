@@ -2,7 +2,7 @@
 
 ## Overview
 
-Novea is a React Native mobile application for reading and writing digital novels, featuring a coin-based monetization system. Built with Expo and Supabase for iOS and Android, it offers an immersive reading experience and supports two user roles: Readers (content consumers) and Writers (content creators). The project aims to provide a platform similar to modern content streaming apps but for digital novels, with a fully serverless backend powered by Supabase.
+Novea is a React Native mobile application for reading and writing digital novels, featuring a coin-based monetization system. Built with Expo and Supabase for iOS and Android, it provides an immersive reading experience and supports two user roles: Readers (content consumers) and Writers (content creators). The project aims to be a leading platform for digital novels, leveraging a fully serverless backend.
 
 ## User Preferences
 
@@ -12,206 +12,48 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-**Framework & Runtime:** React Native 0.81.5 with React 19.1.0, Expo SDK 54, New React Native Architecture, and experimental React Compiler.
-
-**Navigation System:** React Navigation v7 with a custom floating bottom tab bar (Browse, Library, Notifications, Profile) and a Floating Action Button (FAB) for Writers. Features include transparent/blur headers and custom tab bar aesthetics.
-
-**State Management:** React Context API for global state (`AuthContext`, `AppContext`) and React hooks for local component state.
-
-**UI/UX Architecture:** Custom theming with light/dark mode, gradient components, Reanimated v4 for animations, `react-native-gesture-handler` for gestures, safe area management, and keyboard-aware scrolling.
-
-**Component Design Pattern:** Themed components (`ThemedView`, `ThemedText`), screen wrapper components (`ScreenScrollView`, `ScreenFlatList`), reusable UI components (e.g., `Button`, `NovelCard`), error boundaries, and custom hooks (`useAuth`, `useTheme`, `useUserStats`).
-
-**Design System:** Centralized theme constants (colors, typography, spacing, gradients) with a pure black theme, dark grey elevated cards, genre-specific gradients, and platform-specific shadow/blur effects.
-
-**Module Resolution:** Path aliasing using `@/` for root-level imports via Babel module resolver.
+**Framework & Runtime:** React Native with Expo SDK, New React Native Architecture, and experimental React Compiler.
+**Navigation System:** React Navigation v7 with a custom floating bottom tab bar (Browse, Library, Notifications, Profile) and a conditional Floating Action Button (FAB).
+**State Management:** React Context API for global state and React hooks for local component state.
+**UI/UX Architecture:** Custom theming with light/dark mode, gradient components, Reanimated for animations, and `react-native-gesture-handler` for gestures.
+**Component Design Pattern:** Themed components, screen wrappers, reusable UI components, error boundaries, and custom hooks.
+**Design System:** Centralized theme constants (colors, typography, spacing, gradients) featuring a pure black theme and genre-specific gradients.
+**Module Resolution:** Path aliasing using `@/` via Babel module resolver.
 
 ### Backend Architecture (Supabase)
 
-**Backend-as-a-Service:** Supabase Cloud (PostgreSQL, Auth, REST APIs) serves as a fully serverless backend.
-
-**Database:** PostgreSQL hosted on Supabase, with `@supabase/supabase-js` for client-side interaction. Row Level Security (RLS) is used for authorization.
-
-**Authentication:** Supabase Auth (email/password) manages user sessions and integrates with the `users` table for profiles. Features include:
-- **Forgot Password:** Uses Supabase's `resetPasswordForEmail()` to send password reset links. The reset flow redirects to `https://noveaindonesia.com/reset-password`.
-- **Remember Email:** Optional email saving using `expo-secure-store` (native) or localStorage (web) for user convenience. Only email is saved, never passwords.
-- **Session Persistence:** Supabase Auth automatically persists sessions across app restarts.
-
-**Database Schema:** Consists of 12 tables: `users`, `novels`, `chapters`, `reading_progress`, `unlocked_chapters`, `following_novels`, `coin_transactions`, `timeline_posts`, `timeline_post_likes`, `timeline_post_comments`, `genres`, and `novel_genres`.
-
-### Multi-Genre System
-
-**Overview:** Novels can have up to 3 genres. The first selected genre is marked as primary.
-
-**Database Tables:**
-- `genres`: id, name, slug, icon, gradient_start, gradient_end, created_at
-- `novel_genres`: id, novel_id, genre_id, is_primary, created_at (UNIQUE novel_id, genre_id)
-
-**SQL Migration for Supabase Dashboard:**
-```sql
--- Create genres table
-CREATE TABLE IF NOT EXISTS genres (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(50) NOT NULL UNIQUE,
-  slug VARCHAR(50) NOT NULL UNIQUE,
-  icon VARCHAR(50),
-  gradient_start VARCHAR(7),
-  gradient_end VARCHAR(7),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Create novel_genres junction table
-CREATE TABLE IF NOT EXISTS novel_genres (
-  id SERIAL PRIMARY KEY,
-  novel_id INTEGER NOT NULL REFERENCES novels(id) ON DELETE CASCADE,
-  genre_id INTEGER NOT NULL REFERENCES genres(id) ON DELETE CASCADE,
-  is_primary BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  UNIQUE(novel_id, genre_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_novel_genres_novel_id ON novel_genres(novel_id);
-CREATE INDEX IF NOT EXISTS idx_novel_genres_genre_id ON novel_genres(genre_id);
-
--- Insert default genres
-INSERT INTO genres (name, slug, icon, gradient_start, gradient_end) VALUES
-('Romance', 'romance', 'heart', '#EC4899', '#8B5CF6'),
-('Fantasy', 'fantasy', 'star', '#8B5CF6', '#3B82F6'),
-('Thriller', 'thriller', 'zap', '#DC2626', '#000000'),
-('Mystery', 'mystery', 'search', '#14B8A6', '#000000'),
-('Sci-Fi', 'sci-fi', 'cpu', '#06B6D4', '#8B5CF6'),
-('Adventure', 'adventure', 'compass', '#F59E0B', '#D97706'),
-('Drama', 'drama', 'film', '#6366F1', '#8B5CF6'),
-('Horror', 'horror', 'skull', '#991B1B', '#000000'),
-('Comedy', 'comedy', 'smile', '#FBBF24', '#F59E0B'),
-('Action', 'action', 'target', '#EF4444', '#DC2626')
-ON CONFLICT (slug) DO NOTHING;
-
--- Migrate existing genre data from novels table
-INSERT INTO novel_genres (novel_id, genre_id, is_primary)
-SELECT n.id, g.id, TRUE
-FROM novels n
-JOIN genres g ON LOWER(g.name) = LOWER(n.genre)
-WHERE n.genre IS NOT NULL AND n.genre != ''
-ON CONFLICT (novel_id, genre_id) DO NOTHING;
-```
-
-**Role System:** A 5-tier hierarchy (Pembaca, Penulis, Editor, Co Admin, Super Admin) with role-based badges and secure upgrade mechanisms.
-
-### Data Architecture
-
-**Data Models:** Key models include `User` (authentication, roles, coin balance), `Novel` (metadata, pricing), `Chapter` (content, pricing, unlock status), `CoinPackage`, `Genre`, and `UserStats` (dynamic statistics).
-
-**Data Client:** A singleton Supabase client (`utils/supabase.ts`) handles type-safe database operations.
-
-**Data Storage:** Authoritative data resides in the Supabase PostgreSQL database. Session persistence is handled by Supabase Auth.
+**Backend-as-a-Service:** Supabase Cloud (PostgreSQL, Auth, REST APIs) provides a fully serverless backend.
+**Database:** PostgreSQL with Row Level Security (RLS) for authorization.
+**Authentication:** Supabase Auth (email/password) manages user sessions and integrates with user profiles, including password reset functionality.
+**Database Schema:** Consists of tables for `users`, `novels`, `chapters`, `reading_progress`, `coin_transactions`, `timeline_posts`, `genres`, and related junction tables to support core features and a multi-genre system.
+**Role System:** A 5-tier hierarchy (Pembaca, Penulis, Editor, Co Admin, Super Admin) with role-based access and secure upgrade mechanisms.
 
 ### Monetization System
 
-**Coin Economy:** A virtual currency system (Novoin) for unlocking chapters. 1 Novoin = Rp 1,000. Features include free chapters, paid chapters, coin packages, and balance tracking.
+**Coin Economy:** A virtual currency (Novoin) for unlocking chapters, supported by coin packages and balance tracking.
+**Payment Gateway:** Google Play Billing integration via `react-native-iap` for in-app purchases on Android, with server-side validation using a Supabase Edge Function.
+**Writer Monetization:** Writers receive 80% revenue share, with a dashboard for sales analytics, bank account management, and withdrawal requests.
 
-**Payment Gateway:** Google Play Billing integration for in-app purchases on Android. Uses `react-native-iap` v14 with Nitro Modules.
+### Core Features
 
-**Google Play Billing Setup:**
-1. Product IDs in Google Play Console:
-   - `novoin_10` - 10 Novoin (Rp 10.000)
-   - `novoin_25` - 25+2 Novoin (Rp 25.000) - Popular
-   - `novoin_50` - 50+5 Novoin (Rp 50.000)
-   - `novoin_100` - 100+15 Novoin (Rp 100.000)
-   - `novoin_250` - 250+50 Novoin (Rp 250.000)
-   - `novoin_500` - 500+125 Novoin (Rp 500.000)
-2. Required permission: `com.android.vending.BILLING` (already in app.json)
-3. Purchase flow: `utils/googlePlayBilling.ts` handles init, purchase, validation
-4. Idempotent validation: Uses `reference_id` in `coin_transactions` to prevent double-credits
-
-**Writer Monetization:** Writers have access to a comprehensive dashboard:
-- **Sales Analytics:** Professional charts showing daily/weekly earnings, per-novel performance, and revenue trends using react-native-svg
-- **Withdrawal System:** Bank account management and withdrawal requests with status tracking
-- **Revenue Split:** 80% to writer, 20% to platform
-
-### Writer Analytics & Withdrawal System
-
-**Database Tables (run migration in Supabase Dashboard):**
-- `writer_bank_accounts`: Bank account storage for withdrawals
-- `withdrawal_requests`: Withdrawal request tracking with status (pending/processing/approved/rejected/paid)
-- `writer_earnings`: Per-chapter earnings tracking with revenue split
-
-**Migration File:** `database/analytics_withdrawal_migration.sql`
-
-**Chart Components:**
-- `components/charts/AreaChart.tsx`: Line/area charts for time-series data
-- `components/charts/BarChart.tsx`: Bar charts for performance comparison
-
-**Analytics Hook:** `hooks/useWriterAnalytics.ts` - Fetches stats, earnings, novel performance, bank accounts, and withdrawal history from Supabase.
-
-### Admin Dashboard System
-
-**Access:** Available to Editor, Co Admin, and Super Admin roles via Profile screen.
-
-**Statistics Tab:** Displays comprehensive platform analytics including:
-- Total Users (with new registrations today)
-- Total Novels (with new publications today)
-- Total Chapters
-- Total Views
-- Revenue Statistics:
-  - Total Koin Terjual (coins purchased by users)
-  - Chapter Terbeli (coins spent on chapters)
-  - Pendapatan Platform (platform revenue in IDR)
-
-**User Management (Co Admin & Super Admin only):**
-- Search users by name/email
-- View user details (avatar, role, coins, ban status)
-- Change user roles (role hierarchy enforced)
-- Ban/unban users
-- Delete users (Super Admin only)
-
-**Novel/Chapter Management:**
-- View all novels with metadata
-- Edit novel titles
-- Publish/unpublish novels
-- Delete novels
-- View chapter list per novel
-- Edit chapters (title, content, free/paid status)
-- Delete chapters
-
-**Admin Functions (utils/supabase.ts):**
-- `getAdminStats()`: Fetch platform statistics including revenue
-- `updateNovelAdmin()`: Update novel metadata
-- `getChaptersAdmin()`: Get all chapters for a novel
-- `updateChapterAdmin()`: Update chapter content and settings
-- `deleteChapterAdmin()`: Delete a chapter
-
-**Chapter Reading Bypass:**
-- Authors can read their own locked chapters without unlocking
-- Admin and Editor roles can read all locked chapters without unlocking
-- Implemented in NovelDetailScreen and ReaderScreen
-
-### Screen Architecture
-
-**Browse Flow:** Home (carousels), Search (filters), Novel Detail (synopsis, chapters), and Reader (customizable reading experience). Browse home screen features a custom header with the Novea gradient logo (32x32px) from `assets/images/novea-logo.png` and "ovea" text (22px bold) with a compact 4px gap.
-
-**Library Flow:** Sections for following novels and reading history.
-
-**Notifications Flow:** System notifications with deep linking.
-
-**Profile Flow:** User account management, coin store, writer mode toggle, and conditional writer/admin dashboards.
-
-**Reader Experience:** Customizable font size, background themes, scroll/page-turn modes, progress tracking, and chapter unlock modals.
+**Multi-Genre System:** Novels can be assigned up to 3 genres, with one primary genre.
+**Writer Analytics & Withdrawal:** Tools for writers to track earnings, view novel performance, and manage withdrawals.
+**Admin Dashboard:** Provides access to platform statistics (users, novels, revenue), user management (roles, ban/unban), and content management (novels, chapters) for authorized roles.
+**Timeline (Linimasa) Feature:** An Instagram-style social feed for users to share posts, displaying content from admins, followed authors, and the user's own posts.
+**Reader Experience:** Customizable reading settings including font size, themes, scroll/page-turn modes, and progress tracking.
 
 ### Platform-Specific Optimizations
 
 **iOS:** Apple Sign-In, blur effects, haptic feedback.
-
 **Android:** Google Sign-In, edge-to-edge display, adaptive icons.
-
-**Web:** Single-page output with fallback for native APIs and static rendering.
+**Web:** Single-page output with fallback for native APIs.
 
 ## External Dependencies
 
 ### Core Dependencies
-- **Expo SDK 54**: Development platform
+- **Expo SDK**: Development platform
 - **React Navigation**: Multi-stack navigation
-- **React Native Reanimated v4**: Animations
+- **React Native Reanimated**: Animations
 - **React Native Gesture Handler**: Touch gestures
 - **React Native Safe Area Context**: Notch and status bar handling
 
@@ -221,57 +63,26 @@ ON CONFLICT (novel_id, genre_id) DO NOTHING;
 - **expo-blur**: iOS blur effects
 - **@react-native-masked-view/masked-view**: Masking
 - **expo-glass-effect**: Glass visual effects
+- **react-native-svg**: Chart rendering for analytics
 
 ### Storage & State
 - **@react-native-async-storage/async-storage**: Local data persistence
+- **expo-secure-store**: Secure local storage for sensitive data (e.g., remembering email)
 
 ### Platform Integration
 - **expo-web-browser**: OAuth flows
 - **expo-linking**: Deep linking
 - **expo-haptics**: Tactile feedback
 - **expo-splash-screen**: Launch screen
+- **react-native-iap**: In-app purchases for Google Play Billing
+
+### Backend
+- **Supabase**: Backend-as-a-Service (PostgreSQL, Auth, REST APIs, Edge Functions)
+- **@supabase/supabase-js**: Supabase client library
 
 ### Development Tools
 - **TypeScript**: Type safety
 - **ESLint**: Code quality
 - **Prettier**: Code formatting
 - **Babel module resolver**: Path aliasing
-
-## Timeline (Linimasa) Feature
-
-**Overview:** Instagram-style social timeline where users can share posts about their reading/writing journey.
-
-**Feed Logic:** Posts are shown from: (1) Admin roles (Super Admin, Co Admin, Editor) - visible to all users, (2) Followed authors (Penulis) - shown based on user's following relationships, (3) User's own posts.
-
-**Components:**
-- `PostCard.tsx`: Displays individual timeline posts with author info, content, like/comment counts, and actions
-- `CreatePostModal.tsx`: Modal for creating new posts with text and optional novel tagging
-- `TimelineScreen.tsx`: Main timeline feed with pull-to-refresh and FAB for creating posts
-
-**Database Tables (need Supabase migration):**
-- `timeline_posts`: id, user_id, content, image_url, novel_id, likes_count, comments_count, created_at, updated_at
-- `timeline_post_likes`: id, user_id, post_id, created_at (UNIQUE user_id, post_id)
-- `timeline_post_comments`: id, user_id, post_id, parent_id, content, created_at
-
-**SQL Functions:**
-- `increment_post_likes(post_id)`: Increments likes_count
-- `decrement_post_likes(post_id)`: Decrements likes_count (minimum 0)
-
-## EAS Build Configuration
-
-**File:** `eas.json` - Configured for Android APK builds via EAS Build.
-
-**Build Profiles:**
-- `preview`: Development APK for testing (buildType: apk)
-- `production`: Production AAB for Play Store (buildType: app-bundle)
-
-**Build Commands:**
-1. Install EAS CLI globally: `npm install -g eas-cli`
-2. Login to Expo: `eas login`
-3. Build preview APK: `eas build --platform android --profile preview`
-4. Build production AAB: `eas build --platform android --profile production`
-
-**Requirements:**
-- Expo account (create at expo.dev)
-- EAS CLI installed globally
-- Valid bundle identifier in app.json
+- **eas-cli**: Expo Application Services CLI for builds
