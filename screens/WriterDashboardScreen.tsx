@@ -17,7 +17,6 @@ import { Feather } from "@expo/vector-icons";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
-import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { AreaChart } from "@/components/charts/AreaChart";
 import { BarChart } from "@/components/charts/BarChart";
 import { useTheme } from "@/hooks/useTheme";
@@ -746,11 +745,6 @@ export default function WriterDashboardScreen() {
 
         {activeTab === "analytics" ? renderAnalyticsTab() : renderWithdrawalTab()}
       </ScrollView>
-
-      <FloatingActionButton
-        onPress={() => navigation.navigate("EditChapter", { novelId: "new", chapterId: undefined })}
-        icon="plus"
-      />
 
       {renderAddBankModal()}
       {renderWithdrawModal()}

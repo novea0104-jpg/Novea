@@ -66,7 +66,7 @@ export default function ProfileStackNavigator() {
       <Stack.Screen
         name="WriterDashboard"
         component={WriterDashboardScreen}
-        options={{ title: "My Novels" }}
+        options={{ title: "Dashboard Penulis" }}
       />
       <Stack.Screen
         name="WriterCenter"
