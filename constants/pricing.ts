@@ -17,10 +17,12 @@ export function formatNovoin(novoin: number): string {
 }
 
 export const COIN_PACKAGES = [
-  { id: "package-1", coins: 10, priceRupiah: 10000, bonus: 0 },
-  { id: "package-2", coins: 25, priceRupiah: 25000, bonus: 2, isPopular: true },
-  { id: "package-3", coins: 50, priceRupiah: 50000, bonus: 5 },
-  { id: "package-4", coins: 100, priceRupiah: 100000, bonus: 15 },
-  { id: "package-5", coins: 250, priceRupiah: 250000, bonus: 50 },
-  { id: "package-6", coins: 500, priceRupiah: 500000, bonus: 125 },
+  { id: "novoin_10", coins: 10, priceRupiah: 10000, bonus: 0 },
+  { id: "novoin_25", coins: 25, priceRupiah: 25000, bonus: 2, isPopular: true },
+  { id: "novoin_50", coins: 50, priceRupiah: 50000, bonus: 5 },
+  { id: "novoin_100", coins: 100, priceRupiah: 100000, bonus: 15 },
+  { id: "novoin_250", coins: 250, priceRupiah: 250000, bonus: 50 },
+  { id: "novoin_500", coins: 500, priceRupiah: 500000, bonus: 125 },
 ];
+
+export type CoinPackageId = typeof COIN_PACKAGES[number]['id'];

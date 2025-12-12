@@ -14,6 +14,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
+  refreshUser: () => Promise<void>;
   updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
   requireAuth: (message?: string) => boolean;
   showAuthPrompt: (message?: string) => void;
@@ -267,6 +268,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
   }
 
+  async function refreshUser() {
+    if (!user) return;
+    
+    // Fetch latest user data from Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', parseInt(user.id))
+      .single();
+
+    if (error) {
+      console.error('Error refreshing user:', error);
+      return;
+    }
+
+    // Update local state with fresh data
+    const updatedUser: User = {
+      id: data.id.toString(),
+      name: data.name,
+      email: data.email,
+      isWriter: data.is_writer,
+      role: (data.role || 'pembaca') as any,
+      coinBalance: data.coin_balance,
+      avatarUrl: data.avatar_url || undefined,
+      bio: data.bio || undefined,
+    };
+    setUser(updatedUser);
+  }
+
   async function updateProfile(updates: { name?: string; bio?: string; avatarUrl?: string }) {
     if (!user) return;
 
@@ -334,6 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resetPassword,
         upgradeToWriter,
         updateCoinBalance,
+        refreshUser,
         updateProfile,
         requireAuth,
         showAuthPrompt,

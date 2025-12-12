@@ -1,7 +1,6 @@
-import React, { useState } from "react";
-import { View, StyleSheet, FlatList, Pressable, ViewStyle, Modal, ActivityIndicator, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, FlatList, Pressable, ViewStyle, Modal, ActivityIndicator, Alert, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import * as WebBrowser from "expo-web-browser";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
@@ -14,10 +13,14 @@ import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatRupiah, COIN_PACKAGES, NOVOIN_TO_RUPIAH } from "@/constants/pricing";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
-import { createPayment, generateOrderId, PAYMENT_METHODS, PAYMENT_METHOD_NAMES, checkTransactionStatus } from "@/utils/duitku";
 import { Feather } from "@expo/vector-icons";
-
-type PaymentMethodKey = keyof typeof PAYMENT_METHODS;
+import {
+  initializeBilling,
+  purchaseProduct,
+  isGooglePlayAvailable,
+  endBillingConnection,
+  type NovoinProductId,
+} from "@/utils/googlePlayBilling";
 
 interface SelectedPackage {
   id: string;
@@ -26,94 +29,75 @@ interface SelectedPackage {
   priceRupiah: number;
 }
 
-const AVAILABLE_PAYMENT_METHODS: { key: PaymentMethodKey; icon: string }[] = [
-  { key: "QRIS", icon: "smartphone" },
-  { key: "VA_BCA", icon: "credit-card" },
-  { key: "VA_MANDIRI", icon: "credit-card" },
-  { key: "VA_BNI", icon: "credit-card" },
-  { key: "VA_BRI", icon: "credit-card" },
-  { key: "OVO", icon: "dollar-sign" },
-  { key: "DANA", icon: "dollar-sign" },
-  { key: "SHOPEEPAY", icon: "shopping-bag" },
-];
-
 export default function CoinStoreScreen() {
   const { theme } = useTheme();
-  const { user, updateCoinBalance } = useAuth();
+  const { user, updateCoinBalance, refreshUser } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<SelectedPackage | null>(null);
-  const [isPaymentModalVisible, setIsPaymentModalVisible] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+  const [isBillingReady, setIsBillingReady] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  useEffect(() => {
+    async function setupBilling() {
+      if (isGooglePlayAvailable()) {
+        const initialized = await initializeBilling();
+        setIsBillingReady(initialized);
+      }
+    }
+    setupBilling();
+
+    return () => {
+      endBillingConnection();
+    };
+  }, []);
 
   const handleSelectPackage = (packageItem: typeof COIN_PACKAGES[0]) => {
     setSelectedPackage(packageItem);
-    setIsPaymentModalVisible(true);
+    setShowConfirmModal(true);
   };
 
-  const handlePaymentMethodSelect = async (methodKey: PaymentMethodKey) => {
+  const handlePurchase = async () => {
     if (!selectedPackage || !user) return;
 
-    setIsProcessing(true);
-    const orderId = generateOrderId();
-    setCurrentOrderId(orderId);
-
-    try {
-      const paymentMethod = PAYMENT_METHODS[methodKey];
-      const totalCoins = selectedPackage.coins + selectedPackage.bonus;
-
-      const paymentResult = await createPayment({
-        merchantOrderId: orderId,
-        productDetails: `Pembelian ${totalCoins} Novoin`,
-        amount: selectedPackage.priceRupiah,
-        email: user.email,
-        customerName: user.name,
-        callbackUrl: "https://noveaindonesia.com/api/payment/callback",
-        returnUrl: "https://noveaindonesia.com/payment/success",
-        paymentMethod: paymentMethod,
-      });
-
-      if (paymentResult && paymentResult.paymentUrl) {
-        setIsPaymentModalVisible(false);
-        
-        const result = await WebBrowser.openBrowserAsync(paymentResult.paymentUrl, {
-          dismissButtonStyle: "close",
-          presentationStyle: WebBrowser.WebBrowserPresentationStyle.FULL_SCREEN,
-        });
-
-        if (result.type === "cancel" || result.type === "dismiss") {
-          setTimeout(() => checkPaymentStatus(orderId, totalCoins), 2000);
-        }
-      } else {
-        Alert.alert("Error", "Gagal membuat pembayaran. Silakan coba lagi.");
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      Alert.alert("Error", "Terjadi kesalahan. Silakan coba lagi.");
-    } finally {
-      setIsProcessing(false);
+    if (!isGooglePlayAvailable()) {
+      Alert.alert(
+        "Tidak Tersedia",
+        "Pembelian Novoin hanya tersedia di aplikasi Android. Silakan gunakan Expo Go atau build APK untuk melakukan pembelian."
+      );
+      return;
     }
-  };
 
-  const checkPaymentStatus = async (orderId: string, totalCoins: number) => {
+    if (!isBillingReady) {
+      Alert.alert("Error", "Layanan pembayaran belum siap. Silakan coba lagi.");
+      return;
+    }
+
+    setIsProcessing(true);
+    setShowConfirmModal(false);
+
     try {
-      const status = await checkTransactionStatus(orderId);
-      
-      if (status && status.statusCode === "00") {
-        await updateCoinBalance(totalCoins);
-        Alert.alert(
-          "Pembayaran Berhasil!",
-          `${totalCoins} Novoin telah ditambahkan ke akun kamu.`,
-          [{ text: "OK" }]
-        );
-      } else if (status && status.statusCode === "01") {
-        Alert.alert(
-          "Menunggu Pembayaran",
-          "Pembayaran kamu sedang diproses. Saldo akan otomatis bertambah setelah pembayaran dikonfirmasi.",
-          [{ text: "OK" }]
-        );
-      }
-    } catch (error) {
-      console.error("Error checking payment status:", error);
+      await purchaseProduct(
+        selectedPackage.id as NovoinProductId,
+        user.id,
+        async (totalCoins) => {
+          await refreshUser();
+          setIsProcessing(false);
+          Alert.alert(
+            "Pembelian Berhasil!",
+            `${totalCoins} Novoin telah ditambahkan ke akun kamu.`,
+            [{ text: "OK" }]
+          );
+        },
+        (error) => {
+          setIsProcessing(false);
+          if (error !== "User cancelled") {
+            Alert.alert("Pembelian Gagal", error);
+          }
+        }
+      );
+    } catch (error: any) {
+      setIsProcessing(false);
+      Alert.alert("Error", error.message || "Terjadi kesalahan. Silakan coba lagi.");
     }
   };
 
@@ -122,8 +106,8 @@ export default function CoinStoreScreen() {
     
     const totalCoins = selectedPackage.coins + selectedPackage.bonus;
     await updateCoinBalance(totalCoins);
-    setIsPaymentModalVisible(false);
-    Alert.alert("Berhasil!", `${totalCoins} Novoin telah ditambahkan (Sandbox Test)`);
+    setShowConfirmModal(false);
+    Alert.alert("Berhasil!", `${totalCoins} Novoin telah ditambahkan (Development Mode)`);
   };
 
   const renderPackage = ({ item }: { item: typeof COIN_PACKAGES[0] }) => {
@@ -175,27 +159,6 @@ export default function CoinStoreScreen() {
   );
   };
 
-  const renderPaymentMethod = ({ item }: { item: { key: PaymentMethodKey; icon: string } }) => {
-    const methodCode = PAYMENT_METHODS[item.key];
-    const methodName = PAYMENT_METHOD_NAMES[methodCode];
-
-    return (
-      <Pressable
-        onPress={() => handlePaymentMethodSelect(item.key)}
-        style={({ pressed }) => [
-          styles.paymentMethodItem,
-          { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 },
-        ]}
-      >
-        <View style={[styles.paymentMethodIcon, { backgroundColor: theme.primary + "20" }]}>
-          <Feather name={item.icon as any} size={20} color={theme.primary} />
-        </View>
-        <ThemedText style={styles.paymentMethodName}>{methodName}</ThemedText>
-        <Feather name="chevron-right" size={20} color={theme.textSecondary} />
-      </Pressable>
-    );
-  };
-
   return (
     <ScreenScrollView>
       <LinearGradient
@@ -224,6 +187,15 @@ export default function CoinStoreScreen() {
         </ThemedText>
       </View>
 
+      {!isGooglePlayAvailable() ? (
+        <View style={[styles.webNotice, { backgroundColor: theme.warning + "20" }]}>
+          <Feather name="info" size={16} color={theme.warning} />
+          <ThemedText style={[styles.webNoticeText, { color: theme.warning }]}>
+            Pembelian hanya tersedia di aplikasi Android
+          </ThemedText>
+        </View>
+      ) : null}
+
       <ThemedText style={[Typography.h2, styles.sectionTitle, { fontWeight: "700" }]}>Paket Novoin</ThemedText>
       
       <FlatList
@@ -251,67 +223,80 @@ export default function CoinStoreScreen() {
       </View>
 
       <Modal
-        visible={isPaymentModalVisible}
+        visible={showConfirmModal}
         animationType="slide"
         transparent={true}
-        onRequestClose={() => setIsPaymentModalVisible(false)}
+        onRequestClose={() => setShowConfirmModal(false)}
       >
         <View style={styles.modalOverlay}>
           <ThemedView style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
             <View style={styles.modalHeader}>
-              <ThemedText style={[Typography.h2, { fontWeight: "700" }]}>Pilih Pembayaran</ThemedText>
-              <Pressable onPress={() => setIsPaymentModalVisible(false)}>
+              <ThemedText style={[Typography.h2, { fontWeight: "700" }]}>Konfirmasi Pembelian</ThemedText>
+              <Pressable onPress={() => setShowConfirmModal(false)}>
                 <Feather name="x" size={24} color={theme.text} />
               </Pressable>
             </View>
 
             {selectedPackage ? (
               <View style={[styles.selectedPackageInfo, { backgroundColor: theme.backgroundSecondary }]}>
-                <CoinIcon size={32} />
-                <View style={{ marginLeft: Spacing.md }}>
-                  <ThemedText style={{ fontSize: 18, fontWeight: "700" }}>
+                <CoinIcon size={48} />
+                <View style={{ marginLeft: Spacing.md, flex: 1 }}>
+                  <ThemedText style={{ fontSize: 24, fontWeight: "700" }}>
                     {selectedPackage.coins + selectedPackage.bonus} Novoin
                   </ThemedText>
-                  <ThemedText style={{ color: theme.textSecondary }}>
+                  {selectedPackage.bonus > 0 ? (
+                    <ThemedText style={{ color: theme.success, fontSize: 14 }}>
+                      Termasuk {selectedPackage.bonus} bonus
+                    </ThemedText>
+                  ) : null}
+                  <ThemedText style={{ color: theme.textSecondary, marginTop: Spacing.xs }}>
                     {formatRupiah(selectedPackage.priceRupiah)}
                   </ThemedText>
                 </View>
               </View>
             ) : null}
 
-            {isProcessing ? (
-              <View style={styles.processingContainer}>
-                <ActivityIndicator size="large" color={theme.primary} />
-                <ThemedText style={{ marginTop: Spacing.md }}>Memproses pembayaran...</ThemedText>
-              </View>
-            ) : (
-              <>
-                <FlatList
-                  data={AVAILABLE_PAYMENT_METHODS}
-                  renderItem={renderPaymentMethod}
-                  keyExtractor={(item) => item.key}
-                  style={styles.paymentMethodList}
-                  scrollEnabled={false}
-                />
+            <View style={styles.paymentInfo}>
+              <Feather name="shield" size={20} color={theme.primary} />
+              <ThemedText style={[styles.paymentInfoText, { color: theme.textSecondary }]}>
+                Pembayaran diproses melalui Google Play Store dengan keamanan terjamin
+              </ThemedText>
+            </View>
 
-                <View style={styles.sandboxNote}>
-                  <Feather name="info" size={16} color={theme.warning} />
-                  <ThemedText style={[styles.sandboxNoteText, { color: theme.warning }]}>
-                    Mode Sandbox - Untuk testing
-                  </ThemedText>
-                </View>
+            <Button
+              onPress={handlePurchase}
+              style={styles.purchaseButton}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                `Beli ${formatRupiah(selectedPackage?.priceRupiah || 0)}`
+              )}
+            </Button>
 
-                <Pressable
-                  onPress={handleSimulatePurchase}
-                  style={[styles.simulateButton, { backgroundColor: theme.backgroundSecondary }]}
-                >
-                  <ThemedText style={styles.simulateButtonText}>Test: Simulasi Pembelian Sukses</ThemedText>
-                </Pressable>
-              </>
-            )}
+            {__DEV__ ? (
+              <Pressable
+                onPress={handleSimulatePurchase}
+                style={[styles.devButton, { backgroundColor: theme.backgroundSecondary }]}
+              >
+                <ThemedText style={styles.devButtonText}>
+                  [DEV] Simulasi Pembelian
+                </ThemedText>
+              </Pressable>
+            ) : null}
           </ThemedView>
         </View>
       </Modal>
+
+      {isProcessing ? (
+        <View style={styles.processingOverlay}>
+          <View style={[styles.processingCard, { backgroundColor: theme.backgroundDefault }]}>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <ThemedText style={{ marginTop: Spacing.md }}>Memproses pembelian...</ThemedText>
+          </View>
+        </View>
+      ) : null}
     </ScreenScrollView>
   );
 }
@@ -345,6 +330,18 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  webNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.lg,
+  },
+  webNoticeText: {
+    fontSize: 13,
+    flex: 1,
   },
   sectionTitle: {
     marginBottom: Spacing.xl,
@@ -439,7 +436,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
     padding: Spacing.xl,
-    maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -454,54 +450,44 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.xl,
   },
-  paymentMethodList: {
-    maxHeight: 350,
-  },
-  paymentMethodItem: {
+  paymentInfo: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.sm,
-  },
-  paymentMethodIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.sm,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: Spacing.md,
-  },
-  paymentMethodName: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  processingContainer: {
-    alignItems: "center",
-    padding: Spacing["2xl"],
-  },
-  sandboxNote: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    marginTop: Spacing.xl,
+    alignItems: "flex-start",
+    gap: Spacing.md,
+    marginBottom: Spacing.xl,
     padding: Spacing.md,
-    borderRadius: BorderRadius.sm,
   },
-  sandboxNoteText: {
-    fontSize: 12,
-    fontWeight: "600",
+  paymentInfoText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
   },
-  simulateButton: {
-    marginTop: Spacing.sm,
-    padding: Spacing.lg,
+  purchaseButton: {
+    width: "100%",
+  },
+  devButton: {
+    marginTop: Spacing.md,
+    padding: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: "center",
   },
-  simulateButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
+  devButtonText: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  processingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  processingCard: {
+    padding: Spacing["2xl"],
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
   },
 });
