@@ -5,7 +5,11 @@
 -- setelah deploy Edge Function validate-purchase
 -- =====================================================
 
--- 0. Buat unique index pada reference_id untuk idempotency
+-- 0. Tambahkan kolom reference_id jika belum ada
+ALTER TABLE coin_transactions 
+ADD COLUMN IF NOT EXISTS reference_id TEXT;
+
+-- 0b. Buat unique index pada reference_id untuk idempotency
 CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_transactions_reference_id 
 ON coin_transactions(reference_id) 
 WHERE reference_id IS NOT NULL;
