@@ -1,19 +1,4 @@
 import { Platform } from 'react-native';
-import {
-  initConnection,
-  endConnection,
-  fetchProducts,
-  requestPurchase,
-  finishTransaction,
-  consumePurchaseAndroid,
-  purchaseUpdatedListener,
-  purchaseErrorListener,
-  getAvailablePurchases,
-  type Product,
-  type Purchase,
-  type PurchaseError,
-  ErrorCode,
-} from 'react-native-iap';
 import { supabase } from './supabase';
 
 export const NOVOIN_PRODUCTS = [
@@ -36,6 +21,7 @@ export const PRODUCT_COIN_MAP: Record<NovoinProductId, { coins: number; bonus: n
   novoin_500: { coins: 500, bonus: 125 },
 };
 
+let iapModule: any = null;
 let purchaseUpdateSubscription: { remove: () => void } | null = null;
 let purchaseErrorSubscription: { remove: () => void } | null = null;
 let isInitialized = false;
@@ -46,6 +32,22 @@ let currentPurchaseCallback: {
   onSuccess: (totalCoins: number) => void;
   onError: (error: string) => void;
 } | null = null;
+
+async function loadIAPModule() {
+  if (Platform.OS !== 'android') {
+    return null;
+  }
+  if (iapModule) {
+    return iapModule;
+  }
+  try {
+    iapModule = await import('react-native-iap');
+    return iapModule;
+  } catch (error) {
+    console.error('Failed to load react-native-iap:', error);
+    return null;
+  }
+}
 
 export async function initializeBilling(userId?: string): Promise<boolean> {
   if (Platform.OS !== 'android') {
@@ -61,18 +63,24 @@ export async function initializeBilling(userId?: string): Promise<boolean> {
     return true;
   }
 
+  const iap = await loadIAPModule();
+  if (!iap) {
+    console.error('react-native-iap not available');
+    return false;
+  }
+
   try {
-    await initConnection();
+    await iap.initConnection();
     
-    purchaseUpdateSubscription = purchaseUpdatedListener(async (purchase: Purchase) => {
+    purchaseUpdateSubscription = iap.purchaseUpdatedListener(async (purchase: any) => {
       console.log('Purchase updated:', purchase);
       await handlePurchaseUpdate(purchase);
     });
 
-    purchaseErrorSubscription = purchaseErrorListener((error: PurchaseError) => {
+    purchaseErrorSubscription = iap.purchaseErrorListener((error: any) => {
       console.error('Purchase error:', error);
       
-      if (currentPurchaseCallback && error.code !== ErrorCode.UserCancelled) {
+      if (currentPurchaseCallback && error.code !== iap.ErrorCode?.UserCancelled) {
         currentPurchaseCallback.onError(error.message || 'Pembelian gagal');
       }
       currentPurchaseCallback = null;
@@ -96,8 +104,11 @@ async function processPendingPurchases(): Promise<void> {
     return;
   }
 
+  const iap = await loadIAPModule();
+  if (!iap) return;
+
   try {
-    const purchases = await getAvailablePurchases();
+    const purchases = await iap.getAvailablePurchases();
     
     for (const purchase of purchases) {
       const productId = purchase.productId as NovoinProductId;
@@ -111,7 +122,7 @@ async function processPendingPurchases(): Promise<void> {
   }
 }
 
-async function handlePurchaseUpdate(purchase: Purchase) {
+async function handlePurchaseUpdate(purchase: any) {
   const productId = purchase.productId as NovoinProductId;
   
   if (!PRODUCT_COIN_MAP[productId]) {
@@ -119,7 +130,7 @@ async function handlePurchaseUpdate(purchase: Purchase) {
     return;
   }
 
-  const purchaseState = (purchase as any).purchaseState;
+  const purchaseState = purchase.purchaseState;
   if (purchaseState && purchaseState !== 'purchased') {
     console.log('Purchase not completed yet, state:', purchaseState);
     return;
@@ -133,6 +144,9 @@ async function handlePurchaseUpdate(purchase: Purchase) {
     return;
   }
 
+  const iap = await loadIAPModule();
+  if (!iap) return;
+
   try {
     const result = await validatePurchaseServerSide(
       parseInt(userId),
@@ -143,9 +157,9 @@ async function handlePurchaseUpdate(purchase: Purchase) {
     
     if (result.success && result.totalCoins > 0) {
       if (purchase.purchaseToken) {
-        await consumePurchaseAndroid(purchase.purchaseToken);
+        await iap.consumePurchaseAndroid(purchase.purchaseToken);
       }
-      await finishTransaction({ purchase, isConsumable: true });
+      await iap.finishTransaction({ purchase, isConsumable: true });
       
       if (callback && callback.productId === productId) {
         callback.onSuccess(result.totalCoins);
@@ -153,9 +167,9 @@ async function handlePurchaseUpdate(purchase: Purchase) {
       }
     } else if (result.success && result.totalCoins === 0) {
       if (purchase.purchaseToken) {
-        await consumePurchaseAndroid(purchase.purchaseToken);
+        await iap.consumePurchaseAndroid(purchase.purchaseToken);
       }
-      await finishTransaction({ purchase, isConsumable: true });
+      await iap.finishTransaction({ purchase, isConsumable: true });
       console.log('Purchase already processed:', purchase.transactionId);
       if (callback && callback.productId === productId) {
         currentPurchaseCallback = null;
@@ -211,17 +225,20 @@ async function validatePurchaseServerSide(
   }
 }
 
-export async function getAvailableProducts(): Promise<Product[]> {
+export async function getAvailableProducts(): Promise<any[]> {
   if (Platform.OS !== 'android') {
     return [];
   }
 
+  const iap = await loadIAPModule();
+  if (!iap) return [];
+
   try {
-    const products = await fetchProducts({
+    const products = await iap.fetchProducts({
       skus: [...NOVOIN_PRODUCTS],
       type: 'in-app',
     });
-    return (products as Product[]) || [];
+    return products || [];
   } catch (error) {
     console.error('Error getting products:', error);
     return [];
@@ -244,10 +261,16 @@ export async function purchaseProduct(
     return;
   }
 
+  const iap = await loadIAPModule();
+  if (!iap) {
+    onError('Layanan pembayaran tidak tersedia');
+    return;
+  }
+
   currentPurchaseCallback = { productId, userId, onSuccess, onError };
 
   try {
-    await requestPurchase({
+    await iap.requestPurchase({
       request: {
         android: {
           skus: [productId],
@@ -275,11 +298,14 @@ export async function endBillingConnection(): Promise<void> {
   }
   
   if (isInitialized) {
-    try {
-      await endConnection();
-      isInitialized = false;
-    } catch (error) {
-      console.error('Error ending billing connection:', error);
+    const iap = await loadIAPModule();
+    if (iap) {
+      try {
+        await iap.endConnection();
+        isInitialized = false;
+      } catch (error) {
+        console.error('Error ending billing connection:', error);
+      }
     }
   }
 }
