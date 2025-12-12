@@ -302,7 +302,7 @@ export default function ProfileScreen() {
           icon="alert-circle"
           title="Kebijakan dan Akun"
           subtitle="Privasi, Syarat & Ketentuan"
-          onPress={() => {}}
+          onPress={() => navigation.navigate("Policy")}
         />
       </View>
 

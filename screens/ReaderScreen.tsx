@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, TextInput, Image, Modal, FlatList, Keyboard } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { MarkdownText } from "@/components/MarkdownText";
@@ -57,6 +59,14 @@ export default function ReaderScreen() {
   const { novels, unlockedChapters, unlockChapter, getChaptersForNovel, getChapter } = useApp();
   const { user, updateCoinBalance } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+  
+  const commentInputAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      paddingBottom: Math.max(insets.bottom + Spacing.sm, -keyboardHeight.value + Spacing.sm),
+    };
+  });
 
   const { novelId, chapterId } = route.params as { novelId: string; chapterId: string };
   const novel = novels.find((n) => n.id === novelId);
@@ -627,7 +637,7 @@ export default function ReaderScreen() {
             />
 
             {user ? (
-              <View style={[styles.commentInputContainer, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.backgroundSecondary }]}>
+              <Animated.View style={[styles.commentInputContainer, { backgroundColor: theme.backgroundSecondary, borderTopColor: theme.backgroundSecondary }, commentInputAnimatedStyle]}>
                 {replyingTo ? (
                   <View style={styles.replyingToBar}>
                     <ThemedText style={[styles.replyingToText, { color: theme.textMuted }]} numberOfLines={1}>
@@ -699,7 +709,7 @@ export default function ReaderScreen() {
                     )}
                   </Pressable>
                 </View>
-              </View>
+              </Animated.View>
             ) : (
               <View style={[styles.loginPromptModal, { backgroundColor: theme.backgroundSecondary }]}>
                 <ThemedText style={[styles.loginPromptText, { color: theme.textSecondary }]}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useLayoutEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -66,7 +67,17 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 export default function AdminDashboardScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const navigation = useNavigation();
   const headerHeight = useHeaderHeight();
+  
+  useLayoutEffect(() => {
+    const parent = navigation.getParent();
+    parent?.setOptions({ tabBarStyle: { display: 'none' } });
+    
+    return () => {
+      parent?.setOptions({ tabBarStyle: undefined });
+    };
+  }, [navigation]);
   
   const adminRole = user?.role || 'pembaca';
   const isEditor = adminRole === 'editor';
