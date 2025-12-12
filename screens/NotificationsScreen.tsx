@@ -1,6 +1,6 @@
-import React, { useEffect } from "react";
-import { FlatList, StyleSheet, Pressable, View } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState, useCallback } from "react";
+import { FlatList, StyleSheet, Pressable, View, RefreshControl, ActivityIndicator } from "react-native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
@@ -8,12 +8,19 @@ import { EmptyState } from "@/components/EmptyState";
 import { BookIcon } from "@/components/icons/BookIcon";
 import { GiftIcon } from "@/components/icons/GiftIcon";
 import { BellIcon } from "@/components/icons/BellIcon";
+import { UserIcon } from "@/components/icons/UserIcon";
+import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationsStackParamList } from "@/navigation/NotificationsStackNavigator";
 import { Spacing, BorderRadius } from "@/constants/theme";
-import { mockNotifications } from "@/utils/mockData";
+import { 
+  getNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead,
+  Notification 
+} from "@/utils/supabase";
 
 type NavigationProp = NativeStackNavigationProp<NotificationsStackParamList>;
 
@@ -22,12 +29,60 @@ export default function NotificationsScreen() {
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
   const { user, showAuthPrompt } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadNotifications = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await getNotifications(parseInt(user.id));
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications();
+    }, [loadNotifications])
+  );
 
   useEffect(() => {
     if (!user) {
       showAuthPrompt("Masuk untuk melihat notifikasi");
     }
   }, [user]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadNotifications();
+  };
+
+  const handleNotificationPress = async (notification: Notification) => {
+    if (!notification.isRead) {
+      await markNotificationAsRead(notification.id);
+      setNotifications(prev => 
+        prev.map(n => n.id === notification.id ? { ...n, isRead: true } : n)
+      );
+    }
+
+    if (notification.novelId) {
+      navigation.navigate("NovelDetail", { novelId: notification.novelId });
+    } else if (notification.timelinePostId) {
+      navigation.getParent()?.navigate("TimelineTab");
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!user) return;
+    await markAllNotificationsAsRead(parseInt(user.id));
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  };
 
   if (!user) {
     return (
@@ -43,6 +98,15 @@ export default function NotificationsScreen() {
     switch (type) {
       case "new_chapter":
         return <BookIcon size={20} color="#FFFFFF" />;
+      case "new_novel":
+        return <BookIcon size={20} color="#FFFFFF" />;
+      case "new_timeline_post":
+      case "admin_timeline_post":
+        return <MessageSquareIcon size={20} color="#FFFFFF" />;
+      case "comment_reply":
+        return <MessageSquareIcon size={20} color="#FFFFFF" />;
+      case "new_follower":
+        return <UserIcon size={20} color="#FFFFFF" />;
       case "promotion":
         return <GiftIcon size={20} color="#FFFFFF" />;
       default:
@@ -50,13 +114,29 @@ export default function NotificationsScreen() {
     }
   };
 
-  const renderNotification = ({ item }: any) => (
+  const getIconColor = (type: string) => {
+    switch (type) {
+      case "new_chapter":
+      case "new_novel":
+        return "#8B5CF6";
+      case "admin_timeline_post":
+        return "#EF4444";
+      case "new_timeline_post":
+        return "#3B82F6";
+      case "comment_reply":
+        return "#10B981";
+      case "new_follower":
+        return "#F59E0B";
+      case "promotion":
+        return "#EC4899";
+      default:
+        return theme.primary;
+    }
+  };
+
+  const renderNotification = ({ item }: { item: Notification }) => (
     <Pressable
-      onPress={() => {
-        if (item.novelId) {
-          navigation.navigate("NovelDetail", { novelId: item.novelId });
-        }
-      }}
+      onPress={() => handleNotificationPress(item)}
       style={({ pressed }) => [
         styles.notificationItem,
         {
@@ -65,7 +145,7 @@ export default function NotificationsScreen() {
         },
       ]}
     >
-      <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
+      <View style={[styles.iconContainer, { backgroundColor: getIconColor(item.type) }]}>
         {getIcon(item.type)}
       </View>
       <View style={styles.notificationContent}>
@@ -74,33 +154,57 @@ export default function NotificationsScreen() {
           {item.message}
         </ThemedText>
         <ThemedText style={[styles.notificationTime, { color: theme.textMuted }]}>
-          {formatTime(item.createdAt)}
+          {formatTime(new Date(item.createdAt))}
         </ThemedText>
       </View>
-      {!item.isRead && (
+      {!item.isRead ? (
         <View style={[styles.unreadDot, { backgroundColor: theme.primary }]} />
-      )}
+      ) : null}
     </Pressable>
   );
 
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   return (
     <ThemedView style={styles.container}>
-      {mockNotifications.length === 0 ? (
+      {unreadCount > 0 ? (
+        <Pressable
+          onPress={handleMarkAllRead}
+          style={[styles.markAllReadButton, { backgroundColor: theme.backgroundDefault }]}
+        >
+          <ThemedText style={[styles.markAllReadText, { color: theme.primary }]}>
+            Tandai Semua Sudah Dibaca ({unreadCount})
+          </ThemedText>
+        </Pressable>
+      ) : null}
+      
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primary} />
+        </View>
+      ) : notifications.length === 0 ? (
         <EmptyState
           type="notifications"
-          title="No Notifications"
-          message="You're all caught up!"
+          title="Belum Ada Notifikasi"
+          message="Kamu akan menerima notifikasi saat ada update baru dari novel yang kamu ikuti"
         />
       ) : (
         <FlatList
-          data={mockNotifications}
+          data={notifications}
           renderItem={renderNotification}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={[
             styles.list,
-            { paddingTop: screenInsets.paddingTop, paddingBottom: screenInsets.paddingBottom },
+            { paddingTop: unreadCount > 0 ? 0 : screenInsets.paddingTop, paddingBottom: screenInsets.paddingBottom },
           ]}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
+            />
+          }
         />
       )}
     </ThemedView>
@@ -110,18 +214,34 @@ export default function NotificationsScreen() {
 function formatTime(date: Date): string {
   const now = new Date();
   const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / (1000 * 60));
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);
 
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
+  if (minutes < 1) return "Baru saja";
+  if (minutes < 60) return `${minutes} menit lalu`;
+  if (hours < 24) return `${hours} jam lalu`;
+  if (days < 7) return `${days} hari lalu`;
+  return date.toLocaleDateString("id-ID");
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  markAllReadButton: {
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    alignItems: "center",
+  },
+  markAllReadText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   list: {
     padding: Spacing.lg,

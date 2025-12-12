@@ -2258,3 +2258,179 @@ export async function deleteChapterAdmin(
     return { success: false, error: 'Terjadi kesalahan' };
   }
 }
+
+// ==================== NOTIFICATIONS ====================
+
+export interface Notification {
+  id: number;
+  userId: number;
+  type: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  novelId: number | null;
+  chapterId: number | null;
+  timelinePostId: number | null;
+  actorId: number | null;
+  actorName?: string;
+  actorAvatar?: string;
+  createdAt: string;
+}
+
+export async function getNotifications(userId: number, limit = 50): Promise<Notification[]> {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select(`
+        *,
+        actor:actor_id (name, avatar_url)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+
+    return (data || []).map((n: any) => ({
+      id: n.id,
+      userId: n.user_id,
+      type: n.type,
+      title: n.title,
+      message: n.message,
+      isRead: n.is_read,
+      novelId: n.novel_id,
+      chapterId: n.chapter_id,
+      timelinePostId: n.timeline_post_id,
+      actorId: n.actor_id,
+      actorName: n.actor?.name,
+      actorAvatar: n.actor?.avatar_url,
+      createdAt: n.created_at,
+    }));
+  } catch (error) {
+    console.error('Error in getNotifications:', error);
+    return [];
+  }
+}
+
+export async function getUnreadNotificationCount(userId: number): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error getting unread notification count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getUnreadNotificationCount:', error);
+    return 0;
+  }
+}
+
+export async function markNotificationAsRead(notificationId: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error marking notification as read:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in markNotificationAsRead:', error);
+    return false;
+  }
+}
+
+export async function markAllNotificationsAsRead(userId: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', userId)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error marking all notifications as read:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in markAllNotificationsAsRead:', error);
+    return false;
+  }
+}
+
+export async function createNotification(
+  userId: number,
+  type: string,
+  title: string,
+  message: string,
+  options?: {
+    novelId?: number;
+    chapterId?: number;
+    timelinePostId?: number;
+    actorId?: number;
+    reviewId?: number;
+    commentId?: number;
+  }
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .insert({
+        user_id: userId,
+        type,
+        title,
+        message,
+        novel_id: options?.novelId,
+        chapter_id: options?.chapterId,
+        timeline_post_id: options?.timelinePostId,
+        actor_id: options?.actorId,
+        review_id: options?.reviewId,
+        comment_id: options?.commentId,
+      });
+
+    if (error) {
+      console.error('Error creating notification:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in createNotification:', error);
+    return false;
+  }
+}
+
+export async function deleteNotification(notificationId: number): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+
+    if (error) {
+      console.error('Error deleting notification:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in deleteNotification:', error);
+    return false;
+  }
+}

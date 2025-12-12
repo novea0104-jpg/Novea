@@ -18,8 +18,10 @@ import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, getTotalUnreadCount } from "@/utils/supabase";
+import { supabase, getTotalUnreadCount, getUnreadNotificationCount } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
+import { BellIcon } from "@/components/icons/BellIcon";
+import { useNavigationState } from "@react-navigation/native";
 import { Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 import { Novel } from "@/types/models";
 
@@ -55,22 +57,27 @@ export default function BrowseHomeScreen() {
   const { user, showAuthPrompt } = useAuth();
   const [genres, setGenres] = useState<GenreItem[]>([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   useEffect(() => {
     fetchGenres();
   }, []);
 
-  const loadUnreadCount = useCallback(async () => {
+  const loadUnreadCounts = useCallback(async () => {
     if (user) {
-      const count = await getTotalUnreadCount(parseInt(user.id));
-      setUnreadMessageCount(count);
+      const [msgCount, notifCount] = await Promise.all([
+        getTotalUnreadCount(parseInt(user.id)),
+        getUnreadNotificationCount(parseInt(user.id))
+      ]);
+      setUnreadMessageCount(msgCount);
+      setUnreadNotificationCount(notifCount);
     }
   }, [user]);
 
   useFocusEffect(
     useCallback(() => {
-      loadUnreadCount();
-    }, [loadUnreadCount])
+      loadUnreadCounts();
+    }, [loadUnreadCounts])
   );
 
   const goToMessages = () => {
@@ -79,6 +86,14 @@ export default function BrowseHomeScreen() {
       return;
     }
     navigation.navigate("Messages");
+  };
+
+  const goToNotifications = () => {
+    if (!user) {
+      showAuthPrompt("Masuk untuk melihat notifikasi");
+      return;
+    }
+    navigation.getParent()?.navigate("NotificationsTab");
   };
 
   const fetchGenres = async () => {
@@ -281,6 +296,20 @@ export default function BrowseHomeScreen() {
           <ThemedText style={styles.appName}>ovea</ThemedText>
         </View>
         <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={goToNotifications}
+            activeOpacity={0.6}
+            style={styles.headerIconButton}
+          >
+            <BellIcon size={22} color={theme.text} />
+            {unreadNotificationCount > 0 ? (
+              <View style={styles.headerBadge}>
+                <ThemedText style={styles.headerBadgeText}>
+                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </ThemedText>
+              </View>
+            ) : null}
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={goToMessages}
             activeOpacity={0.6}

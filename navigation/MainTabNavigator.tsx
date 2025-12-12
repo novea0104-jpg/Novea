@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useState, useCallback } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
+import { getFocusedRouteNameFromRoute, useFocusEffect } from "@react-navigation/native";
 import { View, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BrowseStackNavigator from "@/navigation/BrowseStackNavigator";
@@ -17,6 +17,7 @@ import { LibraryIcon } from "@/components/icons/LibraryIcon";
 import { TimelineIcon } from "@/components/icons/TimelineIcon";
 import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
 import { ProfileIcon } from "@/components/icons/ProfileIcon";
+import { getUnreadNotificationCount } from "@/utils/supabase";
 
 const HIDDEN_TAB_BAR_ROUTES = ['Messages', 'MessageThread', 'NewMessage', 'NovelDetail', 'Reader'];
 
@@ -36,12 +37,27 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const { theme } = useTheme();
   const { user, requireAuth } = useAuth();
   const insets = useSafeAreaInsets();
+  const [notificationBadge, setNotificationBadge] = useState(0);
 
   const AUTH_MESSAGES: { [key: string]: string } = {
     LibraryTab: "Masuk untuk melihat koleksi novel kamu",
     NotificationsTab: "Masuk untuk melihat notifikasi",
     ProfileTab: "Masuk untuk mengakses profil kamu",
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      const loadBadge = async () => {
+        if (user) {
+          const count = await getUnreadNotificationCount(parseInt(user.id));
+          setNotificationBadge(count);
+        } else {
+          setNotificationBadge(0);
+        }
+      };
+      loadBadge();
+    }, [user])
+  );
 
   const currentRoute = state.routes[state.index];
   const focusedRouteName = getFocusedRouteNameFromRoute(currentRoute);
@@ -87,13 +103,24 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
         const IconComponent = options.tabBarIcon({ color: iconColor, size: 24 });
 
+        const showBadge = route.name === "NotificationsTab" && notificationBadge > 0;
+        
         return (
           <Pressable
             key={route.key}
             onPress={onPress}
             style={styles.tabItem}
           >
-            {IconComponent}
+            <View style={styles.iconWrapper}>
+              {IconComponent}
+              {showBadge ? (
+                <View style={styles.badge}>
+                  <ThemedText style={styles.badgeText} lightColor="#FFFFFF" darkColor="#FFFFFF">
+                    {notificationBadge > 99 ? "99+" : notificationBadge}
+                  </ThemedText>
+                </View>
+              ) : null}
+            </View>
             <ThemedText 
               lightColor={textColor}
               darkColor={textColor}
@@ -193,6 +220,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: Spacing.sm,
     gap: 4,
+  },
+  iconWrapper: {
+    position: "relative",
+  },
+  badge: {
+    position: "absolute",
+    top: -6,
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "700",
   },
   tabLabel: {
     fontSize: 11,
