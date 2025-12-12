@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator, TextInput, Alert, Dimensions } from "react-native";
+import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator, TextInput, Alert, Dimensions, Modal, Platform } from "react-native";
 import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -19,11 +19,12 @@ import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
 import { HeartIcon } from "@/components/icons/HeartIcon";
 import { SendIcon } from "@/components/icons/SendIcon";
 import { UsersIcon } from "@/components/icons/UsersIcon";
+import { XIcon } from "@/components/icons/XIcon";
 import { RoleBadge, UserRole } from "@/components/RoleBadge";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount } from "@/utils/supabase";
+import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount, createTimelinePost } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -82,6 +83,11 @@ export default function NovelDetailScreen() {
   
   // Novel genres
   const [novelGenres, setNovelGenres] = useState<{ id: number; name: string; slug: string; gradient_start: string; gradient_end: string }[]>([]);
+  
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareCaption, setShareCaption] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
 
   // Navigate to user profile
   const navigateToUserProfile = (userId: number | string) => {
@@ -310,6 +316,38 @@ export default function NovelDetailScreen() {
     }
   };
 
+  const handleOpenShareModal = () => {
+    if (!requireAuth("Masuk untuk membagikan novel ini")) return;
+    setShareCaption(`Aku merekomendasikan novel "${novel.title}" karya ${novel.author}. Wajib baca!`);
+    setShowShareModal(true);
+  };
+
+  const handleShareToTimeline = async () => {
+    if (!user || !shareCaption.trim()) return;
+    
+    setIsSharing(true);
+    try {
+      const result = await createTimelinePost(
+        parseInt(user.id),
+        shareCaption.trim(),
+        undefined,
+        parseInt(novelId)
+      );
+      
+      if (result.success) {
+        setShowShareModal(false);
+        setShareCaption("");
+        Alert.alert("Berhasil", "Novel berhasil dibagikan ke Linimasa!");
+      } else {
+        Alert.alert("Gagal", result.error || "Gagal membagikan novel");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Terjadi kesalahan saat membagikan");
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const coverImageSource = {
     romance: require("@/assets/images/novels/romance.png"),
     fantasy: require("@/assets/images/novels/fantasy.png"),
@@ -467,7 +505,7 @@ export default function NovelDetailScreen() {
             </Pressable>
           </View>
         )}
-        <Pressable style={styles.iconButton}>
+        <Pressable style={styles.iconButton} onPress={handleOpenShareModal}>
           <ShareIcon size={20} color={theme.text} />
         </Pressable>
       </View>
@@ -778,6 +816,68 @@ export default function NovelDetailScreen() {
           </>
         )}
       </View>
+
+      <Modal
+        visible={showShareModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <View style={styles.shareModalOverlay}>
+          <View style={[styles.shareModalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.shareModalHeader}>
+              <ThemedText style={[Typography.h3, { flex: 1 }]}>Bagikan ke Linimasa</ThemedText>
+              <Pressable onPress={() => setShowShareModal(false)} style={styles.shareModalClose}>
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <View style={[styles.shareNovelPreview, { backgroundColor: theme.backgroundSecondary }]}>
+              <Image
+                source={imageSource}
+                style={styles.shareNovelCover}
+              />
+              <View style={styles.shareNovelInfo}>
+                <ThemedText style={styles.shareNovelTitle} numberOfLines={2}>{novel.title}</ThemedText>
+                <ThemedText style={[styles.shareNovelAuthor, { color: theme.textSecondary }]}>oleh {novel.author}</ThemedText>
+              </View>
+            </View>
+
+            <TextInput
+              value={shareCaption}
+              onChangeText={setShareCaption}
+              placeholder="Tulis caption..."
+              placeholderTextColor={theme.textMuted}
+              multiline
+              style={[styles.shareCaptionInput, { 
+                backgroundColor: theme.backgroundSecondary, 
+                color: theme.text,
+                borderColor: theme.cardBorder,
+              }]}
+            />
+
+            <Pressable
+              onPress={handleShareToTimeline}
+              disabled={isSharing || !shareCaption.trim()}
+              style={({ pressed }) => [
+                styles.shareButton,
+                { 
+                  backgroundColor: shareCaption.trim() ? theme.primary : theme.backgroundSecondary,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              {isSharing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <ThemedText style={[styles.shareButtonText, { color: shareCaption.trim() ? "#FFFFFF" : theme.textMuted }]}>
+                  Bagikan Sekarang
+                </ThemedText>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScreenScrollView>
   );
 }
@@ -1202,5 +1302,67 @@ const styles = StyleSheet.create({
   },
   socialButtonLabel: {
     fontSize: 11,
+  },
+  shareModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "flex-end",
+  },
+  shareModalContent: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    paddingBottom: 40,
+  },
+  shareModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  shareModalClose: {
+    padding: Spacing.xs,
+  },
+  shareNovelPreview: {
+    flexDirection: "row",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+  },
+  shareNovelCover: {
+    width: 60,
+    height: 90,
+    borderRadius: BorderRadius.sm,
+  },
+  shareNovelInfo: {
+    flex: 1,
+    justifyContent: "center",
+    gap: 4,
+  },
+  shareNovelTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  shareNovelAuthor: {
+    fontSize: 14,
+  },
+  shareCaptionInput: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: "top",
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+  },
+  shareButton: {
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shareButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

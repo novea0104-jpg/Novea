@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, StyleSheet, Pressable, Image } from "react-native";
+import { View, StyleSheet, Pressable, Image, Modal, TextInput, ActivityIndicator, Alert } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
@@ -19,9 +19,11 @@ import { AlertCircleIcon } from "@/components/icons/AlertCircleIcon";
 import { LogOutIcon } from "@/components/icons/LogOutIcon";
 import { CoinIcon } from "@/components/icons/CoinIcon";
 import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
+import { ShareIcon } from "@/components/icons/ShareIcon";
+import { XIcon } from "@/components/icons/XIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserFollowStats, FollowStats, getTotalUnreadCount } from "@/utils/supabase";
+import { getUserFollowStats, FollowStats, getTotalUnreadCount, createTimelinePost } from "@/utils/supabase";
 import { formatRupiah, NOVOIN_TO_RUPIAH } from "@/constants/pricing";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import { LinearGradient } from "expo-linear-gradient";
@@ -35,6 +37,9 @@ export default function ProfileScreen() {
   const [followStats, setFollowStats] = useState<FollowStats>({ followersCount: 0, followingCount: 0 });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareCaption, setShareCaption] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -64,6 +69,39 @@ export default function ProfileScreen() {
       loadUnreadCount();
     }, [loadFollowStats, loadUnreadCount])
   );
+
+  const handleOpenShareModal = () => {
+    if (!user) return;
+    const roleText = user.role === 'penulis' ? 'Penulis' : user.role === 'pembaca' ? 'Pembaca' : user.role;
+    setShareCaption(`Hai! Aku ${user.name}, seorang ${roleText} di Novea. Yuk follow aku untuk update terbaru!`);
+    setShowShareModal(true);
+  };
+
+  const handleShareToTimeline = async () => {
+    if (!user || !shareCaption.trim()) return;
+    
+    setIsSharing(true);
+    try {
+      const result = await createTimelinePost(
+        parseInt(user.id),
+        shareCaption.trim(),
+        undefined,
+        undefined
+      );
+      
+      if (result.success) {
+        setShowShareModal(false);
+        setShareCaption("");
+        Alert.alert("Berhasil", "Profil berhasil dibagikan ke Linimasa!");
+      } else {
+        Alert.alert("Gagal", result.error || "Gagal membagikan profil");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Terjadi kesalahan saat membagikan");
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -154,6 +192,12 @@ export default function ProfileScreen() {
             </ThemedText>
             <RoleBadge role={user.role} size="small" />
           </View>
+          <Pressable 
+            onPress={handleOpenShareModal}
+            style={[styles.shareButton, { backgroundColor: theme.backgroundSecondary }]}
+          >
+            <ShareIcon size={20} color={theme.text} />
+          </Pressable>
         </View>
 
         {user.bio ? (
@@ -283,6 +327,74 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.spacer} />
+
+      <Modal
+        visible={showShareModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowShareModal(false)}
+      >
+        <View style={styles.shareModalOverlay}>
+          <View style={[styles.shareModalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.shareModalHeader}>
+              <ThemedText style={[Typography.h3, { flex: 1 }]}>Bagikan Profilmu</ThemedText>
+              <Pressable onPress={() => setShowShareModal(false)} style={styles.shareModalClose}>
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+
+            <View style={[styles.shareProfilePreview, { backgroundColor: theme.backgroundSecondary }]}>
+              {user.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.shareProfileAvatar} />
+              ) : (
+                <View style={[styles.shareProfileAvatar, { backgroundColor: theme.backgroundRoot, justifyContent: 'center', alignItems: 'center' }]}>
+                  <UserIcon size={24} color={theme.textMuted} />
+                </View>
+              )}
+              <View style={styles.shareProfileInfo}>
+                <ThemedText style={styles.shareProfileName}>{user.name}</ThemedText>
+                <ThemedText style={[styles.shareProfileHandle, { color: theme.textSecondary }]}>
+                  @{user.email.split("@")[0]}
+                </ThemedText>
+                <RoleBadge role={user.role} size="small" />
+              </View>
+            </View>
+
+            <TextInput
+              value={shareCaption}
+              onChangeText={setShareCaption}
+              placeholder="Tulis caption..."
+              placeholderTextColor={theme.textMuted}
+              multiline
+              style={[styles.shareCaptionInput, { 
+                backgroundColor: theme.backgroundSecondary, 
+                color: theme.text,
+                borderColor: theme.cardBorder,
+              }]}
+            />
+
+            <Pressable
+              onPress={handleShareToTimeline}
+              disabled={isSharing || !shareCaption.trim()}
+              style={({ pressed }) => [
+                styles.shareSubmitButton,
+                { 
+                  backgroundColor: shareCaption.trim() ? theme.primary : theme.backgroundSecondary,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              {isSharing ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <ThemedText style={[styles.shareSubmitButtonText, { color: shareCaption.trim() ? "#FFFFFF" : theme.textMuted }]}>
+                  Bagikan Sekarang
+                </ThemedText>
+              )}
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScreenScrollView>
   );
 }
@@ -475,5 +587,75 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#000000",
+  },
+  shareButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  shareModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "flex-end",
+  },
+  shareModalContent: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    paddingBottom: 40,
+  },
+  shareModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.lg,
+  },
+  shareModalClose: {
+    padding: Spacing.xs,
+  },
+  shareProfilePreview: {
+    flexDirection: "row",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+    alignItems: "center",
+  },
+  shareProfileAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  shareProfileInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  shareProfileName: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  shareProfileHandle: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  shareCaptionInput: {
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: "top",
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+  },
+  shareSubmitButton: {
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  shareSubmitButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

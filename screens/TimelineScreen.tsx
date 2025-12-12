@@ -7,6 +7,7 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
 import { ThemedText } from "@/components/ThemedText";
 import { ScreenFlatList } from "@/components/ScreenFlatList";
 import { PostCard } from "@/components/PostCard";
@@ -32,6 +33,7 @@ export default function TimelineScreen() {
   const { theme } = useTheme();
   const { user, isGuest } = useAuth();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   
   const [posts, setPosts] = useState<TimelinePost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,6 +150,22 @@ export default function TimelineScreen() {
     }
   };
 
+  const handleNovelPress = (novelId: number) => {
+    // Navigate to Browse tab's NovelDetail screen
+    navigation.getParent()?.navigate("BrowseTab", {
+      screen: "NovelDetail",
+      params: { novelId: novelId.toString() },
+    });
+  };
+
+  const handleUserPress = (userId: number) => {
+    // Navigate to Browse tab's UserProfile screen
+    navigation.getParent()?.navigate("BrowseTab", {
+      screen: "UserProfile",
+      params: { userId: userId.toString() },
+    });
+  };
+
   const renderPost = ({ item }: { item: TimelinePost }) => (
     <PostCard
       post={item}
@@ -157,6 +175,8 @@ export default function TimelineScreen() {
       onFetchComments={handleFetchComments}
       onAddComment={handleAddComment}
       onDeleteComment={handleDeleteComment}
+      onNovelPress={handleNovelPress}
+      onUserPress={handleUserPress}
       isGuest={isGuest}
     />
   );
