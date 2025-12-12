@@ -19,6 +19,7 @@ import {
   purchaseProduct,
   isGooglePlayAvailable,
   endBillingConnection,
+  setStoredUserId,
   type NovoinProductId,
 } from "@/utils/googlePlayBilling";
 
@@ -39,8 +40,9 @@ export default function CoinStoreScreen() {
 
   useEffect(() => {
     async function setupBilling() {
-      if (isGooglePlayAvailable()) {
-        const initialized = await initializeBilling();
+      if (isGooglePlayAvailable() && user) {
+        setStoredUserId(user.id);
+        const initialized = await initializeBilling(user.id);
         setIsBillingReady(initialized);
       }
     }
@@ -49,7 +51,7 @@ export default function CoinStoreScreen() {
     return () => {
       endBillingConnection();
     };
-  }, []);
+  }, [user?.id]);
 
   const handleSelectPackage = (packageItem: typeof COIN_PACKAGES[0]) => {
     setSelectedPackage(packageItem);

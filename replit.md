@@ -110,7 +110,19 @@ ON CONFLICT (novel_id, genre_id) DO NOTHING;
 
 **Coin Economy:** A virtual currency system (Novoin) for unlocking chapters. 1 Novoin = Rp 1,000. Features include free chapters, paid chapters, coin packages, and balance tracking.
 
-**Payment Gateway:** Duitku integration for Indonesian local payments (QRIS, Virtual Account, E-Wallet). Currently in sandbox mode for testing.
+**Payment Gateway:** Google Play Billing integration for in-app purchases on Android. Uses `react-native-iap` v14 with Nitro Modules.
+
+**Google Play Billing Setup:**
+1. Product IDs in Google Play Console:
+   - `novoin_10` - 10 Novoin (Rp 10.000)
+   - `novoin_25` - 25+2 Novoin (Rp 25.000) - Popular
+   - `novoin_50` - 50+5 Novoin (Rp 50.000)
+   - `novoin_100` - 100+15 Novoin (Rp 100.000)
+   - `novoin_250` - 250+50 Novoin (Rp 250.000)
+   - `novoin_500` - 500+125 Novoin (Rp 500.000)
+2. Required permission: `com.android.vending.BILLING` (already in app.json)
+3. Purchase flow: `utils/googlePlayBilling.ts` handles init, purchase, validation
+4. Idempotent validation: Uses `reference_id` in `coin_transactions` to prevent double-credits
 
 **Writer Monetization:** Writers have access to a comprehensive dashboard:
 - **Sales Analytics:** Professional charts showing daily/weekly earnings, per-novel performance, and revenue trends using react-native-svg
