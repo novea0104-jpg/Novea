@@ -21,6 +21,7 @@ import { SendIcon } from "@/components/icons/SendIcon";
 import { UsersIcon } from "@/components/icons/UsersIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { RoleBadge, UserRole } from "@/components/RoleBadge";
+import { ShareModal } from "@/components/ShareModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -88,6 +89,7 @@ export default function NovelDetailScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCaption, setShareCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const [showSocialShareModal, setShowSocialShareModal] = useState(false);
 
   // Navigate to user profile
   const navigateToUserProfile = (userId: number | string) => {
@@ -871,13 +873,47 @@ export default function NovelDetailScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <ThemedText style={[styles.shareButtonText, { color: shareCaption.trim() ? "#FFFFFF" : theme.textMuted }]}>
-                  Bagikan Sekarang
+                  Bagikan ke Linimasa
                 </ThemedText>
               )}
+            </Pressable>
+
+            <View style={styles.shareDivider}>
+              <View style={[styles.shareDividerLine, { backgroundColor: theme.cardBorder }]} />
+              <ThemedText style={[styles.shareDividerText, { color: theme.textMuted }]}>atau</ThemedText>
+              <View style={[styles.shareDividerLine, { backgroundColor: theme.cardBorder }]} />
+            </View>
+
+            <Pressable
+              onPress={() => {
+                setShowShareModal(false);
+                setShowSocialShareModal(true);
+              }}
+              style={({ pressed }) => [
+                styles.shareButton,
+                { 
+                  backgroundColor: theme.backgroundSecondary,
+                  borderWidth: 1,
+                  borderColor: theme.cardBorder,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <ThemedText style={[styles.shareButtonText, { color: theme.text }]}>
+                Bagikan ke Media Sosial
+              </ThemedText>
             </Pressable>
           </View>
         </View>
       </Modal>
+
+      <ShareModal
+        visible={showSocialShareModal}
+        onClose={() => setShowSocialShareModal(false)}
+        title={novel.title}
+        message={`Baca novel "${novel.title}" karya ${novel.author} di Novea!`}
+        url={`https://noveaindonesia.com/novel/${novelId}`}
+      />
     </ScreenScrollView>
   );
 }
@@ -1364,5 +1400,18 @@ const styles = StyleSheet.create({
   shareButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  shareDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  shareDividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  shareDividerText: {
+    fontSize: 12,
   },
 });

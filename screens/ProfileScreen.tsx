@@ -21,6 +21,7 @@ import { CoinIcon } from "@/components/icons/CoinIcon";
 import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { ShareIcon } from "@/components/icons/ShareIcon";
 import { XIcon } from "@/components/icons/XIcon";
+import { ShareModal } from "@/components/ShareModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserFollowStats, FollowStats, getTotalUnreadCount, createTimelinePost } from "@/utils/supabase";
@@ -40,6 +41,7 @@ export default function ProfileScreen() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCaption, setShareCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const [showSocialShareModal, setShowSocialShareModal] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -388,13 +390,47 @@ export default function ProfileScreen() {
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
                 <ThemedText style={[styles.shareSubmitButtonText, { color: shareCaption.trim() ? "#FFFFFF" : theme.textMuted }]}>
-                  Bagikan Sekarang
+                  Bagikan ke Linimasa
                 </ThemedText>
               )}
+            </Pressable>
+
+            <View style={styles.shareDivider}>
+              <View style={[styles.shareDividerLine, { backgroundColor: theme.cardBorder }]} />
+              <ThemedText style={[styles.shareDividerText, { color: theme.textMuted }]}>atau</ThemedText>
+              <View style={[styles.shareDividerLine, { backgroundColor: theme.cardBorder }]} />
+            </View>
+
+            <Pressable
+              onPress={() => {
+                setShowShareModal(false);
+                setShowSocialShareModal(true);
+              }}
+              style={({ pressed }) => [
+                styles.shareSubmitButton,
+                { 
+                  backgroundColor: theme.backgroundSecondary,
+                  borderWidth: 1,
+                  borderColor: theme.cardBorder,
+                  opacity: pressed ? 0.7 : 1,
+                },
+              ]}
+            >
+              <ThemedText style={[styles.shareSubmitButtonText, { color: theme.text }]}>
+                Bagikan ke Media Sosial
+              </ThemedText>
             </Pressable>
           </View>
         </View>
       </Modal>
+
+      <ShareModal
+        visible={showSocialShareModal}
+        onClose={() => setShowSocialShareModal(false)}
+        title={user?.name || "Profil Novea"}
+        message={`Ikuti ${user?.name || "aku"} di Novea untuk update novel terbaru!`}
+        url={`https://noveaindonesia.com/user/${user?.id}`}
+      />
     </ScreenScrollView>
   );
 }
@@ -657,5 +693,18 @@ const styles = StyleSheet.create({
   shareSubmitButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  shareDivider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  shareDividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  shareDividerText: {
+    fontSize: 12,
   },
 });
