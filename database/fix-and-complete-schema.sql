@@ -156,7 +156,11 @@ $$;
 -- ==================== STEP 7: CREATE NOTIFICATION TRIGGERS ====================
 
 CREATE OR REPLACE FUNCTION notify_followers_on_new_content()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
     INSERT INTO notifications (user_id, type, title, message, actor_id, novel_id, timeline_post_id)
     SELECT 
@@ -192,10 +196,14 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION notify_all_on_admin_post()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     poster_role VARCHAR(50);
     poster_name VARCHAR(255);
@@ -217,10 +225,14 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION notify_followers_on_new_chapter()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     novel_title VARCHAR(255);
     author_id_val INTEGER;
@@ -241,10 +253,14 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 CREATE OR REPLACE FUNCTION notify_on_review_reply()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
     parent_user_id INTEGER;
     replier_name VARCHAR(255);
@@ -269,7 +285,7 @@ BEGIN
     
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 
 -- ==================== STEP 8: CREATE TRIGGERS ====================

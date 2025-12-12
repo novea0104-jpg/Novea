@@ -17,6 +17,7 @@ import { LockIcon } from "@/components/icons/LockIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
 import { HeartIcon } from "@/components/icons/HeartIcon";
+import { SendIcon } from "@/components/icons/SendIcon";
 import { UsersIcon } from "@/components/icons/UsersIcon";
 import { RoleBadge, UserRole } from "@/components/RoleBadge";
 import { useTheme } from "@/hooks/useTheme";
@@ -706,21 +707,33 @@ export default function NovelDetailScreen() {
                   {/* Reply input */}
                   {isReplying ? (
                     <View style={styles.replyInputContainer}>
-                      <TextInput
-                        style={[styles.replyInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                        placeholder="Tulis balasan..."
-                        placeholderTextColor={theme.textMuted}
-                        value={replyText}
-                        onChangeText={setReplyText}
-                        multiline
-                      />
-                      <Button
-                        onPress={handleSubmitReply}
-                        style={styles.replySubmitButton}
-                        disabled={isSubmittingReply || !replyText.trim()}
-                      >
-                        {isSubmittingReply ? "..." : "Kirim"}
-                      </Button>
+                      <View style={styles.replyInputRow}>
+                        <TextInput
+                          style={[styles.replyInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                          placeholder="Tulis balasan..."
+                          placeholderTextColor={theme.textMuted}
+                          value={replyText}
+                          onChangeText={setReplyText}
+                          multiline
+                        />
+                        <Pressable
+                          onPress={handleSubmitReply}
+                          disabled={isSubmittingReply || !replyText.trim()}
+                          style={({ pressed }) => [
+                            styles.replySubmitBtn,
+                            { 
+                              backgroundColor: replyText.trim() ? theme.primary : theme.backgroundSecondary,
+                              opacity: pressed ? 0.7 : 1,
+                            },
+                          ]}
+                        >
+                          {isSubmittingReply ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <SendIcon size={18} color={replyText.trim() ? "#FFFFFF" : theme.textMuted} />
+                          )}
+                        </Pressable>
+                      </View>
                     </View>
                   ) : null}
                   
@@ -1110,17 +1123,27 @@ const styles = StyleSheet.create({
   },
   replyInputContainer: {
     marginTop: Spacing.sm,
+  },
+  replyInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: Spacing.sm,
   },
   replyInput: {
+    flex: 1,
     borderRadius: BorderRadius.md,
     padding: Spacing.sm,
     fontSize: 14,
-    minHeight: 60,
+    minHeight: 44,
+    maxHeight: 100,
     textAlignVertical: "top",
   },
-  replySubmitButton: {
-    alignSelf: "flex-end",
+  replySubmitBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
   repliesContainer: {
     marginTop: Spacing.md,
