@@ -71,10 +71,56 @@ export default function NotificationsScreen() {
       );
     }
 
-    if (notification.novelId) {
-      navigation.navigate("NovelDetail", { novelId: notification.novelId });
-    } else if (notification.timelinePostId) {
-      navigation.getParent()?.navigate("TimelineTab");
+    // Navigate based on notification type and available data
+    switch (notification.type) {
+      case "new_chapter":
+        // Go directly to the chapter reader
+        if (notification.chapterId && notification.novelId) {
+          navigation.navigate("Reader", { 
+            chapterId: String(notification.chapterId), 
+            novelId: String(notification.novelId) 
+          });
+        } else if (notification.novelId) {
+          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+        }
+        break;
+        
+      case "new_novel":
+        // Go to novel detail page
+        if (notification.novelId) {
+          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+        }
+        break;
+        
+      case "comment_reply":
+        // Go to the novel detail where the review/comment is
+        if (notification.novelId) {
+          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+        }
+        break;
+        
+      case "new_timeline_post":
+      case "admin_announcement":
+      case "admin_timeline_post":
+        // Go to Timeline tab
+        navigation.getParent()?.navigate("TimelineTab");
+        break;
+        
+      case "new_follower":
+        // Go to the follower's profile
+        if (notification.actorId) {
+          navigation.navigate("UserProfile", { userId: notification.actorId });
+        }
+        break;
+        
+      default:
+        // Fallback: try to navigate based on available data
+        if (notification.novelId) {
+          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+        } else if (notification.timelinePostId) {
+          navigation.getParent()?.navigate("TimelineTab");
+        }
+        break;
     }
   };
 
