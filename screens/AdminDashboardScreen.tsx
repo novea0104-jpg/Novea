@@ -1367,21 +1367,20 @@ const styles = StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.md,
+    paddingVertical: Spacing.xs,
+    gap: Spacing.sm,
   },
   tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    gap: Spacing.sm,
-    minWidth: 100,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
   },
   tabLabel: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
   },
   content: {
