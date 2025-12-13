@@ -303,100 +303,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   async function unlockChapter(chapterId: string, cost: number): Promise<boolean> {
     if (!user) {
-      throw new Error("Must be logged in to unlock chapters");
+      throw new Error("Silakan masuk terlebih dahulu");
     }
 
     try {
-      // Check if user has enough coins
+      // Check if user has enough coins locally first
       if (user.coinBalance < cost) {
-        throw new Error("Insufficient coins");
+        throw new Error("Koin tidak cukup");
       }
 
-      // Get chapter info to find novel_id and author_id
-      const { data: chapter, error: chapterError } = await supabase
-        .from('chapters')
-        .select('novel_id')
-        .eq('id', parseInt(chapterId))
-        .single();
+      // Call secure RPC function to handle all unlock operations
+      const { data, error } = await supabase.rpc('unlock_chapter_secure', {
+        p_user_id: parseInt(user.id),
+        p_chapter_id: parseInt(chapterId),
+        p_cost: cost,
+      });
 
-      if (chapterError) throw chapterError;
-
-      // Get novel author_id for writer earnings
-      const { data: novel, error: novelError } = await supabase
-        .from('novels')
-        .select('author_id')
-        .eq('id', chapter.novel_id)
-        .single();
-
-      if (novelError) throw novelError;
-
-      // Insert into unlocked_chapters
-      const { error: unlockError } = await supabase
-        .from('unlocked_chapters')
-        .insert({
-          user_id: parseInt(user.id),
-          chapter_id: parseInt(chapterId),
-          novel_id: chapter.novel_id,
-        });
-
-      if (unlockError) throw unlockError;
-
-      // Record coin transaction for reader
-      const { error: txError } = await supabase
-        .from('coin_transactions')
-        .insert({
-          user_id: parseInt(user.id),
-          amount: -cost,
-          type: 'unlock_chapter',
-          description: `Unlocked chapter ${chapterId}`,
-          metadata: { chapter_id: parseInt(chapterId) },
-        });
-
-      if (txError) {
-        console.error('Error inserting coin transaction:', txError);
+      if (error) {
+        console.error('RPC error:', error);
+        throw new Error(error.message || 'Gagal membuka chapter');
       }
 
-      // Record writer earnings (80% writer, 20% platform)
-      const writerShare = Math.floor(cost * 0.80);
-      const platformShare = cost - writerShare;
-
-      const { error: earningsError } = await supabase
-        .from('writer_earnings')
-        .insert({
-          writer_id: novel.author_id,
-          novel_id: chapter.novel_id,
-          chapter_id: parseInt(chapterId),
-          reader_id: parseInt(user.id),
-          amount: cost,
-          writer_share: writerShare,
-          platform_share: platformShare,
-        });
-
-      if (earningsError) {
-        console.error('Error inserting writer earnings:', earningsError);
+      // Check RPC result
+      if (!data?.success) {
+        throw new Error(data?.error || 'Gagal membuka chapter');
       }
 
-      // Update writer's balance in users table
-      // First get current balance, then update
-      const { data: writerData } = await supabase
-        .from('users')
-        .select('writer_balance, total_earnings')
-        .eq('id', novel.author_id)
-        .single();
-
-      const currentBalance = writerData?.writer_balance || 0;
-      const currentTotalEarnings = writerData?.total_earnings || 0;
-
-      await supabase
-        .from('users')
-        .update({
-          writer_balance: currentBalance + writerShare,
-          total_earnings: currentTotalEarnings + writerShare,
-        })
-        .eq('id', novel.author_id);
-
-      // Update coin balance (this will update both Supabase and local state)
-      await updateCoinBalance(-cost);
+      // Update local coin balance from RPC response
+      if (data.new_balance !== undefined) {
+        // Update user state with new balance
+        await refreshUserBalance(data.new_balance);
+      }
 
       // Update local unlocked chapters
       const newUnlocked = new Set(unlockedChapters);
@@ -404,10 +341,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setUnlockedChapters(newUnlocked);
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error unlocking chapter:", error);
       throw error;
     }
+  }
+
+  async function refreshUserBalance(newBalance: number) {
+    if (!user) return;
+    // This updates the local user state with new coin balance
+    // The AuthContext will handle syncing with Supabase
+    await updateCoinBalance(newBalance - user.coinBalance);
   }
 
   function searchNovels(query: string): Novel[] {
