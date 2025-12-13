@@ -30,6 +30,8 @@ import { BarChartIcon } from "@/components/icons/BarChartIcon";
 import { CoinIcon } from "@/components/icons/CoinIcon";
 import { EditIcon } from "@/components/icons/EditIcon";
 import { LockIcon } from "@/components/icons/LockIcon";
+import { AwardIcon } from "@/components/icons/AwardIcon";
+import { PlusIcon } from "@/components/icons/PlusIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, Typography, BorderRadius } from "@/constants/theme";
@@ -52,9 +54,14 @@ import {
   AdminNovel,
   AdminStats,
   AdminChapter,
+  getEditorsChoiceNovels,
+  addToEditorsChoice,
+  removeFromEditorsChoice,
+  searchNovelsForEditorsChoice,
+  EditorsChoiceNovel,
 } from "@/utils/supabase";
 
-type TabType = 'stats' | 'users' | 'novels';
+type TabType = 'stats' | 'users' | 'novels' | 'featured';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -115,6 +122,14 @@ export default function AdminDashboardScreen() {
   const [editChapterContent, setEditChapterContent] = useState('');
   const [editChapterIsFree, setEditChapterIsFree] = useState(false);
   
+  // Editors Choice states
+  const [editorsChoice, setEditorsChoice] = useState<EditorsChoiceNovel[]>([]);
+  const [editorsChoiceLoading, setEditorsChoiceLoading] = useState(false);
+  const [searchNovelQuery, setSearchNovelQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{id: number; title: string; authorName: string; coverUrl: string | null}[]>([]);
+  const [showAddNovelModal, setShowAddNovelModal] = useState(false);
+  const [searchingNovels, setSearchingNovels] = useState(false);
+  
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
       return;
@@ -151,6 +166,13 @@ export default function AdminDashboardScreen() {
     setNovelPage(page);
   }, []);
 
+  const loadEditorsChoice = useCallback(async () => {
+    setEditorsChoiceLoading(true);
+    const data = await getEditorsChoiceNovels();
+    setEditorsChoice(data);
+    setEditorsChoiceLoading(false);
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -159,6 +181,7 @@ export default function AdminDashboardScreen() {
         await loadUsers(1);
       }
       await loadNovels(1);
+      await loadEditorsChoice();
       setLoading(false);
     };
     loadData();
@@ -172,6 +195,8 @@ export default function AdminDashboardScreen() {
       await loadUsers(1);
     } else if (activeTab === 'novels') {
       await loadNovels(1);
+    } else if (activeTab === 'featured') {
+      await loadEditorsChoice();
     }
     setRefreshing(false);
   };
@@ -416,6 +441,57 @@ export default function AdminDashboardScreen() {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // Editors Choice handlers
+  const handleSearchNovels = async () => {
+    if (!searchNovelQuery.trim()) return;
+    setSearchingNovels(true);
+    const results = await searchNovelsForEditorsChoice(searchNovelQuery.trim());
+    setSearchResults(results);
+    setSearchingNovels(false);
+  };
+
+  const handleAddToEditorsChoice = async (novelId: number) => {
+    if (!user) return;
+    setActionLoading(true);
+    const displayOrder = editorsChoice.length + 1;
+    const result = await addToEditorsChoice(novelId, user.id, displayOrder);
+    setActionLoading(false);
+    if (result.success) {
+      await loadEditorsChoice();
+      setShowAddNovelModal(false);
+      setSearchNovelQuery('');
+      setSearchResults([]);
+      Alert.alert('Berhasil', 'Novel telah ditambahkan ke Pilihan Editor');
+    } else {
+      Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+    }
+  };
+
+  const handleRemoveFromEditorsChoice = async (novelId: number) => {
+    Alert.alert(
+      'Konfirmasi Hapus',
+      'Apakah Anda yakin ingin menghapus novel ini dari Pilihan Editor?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            const result = await removeFromEditorsChoice(novelId);
+            setActionLoading(false);
+            if (result.success) {
+              await loadEditorsChoice();
+              Alert.alert('Berhasil', 'Novel telah dihapus dari Pilihan Editor');
+            } else {
+              Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderTabButton = (tab: TabType, label: string, IconComponent: React.ComponentType<{ size: number; color: string }>) => {
@@ -989,6 +1065,7 @@ export default function AdminDashboardScreen() {
         {renderTabButton('stats', 'Statistik', BarChartIcon)}
         {renderTabButton('users', 'Users', UsersIcon)}
         {renderTabButton('novels', 'Novel', BookIcon)}
+        {renderTabButton('featured', 'Pilihan', AwardIcon)}
       </View>
 
       {activeTab === 'stats' ? (
@@ -1048,7 +1125,7 @@ export default function AdminDashboardScreen() {
             }
           />
         </View>
-      ) : (
+      ) : activeTab === 'novels' ? (
         <View style={styles.listContainer}>
           <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary }]}>
             <SearchIcon size={20} color={theme.textMuted} />
@@ -1089,7 +1166,149 @@ export default function AdminDashboardScreen() {
             }
           />
         </View>
-      )}
+      ) : activeTab === 'featured' ? (
+        <View style={styles.listContainer}>
+          <View style={styles.featuredHeader}>
+            <ThemedText style={[Typography.h3, { flex: 1 }]}>Pilihan Editor</ThemedText>
+            <Pressable
+              onPress={() => setShowAddNovelModal(true)}
+              style={[styles.addButton, { backgroundColor: theme.primary }]}
+            >
+              <PlusIcon size={18} color="#FFFFFF" />
+              <ThemedText style={styles.addButtonText}>Tambah</ThemedText>
+            </Pressable>
+          </View>
+          {editorsChoiceLoading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={editorsChoice}
+              renderItem={({ item }) => (
+                <Card elevation={1} style={styles.listItem}>
+                  <View style={[styles.novelIcon, { backgroundColor: theme.backgroundSecondary }]}>
+                    <AwardIcon size={24} color={theme.warning} />
+                  </View>
+                  <View style={styles.listItemContent}>
+                    <ThemedText style={styles.listItemTitle} numberOfLines={1}>
+                      {item.title}
+                    </ThemedText>
+                    <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                      oleh {item.authorName}
+                    </ThemedText>
+                    <ThemedText style={[styles.novelStatText, { color: theme.textMuted }]}>
+                      Ditambahkan oleh {item.addedByName}
+                    </ThemedText>
+                  </View>
+                  <Pressable
+                    onPress={() => handleRemoveFromEditorsChoice(item.novelId)}
+                    style={[styles.removeButton, { backgroundColor: theme.error }]}
+                  >
+                    <TrashIcon size={16} color="#FFFFFF" />
+                  </Pressable>
+                </Card>
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <AwardIcon size={48} color={theme.textMuted} />
+                  <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
+                    Belum ada novel pilihan editor
+                  </ThemedText>
+                  <ThemedText style={[styles.emptySubtext, { color: theme.textMuted }]}>
+                    Klik tombol Tambah untuk menambahkan novel
+                  </ThemedText>
+                </View>
+              }
+            />
+          )}
+        </View>
+      ) : null}
+
+      {/* Add Novel to Editors Choice Modal */}
+      <Modal
+        visible={showAddNovelModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowAddNovelModal(false);
+          setSearchNovelQuery('');
+          setSearchResults([]);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={Typography.h3}>Tambah Pilihan Editor</ThemedText>
+              <Pressable 
+                onPress={() => {
+                  setShowAddNovelModal(false);
+                  setSearchNovelQuery('');
+                  setSearchResults([]);
+                }}
+              >
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary, marginHorizontal: 0 }]}>
+                <SearchIcon size={20} color={theme.textMuted} />
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text }]}
+                  placeholder="Cari novel untuk ditambahkan..."
+                  placeholderTextColor={theme.textMuted}
+                  value={searchNovelQuery}
+                  onChangeText={setSearchNovelQuery}
+                  onSubmitEditing={handleSearchNovels}
+                  returnKeyType="search"
+                />
+              </View>
+              <Button onPress={handleSearchNovels} disabled={searchingNovels} style={{ marginTop: Spacing.sm }}>
+                {searchingNovels ? 'Mencari...' : 'Cari Novel'}
+              </Button>
+              
+              {searchResults.length > 0 ? (
+                <View style={{ marginTop: Spacing.lg }}>
+                  <ThemedText style={[Typography.body, { marginBottom: Spacing.sm, color: theme.textSecondary }]}>
+                    Hasil Pencarian ({searchResults.length})
+                  </ThemedText>
+                  {searchResults.map((novel) => (
+                    <Pressable
+                      key={novel.id}
+                      onPress={() => handleAddToEditorsChoice(novel.id)}
+                      disabled={actionLoading}
+                    >
+                      <Card elevation={1} style={[styles.listItem, { marginBottom: Spacing.sm }]}>
+                        <View style={[styles.novelIcon, { backgroundColor: theme.backgroundSecondary }]}>
+                          <BookIcon size={24} color={theme.text} />
+                        </View>
+                        <View style={styles.listItemContent}>
+                          <ThemedText style={styles.listItemTitle} numberOfLines={1}>
+                            {novel.title}
+                          </ThemedText>
+                          <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                            oleh {novel.authorName}
+                          </ThemedText>
+                        </View>
+                        <PlusIcon size={20} color={theme.primary} />
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : searchNovelQuery && !searchingNovels ? (
+                <ThemedText style={[styles.emptyText, { color: theme.textMuted, marginTop: Spacing.lg, textAlign: 'center' }]}>
+                  Tidak ada novel ditemukan
+                </ThemedText>
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {renderUserModal()}
       {renderNovelModal()}
@@ -1514,5 +1733,32 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 16,
+  },
+  featuredHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  removeButton: {
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

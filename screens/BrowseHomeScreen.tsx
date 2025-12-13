@@ -24,7 +24,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
-import { supabase, getTotalUnreadCount, getUnreadNotificationCount } from "@/utils/supabase";
+import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { BellIcon } from "@/components/icons/BellIcon";
 import { useNavigationState } from "@react-navigation/native";
@@ -65,6 +65,7 @@ export default function BrowseHomeScreen() {
   const [genres, setGenres] = useState<GenreItem[]>([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [editorsPick, setEditorsPick] = useState<Novel[]>([]);
 
   const maxContentWidth = 1200;
   const shouldCenterContent = isDesktop && width > maxContentWidth;
@@ -72,7 +73,39 @@ export default function BrowseHomeScreen() {
 
   useEffect(() => {
     fetchGenres();
+    fetchEditorsChoice();
   }, []);
+
+  const fetchEditorsChoice = async () => {
+    try {
+      const data = await getEditorsChoiceForHome();
+      const mappedNovels: Novel[] = data.map((item) => ({
+        id: item.id.toString(),
+        title: item.title,
+        author: item.authorName,
+        authorId: item.authorId,
+        genre: item.genre,
+        description: item.description || "",
+        coverUrl: item.coverUrl || null,
+        status: item.status || "ongoing",
+        rating: item.rating,
+        totalChapters: item.totalChapters || 0,
+        freeChapters: item.freeChapters || 0,
+        chapterPrice: item.chapterPrice || 0,
+        followers: item.totalReads || 0,
+        createdAt: new Date(item.createdAt),
+        updatedAt: new Date(item.updatedAt),
+      }));
+      setEditorsPick(mappedNovels);
+    } catch (error) {
+      console.error("Error fetching editors choice:", error);
+      // Fallback: sort by rating if fetching fails
+      const fallback = [...novels]
+        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
+        .slice(0, 20);
+      setEditorsPick(fallback);
+    }
+  };
 
   const loadUnreadCounts = useCallback(async () => {
     if (user) {
@@ -183,10 +216,7 @@ export default function BrowseHomeScreen() {
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, 6);
   
-  // Pilihan Editor: Sort by rating (highest rated), max 20
-  const editorsPick = [...novels]
-    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-    .slice(0, 20);
+  // Pilihan Editor: fetched from editors_choice table (fallback to rating sort if empty)
 
   // Novel Gratis: Filter novels that have free chapters
   const freeNovels = [...novels]
