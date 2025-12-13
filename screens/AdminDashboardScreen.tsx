@@ -1180,7 +1180,7 @@ export default function AdminDashboardScreen() {
         >
           <View style={styles.content}>
             <ThemedText style={[Typography.h2, styles.sectionHeader]}>
-              Dashboard Admin
+              Statistik Novea
             </ThemedText>
             <ThemedText style={[styles.roleInfo, { color: theme.textSecondary }]}>
               Login sebagai {adminRole === 'super_admin' ? 'Super Admin' : adminRole === 'co_admin' ? 'Co Admin' : 'Editor'}
@@ -1634,7 +1634,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.xs,
   },
   sectionHeader: {
     marginBottom: Spacing.xs,
