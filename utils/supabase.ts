@@ -2525,3 +2525,241 @@ export async function deleteNotification(notificationId: number): Promise<boolea
     return false;
   }
 }
+
+// =====================================================
+// EDITORS CHOICE FUNCTIONS
+// =====================================================
+
+export interface EditorsChoiceNovel {
+  id: number;
+  novelId: number;
+  title: string;
+  authorName: string;
+  coverUrl: string | null;
+  genre: string;
+  viewCount: number;
+  likesCount: number;
+  displayOrder: number;
+  addedAt: string;
+  addedBy: string;
+}
+
+export async function getEditorsChoiceNovels(): Promise<EditorsChoiceNovel[]> {
+  try {
+    const { data, error } = await supabase
+      .from('editors_choice')
+      .select(`
+        id,
+        novel_id,
+        display_order,
+        added_at,
+        novels (
+          id,
+          title,
+          cover_image_url,
+          genre,
+          view_count,
+          likes_count,
+          author:users!novels_author_id_fkey (
+            id,
+            name
+          )
+        ),
+        added_by_user:users!editors_choice_added_by_fkey (
+          name
+        )
+      `)
+      .order('display_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching editors choice:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      novelId: item.novel_id,
+      title: item.novels?.title || '',
+      authorName: item.novels?.author?.name || 'Unknown',
+      coverUrl: item.novels?.cover_image_url,
+      genre: item.novels?.genre || '',
+      viewCount: item.novels?.view_count || 0,
+      likesCount: item.novels?.likes_count || 0,
+      displayOrder: item.display_order,
+      addedAt: item.added_at,
+      addedBy: item.added_by_user?.name || 'Admin',
+    }));
+  } catch (error) {
+    console.error('Error in getEditorsChoiceNovels:', error);
+    return [];
+  }
+}
+
+export async function addToEditorsChoice(
+  adminId: number,
+  novelId: number,
+  displayOrder: number = 0
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('add_to_editors_choice', {
+      p_admin_id: adminId,
+      p_novel_id: novelId,
+      p_display_order: displayOrder
+    });
+
+    if (error) {
+      console.error('Error adding to editors choice:', error);
+      return { success: false, error: error.message };
+    }
+
+    return data as { success: boolean; error?: string };
+  } catch (error: any) {
+    console.error('Error in addToEditorsChoice:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function removeFromEditorsChoice(
+  adminId: number,
+  novelId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('remove_from_editors_choice', {
+      p_admin_id: adminId,
+      p_novel_id: novelId
+    });
+
+    if (error) {
+      console.error('Error removing from editors choice:', error);
+      return { success: false, error: error.message };
+    }
+
+    return data as { success: boolean; error?: string };
+  } catch (error: any) {
+    console.error('Error in removeFromEditorsChoice:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateEditorsChoiceOrder(
+  adminId: number,
+  novelId: number,
+  newOrder: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('update_editors_choice_order', {
+      p_admin_id: adminId,
+      p_novel_id: novelId,
+      p_new_order: newOrder
+    });
+
+    if (error) {
+      console.error('Error updating editors choice order:', error);
+      return { success: false, error: error.message };
+    }
+
+    return data as { success: boolean; error?: string };
+  } catch (error: any) {
+    console.error('Error in updateEditorsChoiceOrder:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function searchNovelsForEditorsChoice(
+  searchQuery: string,
+  excludeIds: number[] = []
+): Promise<{ id: number; title: string; authorName: string; coverUrl: string | null }[]> {
+  try {
+    let query = supabase
+      .from('novels')
+      .select(`
+        id,
+        title,
+        cover_image_url,
+        author:users!novels_author_id_fkey (name)
+      `)
+      .eq('is_published', true)
+      .ilike('title', `%${searchQuery}%`)
+      .limit(20);
+
+    if (excludeIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error searching novels:', error);
+      return [];
+    }
+
+    return (data || []).map((n: any) => ({
+      id: n.id,
+      title: n.title,
+      authorName: n.author?.name || 'Unknown',
+      coverUrl: n.cover_image_url,
+    }));
+  } catch (error) {
+    console.error('Error in searchNovelsForEditorsChoice:', error);
+    return [];
+  }
+}
+
+export async function getEditorsChoiceForHome(): Promise<{
+  id: string;
+  title: string;
+  author: string;
+  coverUrl: string | null;
+  genre: string;
+  rating: number;
+  followers: number;
+  chapters: number;
+}[]> {
+  try {
+    const { data, error } = await supabase
+      .from('editors_choice')
+      .select(`
+        novels (
+          id,
+          title,
+          cover_image_url,
+          genre,
+          rating,
+          total_reads,
+          author:users!novels_author_id_fkey (name)
+        )
+      `)
+      .order('display_order', { ascending: true })
+      .limit(20);
+
+    if (error) {
+      console.error('Error fetching editors choice for home:', error);
+      return [];
+    }
+
+    const { data: chaptersData } = await supabase
+      .from('chapters')
+      .select('novel_id');
+
+    const chapterCounts: Record<number, number> = {};
+    (chaptersData || []).forEach((c: any) => {
+      chapterCounts[c.novel_id] = (chapterCounts[c.novel_id] || 0) + 1;
+    });
+
+    return (data || [])
+      .filter((item: any) => item.novels)
+      .map((item: any) => ({
+        id: String(item.novels.id),
+        title: item.novels.title,
+        author: item.novels.author?.name || 'Unknown',
+        coverUrl: item.novels.cover_image_url,
+        genre: item.novels.genre || '',
+        rating: item.novels.rating || 0,
+        followers: item.novels.total_reads || 0,
+        chapters: chapterCounts[item.novels.id] || 0,
+      }));
+  } catch (error) {
+    console.error('Error in getEditorsChoiceForHome:', error);
+    return [];
+  }
+}
