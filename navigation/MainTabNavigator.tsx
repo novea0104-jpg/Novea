@@ -19,7 +19,7 @@ import { NotificationsIcon } from "@/components/icons/NotificationsIcon";
 import { ProfileIcon } from "@/components/icons/ProfileIcon";
 import { getUnreadNotificationCount } from "@/utils/supabase";
 
-const HIDDEN_TAB_BAR_ROUTES = ['Messages', 'MessageThread', 'NewMessage', 'NovelDetail', 'Reader'];
+const HIDDEN_TAB_BAR_ROUTES = ['Messages', 'MessageThread', 'NewMessage', 'NovelDetail', 'Reader', 'WriterCenter', 'AdminDashboard'];
 
 const PROTECTED_TABS = ["LibraryTab", "NotificationsTab", "ProfileTab"];
 
