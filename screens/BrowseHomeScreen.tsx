@@ -24,7 +24,9 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
-import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome } from "@/utils/supabase";
+import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome, getFeaturedAuthors, FeaturedAuthor } from "@/utils/supabase";
+import { Avatar } from "@/components/Avatar";
+import { UserIcon } from "@/components/icons/UserIcon";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { BellIcon } from "@/components/icons/BellIcon";
 import { useNavigationState } from "@react-navigation/native";
@@ -66,6 +68,7 @@ export default function BrowseHomeScreen() {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [editorsPick, setEditorsPick] = useState<Novel[]>([]);
+  const [featuredAuthors, setFeaturedAuthors] = useState<FeaturedAuthor[]>([]);
 
   const maxContentWidth = 1200;
   const shouldCenterContent = isDesktop && width > maxContentWidth;
@@ -74,7 +77,17 @@ export default function BrowseHomeScreen() {
   useEffect(() => {
     fetchGenres();
     fetchEditorsChoice();
+    fetchFeaturedAuthors();
   }, []);
+
+  const fetchFeaturedAuthors = async () => {
+    try {
+      const authors = await getFeaturedAuthors();
+      setFeaturedAuthors(authors);
+    } catch (error) {
+      console.error("Error fetching featured authors:", error);
+    }
+  };
 
   const fetchEditorsChoice = async () => {
     try {
@@ -359,6 +372,83 @@ export default function BrowseHomeScreen() {
     );
   };
 
+  const handleAuthorPress = (authorId: number) => {
+    navigation.navigate("UserProfile", { userId: authorId.toString() });
+  };
+
+  const renderFeaturedAuthorsSection = () => {
+    if (featuredAuthors.length === 0) return null;
+
+    const renderAuthorCard = (author: FeaturedAuthor) => (
+      <Pressable
+        key={author.id}
+        onPress={() => handleAuthorPress(author.authorId)}
+        style={({ pressed }) => [
+          styles.authorCard,
+          { 
+            backgroundColor: theme.backgroundSecondary,
+            opacity: pressed ? 0.8 : 1, 
+            transform: [{ scale: pressed ? 0.97 : 1 }] 
+          }
+        ]}
+      >
+        <Avatar uri={author.avatarUrl} name={author.name} size={56} />
+        <ThemedText style={styles.authorName} numberOfLines={1}>
+          {author.name}
+        </ThemedText>
+        <View style={styles.authorStats}>
+          <View style={styles.authorStatItem}>
+            <ThemedText style={[styles.authorStatValue, { color: theme.text }]}>
+              {author.novelCount}
+            </ThemedText>
+            <ThemedText style={[styles.authorStatLabel, { color: theme.textSecondary }]}>
+              Novel
+            </ThemedText>
+          </View>
+          <View style={[styles.authorStatDivider, { backgroundColor: theme.cardBorder }]} />
+          <View style={styles.authorStatItem}>
+            <ThemedText style={[styles.authorStatValue, { color: theme.text }]}>
+              {author.followersCount > 1000 ? `${(author.followersCount / 1000).toFixed(1)}K` : author.followersCount}
+            </ThemedText>
+            <ThemedText style={[styles.authorStatLabel, { color: theme.textSecondary }]}>
+              Pengikut
+            </ThemedText>
+          </View>
+        </View>
+      </Pressable>
+    );
+
+    if (isDesktop || isTablet) {
+      const columnsCount = isDesktop ? 6 : 4;
+      const displayAuthors = featuredAuthors.slice(0, columnsCount * 2);
+      return (
+        <View style={styles.section}>
+          {renderSectionTitle("Author Terfavorit", <UserIcon size={20} color="#EC4899" />, "#EC4899")}
+          <View style={styles.desktopGrid}>
+            {displayAuthors.map((author) => (
+              <View key={author.id} style={[styles.desktopGridItem, { width: `${100 / columnsCount}%` as any }]}>
+                {renderAuthorCard(author)}
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.section}>
+        {renderSectionTitle("Author Terfavorit", <UserIcon size={20} color="#EC4899" />, "#EC4899")}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.authorCarousel}
+        >
+          {featuredAuthors.map(renderAuthorCard)}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderFreeNovelsSection = () => {
     if (isDesktop || isTablet) {
       const columnsCount = isDesktop ? 6 : 4;
@@ -471,6 +561,7 @@ export default function BrowseHomeScreen() {
       >
         {renderNovelSection("Sedang Trending", trendingNovels, <FlameIcon size={20} color="#EF4444" />, "#EF4444", "large")}
         {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={20} color="#8B5CF6" />, "#8B5CF6")}
+        {renderFeaturedAuthorsSection()}
         {renderEditorsPickSection()}
 
         <View style={styles.section}>
@@ -647,5 +738,41 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
+  },
+  authorCarousel: {
+    paddingRight: Spacing.lg,
+    gap: Spacing.md,
+  },
+  authorCard: {
+    width: 110,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  authorName: {
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  authorStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  authorStatItem: {
+    alignItems: "center",
+  },
+  authorStatValue: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  authorStatLabel: {
+    fontSize: 9,
+    fontWeight: "500",
+  },
+  authorStatDivider: {
+    width: 1,
+    height: 20,
   },
 });
