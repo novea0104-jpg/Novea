@@ -69,6 +69,7 @@ DECLARE
     v_chapter_novel_id INTEGER;
     v_novel_author_id INTEGER;
     v_writer_share INTEGER;
+    v_platform_share INTEGER;
 BEGIN
     SELECT coin_balance INTO v_user_balance FROM users WHERE id = p_user_id;
     IF v_user_balance IS NULL THEN RETURN '{"success":false,"error":"User not found"}'::json; END IF;
@@ -83,14 +84,45 @@ BEGIN
         RETURN '{"success":true,"message":"Already unlocked"}'::json;
     END IF;
 
+    -- Calculate writer share (80%) and platform share (20%)
     v_writer_share := FLOOR(p_cost * 0.80);
+    v_platform_share := p_cost - v_writer_share;
 
+    -- Deduct coins from reader
     UPDATE users SET coin_balance = coin_balance - p_cost WHERE id = p_user_id;
+    
+    -- Record the unlock
     INSERT INTO unlocked_chapters (user_id, chapter_id, novel_id) VALUES (p_user_id, p_chapter_id, v_chapter_novel_id);
+    
+    -- Record coin transaction for reader
     INSERT INTO coin_transactions (user_id, amount, type, description) VALUES (p_user_id, -p_cost, 'unlock', 'Chapter ' || p_chapter_id);
 
+    -- Credit writer and record earnings
     IF v_novel_author_id IS NOT NULL THEN
-        UPDATE users SET writer_balance = COALESCE(writer_balance,0) + v_writer_share WHERE id = v_novel_author_id;
+        -- Update writer's balance and total earnings
+        UPDATE users SET 
+            writer_balance = COALESCE(writer_balance, 0) + v_writer_share,
+            total_earnings = COALESCE(total_earnings, 0) + v_writer_share
+        WHERE id = v_novel_author_id;
+        
+        -- Insert into writer_earnings table for dashboard analytics
+        INSERT INTO writer_earnings (
+            writer_id, 
+            novel_id, 
+            chapter_id, 
+            reader_id, 
+            amount, 
+            writer_share, 
+            platform_share
+        ) VALUES (
+            v_novel_author_id, 
+            v_chapter_novel_id, 
+            p_chapter_id, 
+            p_user_id, 
+            p_cost, 
+            v_writer_share, 
+            v_platform_share
+        );
     END IF;
 
     SELECT coin_balance INTO v_user_balance FROM users WHERE id = p_user_id;
