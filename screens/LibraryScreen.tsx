@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { StarIcon } from "@/components/icons/StarIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
+import { useResponsive } from "@/hooks/useResponsive";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LibraryStackParamList } from "@/navigation/LibraryStackNavigator";
@@ -20,9 +21,12 @@ export default function LibraryScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
+  const { isDesktop, isTablet } = useResponsive();
   const { novels, followingNovels, readingHistory } = useApp();
   const { user, showAuthPrompt } = useAuth();
   const [activeTab, setActiveTab] = useState<"following" | "history">("following");
+  
+  const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
 
   useEffect(() => {
     if (!user) {
@@ -147,7 +151,7 @@ export default function LibraryScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { marginLeft: sidebarWidth }]}>
       <View style={[styles.tabs, { paddingTop: screenInsets.paddingTop }]}>
         <Pressable
           onPress={() => setActiveTab("following")}

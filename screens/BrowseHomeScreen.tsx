@@ -68,6 +68,7 @@ export default function BrowseHomeScreen() {
 
   const maxContentWidth = 1200;
   const shouldCenterContent = isDesktop && width > maxContentWidth;
+  const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
 
   useEffect(() => {
     fetchGenres();
@@ -369,16 +370,20 @@ export default function BrowseHomeScreen() {
   };
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { marginLeft: sidebarWidth }]}>
       <View style={[styles.customHeader, { paddingTop: insets.top + Spacing.sm }]}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={require("@/assets/images/novea-logo.png")}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-          <ThemedText style={styles.appName}>ovea</ThemedText>
-        </View>
+        {!(isDesktop || isTablet) ? (
+          <View style={styles.headerLeft}>
+            <Image
+              source={require("@/assets/images/novea-logo.png")}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <ThemedText style={styles.appName}>ovea</ThemedText>
+          </View>
+        ) : (
+          <View style={styles.headerLeft} />
+        )}
         <View style={styles.headerRight}>
           <TouchableOpacity
             onPress={goToNotifications}

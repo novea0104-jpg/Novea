@@ -6,6 +6,7 @@ import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
+import { useResponsive } from "@/hooks/useResponsive";
 import { Card } from "@/components/Card";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserIcon } from "@/components/icons/UserIcon";
@@ -34,7 +35,10 @@ type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
 export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
+  const { isDesktop, isTablet } = useResponsive();
   const { user, logout, upgradeToWriter, showAuthPrompt } = useAuth();
+  
+  const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
   const [followStats, setFollowStats] = useState<FollowStats>({ followersCount: 0, followingCount: 0 });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -171,7 +175,7 @@ export default function ProfileScreen() {
   );
 
   return (
-    <ScreenScrollView>
+    <ScreenScrollView style={{ marginLeft: sidebarWidth }}>
       <Card elevation={1} style={styles.profileCard}>
         <View style={styles.profileHeader}>
           <View style={styles.avatarContainer}>

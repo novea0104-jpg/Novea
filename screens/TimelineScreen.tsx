@@ -13,6 +13,7 @@ import { ScreenFlatList } from "@/components/ScreenFlatList";
 import { PostCard } from "@/components/PostCard";
 import { CreatePostModal } from "@/components/CreatePostModal";
 import { useTheme } from "@/hooks/useTheme";
+import { useResponsive } from "@/hooks/useResponsive";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spacing, Typography, BorderRadius } from "@/constants/theme";
 import {
@@ -34,7 +35,9 @@ export default function TimelineScreen() {
   const { user, isGuest } = useAuth();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const { isDesktop, isTablet } = useResponsive();
   
+  const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
   const [posts, setPosts] = useState<TimelinePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -231,7 +234,7 @@ export default function TimelineScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+    <View style={[styles.container, { backgroundColor: theme.backgroundRoot, marginLeft: sidebarWidth }]}>
       <ScreenFlatList
         data={posts}
         renderItem={renderPost}

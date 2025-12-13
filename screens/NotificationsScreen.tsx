@@ -12,6 +12,7 @@ import { UserIcon } from "@/components/icons/UserIcon";
 import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
+import { useResponsive } from "@/hooks/useResponsive";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationsStackParamList } from "@/navigation/NotificationsStackNavigator";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -28,7 +29,10 @@ export default function NotificationsScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const screenInsets = useScreenInsets();
+  const { isDesktop, isTablet } = useResponsive();
   const { user, showAuthPrompt } = useAuth();
+  
+  const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -212,7 +216,7 @@ export default function NotificationsScreen() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { marginLeft: sidebarWidth }]}>
       {unreadCount > 0 ? (
         <Pressable
           onPress={handleMarkAllRead}

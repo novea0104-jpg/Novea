@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, TextInput, Image, Modal, FlatList, Keyboard } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
+import { useResponsive } from "@/hooks/useResponsive";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
@@ -59,7 +60,11 @@ export default function ReaderScreen() {
   const insets = useSafeAreaInsets();
   const { novels, unlockedChapters, unlockChapter, getChaptersForNovel, getChapter } = useApp();
   const { user, updateCoinBalance } = useAuth();
+  const { isDesktop, isTablet, width } = useResponsive();
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
+  const maxContentWidth = isDesktop ? 800 : undefined;
   
   const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
   
@@ -372,7 +377,7 @@ export default function ReaderScreen() {
 
   if (!novel || isLoading) {
     return (
-      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', marginLeft: sidebarWidth }]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </ThemedView>
     );
@@ -380,7 +385,7 @@ export default function ReaderScreen() {
 
   if (!currentChapter) {
     return (
-      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: Spacing.xl }]}>
+      <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: Spacing.xl, marginLeft: sidebarWidth }]}>
         <AlertCircleIcon size={64} color={theme.warning} />
         <ThemedText style={[Typography.h2, { marginTop: Spacing.xl, textAlign: 'center' }]}>
           Chapter Tidak Ditemukan
@@ -429,7 +434,7 @@ export default function ReaderScreen() {
 
   if (!isUnlocked) {
     return (
-      <ThemedView style={styles.container}>
+      <ThemedView style={[styles.container, { marginLeft: sidebarWidth }]}>
         <View style={[styles.lockedContainer, { paddingTop: insets.top }]}>
           <LockIcon size={64} color={theme.warning} />
           <ThemedText style={[Typography.h2, { marginTop: Spacing.xl }]}>
@@ -450,7 +455,7 @@ export default function ReaderScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
+    <ThemedView style={[styles.container, { marginLeft: sidebarWidth }]}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -459,6 +464,9 @@ export default function ReaderScreen() {
           {
             paddingTop: Spacing.lg,
             paddingBottom: insets.bottom + 100,
+            maxWidth: maxContentWidth,
+            alignSelf: isDesktop ? 'center' : undefined,
+            width: isDesktop ? '100%' : undefined,
           },
         ]}
         showsVerticalScrollIndicator={false}

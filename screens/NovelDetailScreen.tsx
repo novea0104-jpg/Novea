@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator, TextInput, Alert, Dimensions, Modal, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Image, FlatList, ActivityIndicator, TextInput, Alert, Modal, Platform } from "react-native";
+import { useResponsive } from "@/hooks/useResponsive";
 import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -44,6 +45,7 @@ export default function NovelDetailScreen() {
   const { theme } = useTheme();
   const { novels, followingNovels, likedNovels, toggleFollow, toggleLike, unlockedChapters, getChaptersForNovel, refreshNovels } = useApp();
   const { user, requireAuth } = useAuth();
+  const { isDesktop, isTablet, width } = useResponsive();
   
   const { novelId } = route.params as { novelId: string };
   const novel = novels.find((n) => n.id === novelId);
@@ -54,7 +56,8 @@ export default function NovelDetailScreen() {
   const [showAllChapters, setShowAllChapters] = useState(false);
   
   const CHAPTERS_PREVIEW_COUNT = 10;
-  const screenWidth = Dimensions.get('window').width;
+  const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
+  const screenWidth = width - sidebarWidth;
   
   // Reviews state
   const [reviews, setReviews] = useState<NovelReview[]>([]);
@@ -406,7 +409,7 @@ export default function NovelDetailScreen() {
   const coverHeight = coverWidth * 1.5;
 
   return (
-    <ScreenScrollView>
+    <ScreenScrollView style={{ marginLeft: sidebarWidth }}>
       <View style={styles.header}>
         <View style={styles.coverBackground}>
           <Image source={imageSource} style={styles.coverBackgroundImage} resizeMode="cover" blurRadius={25} />
