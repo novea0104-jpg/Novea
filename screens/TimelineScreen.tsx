@@ -211,17 +211,6 @@ export default function TimelineScreen() {
     </View>
   );
 
-  const renderHeader = () => (
-    <View style={styles.headerSection}>
-      <ThemedText style={[styles.headerTitle, { color: theme.text }]}>
-        Linimasa
-      </ThemedText>
-      <ThemedText style={[styles.headerSubtitle, { color: theme.textMuted }]}>
-        Ikuti perkembangan dari penulis favoritmu
-      </ThemedText>
-    </View>
-  );
-
   if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.backgroundRoot }]}>
@@ -239,7 +228,6 @@ export default function TimelineScreen() {
         data={posts}
         renderItem={renderPost}
         keyExtractor={(item) => item.id.toString()}
-        ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={[
           styles.listContent,
@@ -300,17 +288,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: Spacing.md,
     gap: Spacing.md,
-  },
-  headerSection: {
-    paddingVertical: Spacing.lg,
-  },
-  headerTitle: {
-    fontSize: Typography.h1.fontSize,
-    fontWeight: "700",
-    marginBottom: Spacing.xs,
-  },
-  headerSubtitle: {
-    fontSize: Typography.body.fontSize,
   },
   emptyState: {
     alignItems: "center",
