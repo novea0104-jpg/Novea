@@ -158,12 +158,19 @@ export default function EditChapterScreen() {
 
     setIsLoading(true);
 
+    const timeoutMs = 15000;
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timeout - server tidak merespons')), timeoutMs)
+    );
+
     try {
       const isFree = !isLocked;
       const chapterPrice = isLocked ? priceInNovoin : 0;
 
       if (isEditing && chapterIdNum) {
-        const { error } = await supabase
+        console.log('Updating chapter:', chapterIdNum);
+        
+        const updatePromise = supabase
           .from('chapters')
           .update({
             title: title.trim(),
@@ -175,15 +182,26 @@ export default function EditChapterScreen() {
           })
           .eq('id', chapterIdNum);
 
-        if (error) throw error;
+        const result = await Promise.race([updatePromise, timeoutPromise]) as any;
+        
+        if (result?.error) {
+          console.error('Supabase update error:', result.error);
+          if (result.error.message?.includes('row-level security') || result.error.code === '42501') {
+            throw new Error('Akses ditolak. Jalankan SQL fix di Supabase Dashboard.');
+          }
+          throw result.error;
+        }
 
+        console.log('Chapter updated successfully');
         await refreshNovels();
 
         Alert.alert("Berhasil!", "Chapter berhasil diupdate!", [
           { text: "OK", onPress: () => navigation.goBack() }
         ]);
       } else {
-        const { error } = await supabase
+        console.log('Inserting new chapter for novel:', novelIdNum);
+        
+        const insertPromise = supabase
           .from('chapters')
           .insert({
             novel_id: novelIdNum,
@@ -195,7 +213,17 @@ export default function EditChapterScreen() {
             price: chapterPrice,
           });
 
-        if (error) throw error;
+        const result = await Promise.race([insertPromise, timeoutPromise]) as any;
+
+        if (result?.error) {
+          console.error('Supabase insert error:', result.error);
+          if (result.error.message?.includes('row-level security') || result.error.code === '42501') {
+            throw new Error('Akses ditolak. Jalankan SQL fix di Supabase Dashboard.');
+          }
+          throw result.error;
+        }
+
+        console.log('Chapter inserted successfully');
 
         const { error: updateError } = await supabase
           .from('novels')
@@ -217,7 +245,8 @@ export default function EditChapterScreen() {
       }
     } catch (error: any) {
       console.error('Error saving chapter:', error);
-      Alert.alert("Error", error.message || "Gagal menyimpan chapter. Coba lagi.");
+      const errorMessage = error.message || "Gagal menyimpan chapter.";
+      Alert.alert("Error", errorMessage);
     } finally {
       setIsLoading(false);
     }
