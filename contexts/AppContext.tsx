@@ -85,6 +85,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ratingCountsMap.set(review.novel_id, currentCount + 1);
           });
         }
+
+        // Fetch novel likes counts
+        const novelLikesMap = new Map<number, number>();
+        const { data: novelLikesData } = await supabase
+          .from('novel_likes')
+          .select('novel_id')
+          .in('novel_id', novelIds);
+
+        if (novelLikesData) {
+          novelLikesData.forEach(like => {
+            const currentCount = novelLikesMap.get(like.novel_id) || 0;
+            novelLikesMap.set(like.novel_id, currentCount + 1);
+          });
+        }
+
+        // Fetch chapter likes counts
+        const chapterLikesMap = new Map<number, number>();
+        const { data: chapterLikesData } = await supabase
+          .from('chapter_likes')
+          .select('novel_id')
+          .in('novel_id', novelIds);
+
+        if (chapterLikesData) {
+          chapterLikesData.forEach(like => {
+            const currentCount = chapterLikesMap.get(like.novel_id) || 0;
+            chapterLikesMap.set(like.novel_id, currentCount + 1);
+          });
+        }
+
+        // Store maps for later use in novel mapping
+        (globalThis as any).__novelLikesMap = novelLikesMap;
+        (globalThis as any).__chapterLikesMap = chapterLikesMap;
       }
 
       // Fetch user-specific data if logged in
@@ -158,6 +190,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUnlockedChapters(new Set());
       }
 
+      // Get likes maps from global storage
+      const novelLikesMap = (globalThis as any).__novelLikesMap || new Map<number, number>();
+      const chapterLikesMap = (globalThis as any).__chapterLikesMap || new Map<number, number>();
+
       // Convert API novels to app Novel type
       const convertedNovels: Novel[] = (novelsData || []).map(apiNovel => ({
         id: apiNovel.id.toString(),
@@ -174,6 +210,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         freeChapters: apiNovel.free_chapters,
         totalChapters: apiNovel.total_chapters,
         followers: viewCountsMap.get(apiNovel.id) || 0,
+        totalLikes: (novelLikesMap.get(apiNovel.id) || 0) + (chapterLikesMap.get(apiNovel.id) || 0),
         isFollowing: followingSet.has(apiNovel.id.toString()),
         createdAt: new Date(apiNovel.created_at),
         lastUpdated: new Date(apiNovel.updated_at),

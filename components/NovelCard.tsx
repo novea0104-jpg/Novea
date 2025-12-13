@@ -4,6 +4,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
 import { EyeIcon } from "@/components/icons/EyeIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
+import { HeartIcon } from "@/components/icons/HeartIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { Novel } from "@/types/models";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -76,6 +77,15 @@ export function NovelCard({ novel, onPress, variant = "medium", showMetadata = t
                 {novel.rating.toFixed(1)}
               </ThemedText>
             </View>
+            
+            {novel.totalLikes > 0 ? (
+              <View style={styles.metadataItem}>
+                <HeartIcon size={10} color="#EF4444" filled />
+                <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
+                  {novel.totalLikes > 1000 ? `${(novel.totalLikes / 1000).toFixed(1)}k` : novel.totalLikes}
+                </ThemedText>
+              </View>
+            ) : null}
           </View>
         ) : null}
       </View>

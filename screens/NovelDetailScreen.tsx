@@ -487,7 +487,7 @@ export default function NovelDetailScreen() {
               <HeartIcon size={18} color={isLiked ? theme.error : theme.text} filled={isLiked} />
               <View style={styles.socialButtonContent}>
                 <ThemedText style={[styles.socialButtonCount, { color: isLiked ? theme.error : theme.text }]}>
-                  {likeCount.toLocaleString()}
+                  {(likeCount + chapterLikesCount).toLocaleString()}
                 </ThemedText>
                 <ThemedText style={[styles.socialButtonLabel, { color: isLiked ? theme.error : theme.textSecondary }]}>
                   {isLiked ? 'Disukai' : 'Suka'}
