@@ -467,7 +467,7 @@ export default function AdminDashboardScreen() {
     
     setActionLoading(true);
     const displayOrder = editorsChoice.length + 1;
-    const result = await addToEditorsChoice(novelId, user.id, displayOrder);
+    const result = await addToEditorsChoice(parseInt(user.id), novelId, displayOrder);
     setActionLoading(false);
     if (result.success) {
       await loadEditorsChoice();
