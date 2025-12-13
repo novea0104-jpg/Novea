@@ -28,7 +28,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { user, updateCoinBalance } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [novels, setNovels] = useState<Novel[]>([]);
   const [followingNovels, setFollowingNovels] = useState<Set<string>>(new Set());
   const [likedNovels, setLikedNovels] = useState<Set<string>>(new Set());
@@ -329,11 +329,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         throw new Error(data?.error || 'Gagal membuka chapter');
       }
 
-      // Update local coin balance from RPC response
-      if (data.new_balance !== undefined) {
-        // Update user state with new balance
-        await refreshUserBalance(data.new_balance);
-      }
+      // Refresh user data to get updated coin balance from database
+      await refreshUser();
 
       // Update local unlocked chapters
       const newUnlocked = new Set(unlockedChapters);
@@ -345,13 +342,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error("Error unlocking chapter:", error);
       throw error;
     }
-  }
-
-  async function refreshUserBalance(newBalance: number) {
-    if (!user) return;
-    // This updates the local user state with new coin balance
-    // The AuthContext will handle syncing with Supabase
-    await updateCoinBalance(newBalance - user.coinBalance);
   }
 
   function searchNovels(query: string): Novel[] {
