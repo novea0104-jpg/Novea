@@ -23,6 +23,7 @@ import { GiftIcon } from "@/components/icons/GiftIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useResponsive } from "@/hooks/useResponsive";
 import { supabase, getTotalUnreadCount, getUnreadNotificationCount } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { BellIcon } from "@/components/icons/BellIcon";
@@ -60,9 +61,13 @@ export default function BrowseHomeScreen() {
   const insets = useSafeAreaInsets();
   const { novels } = useApp();
   const { user, showAuthPrompt } = useAuth();
+  const { isDesktop, isTablet, width } = useResponsive();
   const [genres, setGenres] = useState<GenreItem[]>([]);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  const maxContentWidth = 1200;
+  const shouldCenterContent = isDesktop && width > maxContentWidth;
 
   useEffect(() => {
     fetchGenres();
@@ -237,66 +242,131 @@ export default function BrowseHomeScreen() {
     </View>
   );
 
-  const renderNovelSection = (title: string, novels: Novel[], icon: React.ReactNode, iconColor: string, variant: "large" | "medium" = "medium") => (
-    <View style={styles.section}>
-      {renderSectionTitle(title, icon, iconColor)}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.carousel}
-      >
-        {novels.map((novel) => (
-          <NovelCard
-            key={novel.id}
-            novel={novel}
-            variant={variant}
-            onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+  const renderNovelSection = (title: string, novels: Novel[], icon: React.ReactNode, iconColor: string, variant: "large" | "medium" = "medium") => {
+    if (isDesktop || isTablet) {
+      const columnsCount = isDesktop ? 6 : 4;
+      const displayNovels = novels.slice(0, columnsCount * 2);
+      return (
+        <View style={styles.section}>
+          {renderSectionTitle(title, icon, iconColor)}
+          <View style={styles.desktopGrid}>
+            {displayNovels.map((novel) => (
+              <View key={novel.id} style={[styles.desktopGridItem, { width: `${100 / columnsCount}%` as any }]}>
+                <NovelCard
+                  novel={novel}
+                  variant={variant}
+                  onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.section}>
+        {renderSectionTitle(title, icon, iconColor)}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.carousel}
+        >
+          {novels.map((novel) => (
+            <NovelCard
+              key={novel.id}
+              novel={novel}
+              variant={variant}
+              onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
-  const renderEditorsPickSection = () => (
-    <View style={styles.section}>
-      {renderSectionTitle("Pilihan Editor", <AwardIcon size={16} color="#F59E0B" />, "#F59E0B")}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.carousel}
-        decelerationRate="fast"
-        snapToInterval={316}
-      >
-        {editorsPick.map((novel) => (
-          <EditorPickCard
-            key={novel.id}
-            novel={novel}
-            onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+  const renderEditorsPickSection = () => {
+    if (isDesktop || isTablet) {
+      const columnsCount = isDesktop ? 4 : 2;
+      const displayNovels = editorsPick.slice(0, columnsCount * 2);
+      return (
+        <View style={styles.section}>
+          {renderSectionTitle("Pilihan Editor", <AwardIcon size={16} color="#F59E0B" />, "#F59E0B")}
+          <View style={styles.desktopGrid}>
+            {displayNovels.map((novel) => (
+              <View key={novel.id} style={[styles.desktopGridItem, { width: `${100 / columnsCount}%` as any }]}>
+                <EditorPickCard
+                  novel={novel}
+                  onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.section}>
+        {renderSectionTitle("Pilihan Editor", <AwardIcon size={16} color="#F59E0B" />, "#F59E0B")}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.carousel}
+          decelerationRate="fast"
+          snapToInterval={316}
+        >
+          {editorsPick.map((novel) => (
+            <EditorPickCard
+              key={novel.id}
+              novel={novel}
+              onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
-  const renderFreeNovelsSection = () => (
-    <View style={styles.section}>
-      {renderSectionTitle("Novel Gratis", <GiftIcon size={16} color="#10B981" />, "#10B981")}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.carousel}
-      >
-        {freeNovels.map((novel) => (
-          <NovelCard
-            key={novel.id}
-            novel={novel}
-            onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
-            showMetadata={false}
-          />
-        ))}
-      </ScrollView>
-    </View>
-  );
+  const renderFreeNovelsSection = () => {
+    if (isDesktop || isTablet) {
+      const columnsCount = isDesktop ? 6 : 4;
+      const displayNovels = freeNovels.slice(0, columnsCount * 2);
+      return (
+        <View style={styles.section}>
+          {renderSectionTitle("Novel Gratis", <GiftIcon size={16} color="#10B981" />, "#10B981")}
+          <View style={styles.desktopGrid}>
+            {displayNovels.map((novel) => (
+              <View key={novel.id} style={[styles.desktopGridItem, { width: `${100 / columnsCount}%` as any }]}>
+                <NovelCard
+                  novel={novel}
+                  onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+                  showMetadata={false}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.section}>
+        {renderSectionTitle("Novel Gratis", <GiftIcon size={16} color="#10B981" />, "#10B981")}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.carousel}
+        >
+          {freeNovels.map((novel) => (
+            <NovelCard
+              key={novel.id}
+              novel={novel}
+              onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+              showMetadata={false}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -368,13 +438,19 @@ export default function BrowseHomeScreen() {
 
         <View style={styles.section}>
           {renderSectionTitle("Jelajahi Genre", <CompassIcon size={16} color="#3B82F6" />, "#3B82F6")}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.genreCarousel}
-          >
-            {genres.map(renderGenreCard)}
-          </ScrollView>
+          {(isDesktop || isTablet) ? (
+            <View style={styles.desktopGenreGrid}>
+              {genres.map(renderGenreCard)}
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.genreCarousel}
+            >
+              {genres.map(renderGenreCard)}
+            </ScrollView>
+          )}
         </View>
 
         {renderFreeNovelsSection()}
@@ -475,6 +551,20 @@ const styles = StyleSheet.create({
   },
   carousel: {
     paddingRight: Spacing.lg,
+  },
+  desktopGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginHorizontal: -Spacing.sm,
+  },
+  desktopGridItem: {
+    paddingHorizontal: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  desktopGenreGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
   },
   genreCarousel: {
     paddingRight: Spacing.lg,
