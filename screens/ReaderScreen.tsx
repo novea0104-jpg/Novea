@@ -59,7 +59,7 @@ export default function ReaderScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { novels, unlockedChapters, unlockChapter, getChaptersForNovel, getChapter } = useApp();
-  const { user, updateCoinBalance } = useAuth();
+  const { user } = useAuth();
   const { isDesktop, isTablet, width } = useResponsive();
   const scrollViewRef = useRef<ScrollView>(null);
   
@@ -94,6 +94,7 @@ export default function ReaderScreen() {
   const [isChapterLiked, setIsChapterLiked] = useState(false);
   const [chapterLikeCount, setChapterLikeCount] = useState(0);
   const [isLiking, setIsLiking] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   useEffect(() => {
     loadReaderSettings();
@@ -411,13 +412,27 @@ export default function ReaderScreen() {
   const chapterPrice = currentChapter.price || novel.coinPerChapter || 0;
   
   const handleUnlock = async () => {
-    if (!user || user.coinBalance < chapterPrice) {
+    if (!user) {
+      alert("Silakan masuk terlebih dahulu");
+      return;
+    }
+    
+    if (user.coinBalance < chapterPrice) {
       alert("Koin tidak cukup");
       return;
     }
+    
+    if (isUnlocking) return;
 
-    await unlockChapter(chapterId, chapterPrice);
-    await updateCoinBalance(-chapterPrice);
+    setIsUnlocking(true);
+    try {
+      await unlockChapter(chapterId, chapterPrice);
+    } catch (error: any) {
+      console.error('Unlock chapter error:', error);
+      alert(error.message || 'Gagal membuka chapter');
+    } finally {
+      setIsUnlocking(false);
+    }
   };
 
   const goToPrevChapter = () => {
@@ -443,8 +458,8 @@ export default function ReaderScreen() {
           <ThemedText style={[styles.lockedText, { color: theme.textSecondary, marginTop: Spacing.md }]}>
             Buka chapter ini dengan {chapterPrice} koin
           </ThemedText>
-          <Button onPress={handleUnlock} style={styles.unlockButton}>
-            Buka dengan {chapterPrice} koin
+          <Button onPress={handleUnlock} style={styles.unlockButton} disabled={isUnlocking}>
+            {isUnlocking ? 'Membuka...' : `Buka dengan ${chapterPrice} koin`}
           </Button>
           <ThemedText style={[styles.balance, { color: theme.textSecondary, marginTop: Spacing.lg }]}>
             Saldo kamu: {user?.coinBalance || 0} koin
