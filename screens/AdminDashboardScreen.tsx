@@ -1072,12 +1072,16 @@ export default function AdminDashboardScreen() {
 
   return (
     <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.md }]}>
-      <View style={styles.tabsContainer}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabsContainer}
+      >
         {renderTabButton('stats', 'Statistik', BarChartIcon)}
         {renderTabButton('users', 'Users', UsersIcon)}
         {renderTabButton('novels', 'Novel', BookIcon)}
-        {renderTabButton('featured', 'Pilihan', AwardIcon)}
-      </View>
+        {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
+      </ScrollView>
 
       {activeTab === 'stats' ? (
         <ScreenScrollView
@@ -1364,20 +1368,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   tabButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.lg,
-    gap: Spacing.xs,
+    gap: Spacing.sm,
+    minWidth: 100,
   },
   tabLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   content: {
