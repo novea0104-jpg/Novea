@@ -2826,3 +2826,202 @@ export async function getEditorsChoiceForHome(): Promise<{
     return [];
   }
 }
+
+// =====================================================
+// FEATURED AUTHORS FUNCTIONS
+// =====================================================
+
+export interface FeaturedAuthor {
+  id: number;
+  authorId: number;
+  name: string;
+  avatarUrl: string | null;
+  followersCount: number;
+  followingCount: number;
+  novelCount: number;
+  displayOrder: number;
+  addedAt: string;
+}
+
+export async function getFeaturedAuthors(): Promise<FeaturedAuthor[]> {
+  try {
+    const { data: featuredData, error: featuredError } = await supabase
+      .from('featured_authors')
+      .select('id, author_id, display_order, created_at')
+      .order('display_order', { ascending: true });
+
+    if (featuredError) {
+      console.error('Error fetching featured authors:', featuredError);
+      return [];
+    }
+
+    if (!featuredData || featuredData.length === 0) {
+      return [];
+    }
+
+    const authorIds = featuredData.map(f => f.author_id);
+
+    // Fetch author details
+    const { data: authorsData } = await supabase
+      .from('users')
+      .select('id, name, avatar_url')
+      .in('id', authorIds);
+
+    // Fetch followers count for each author
+    const { data: followersData } = await supabase
+      .from('user_follows')
+      .select('following_id')
+      .in('following_id', authorIds);
+
+    const followersCounts: Record<number, number> = {};
+    (followersData || []).forEach((f: any) => {
+      followersCounts[f.following_id] = (followersCounts[f.following_id] || 0) + 1;
+    });
+
+    // Fetch following count for each author
+    const { data: followingData } = await supabase
+      .from('user_follows')
+      .select('follower_id')
+      .in('follower_id', authorIds);
+
+    const followingCounts: Record<number, number> = {};
+    (followingData || []).forEach((f: any) => {
+      followingCounts[f.follower_id] = (followingCounts[f.follower_id] || 0) + 1;
+    });
+
+    // Fetch novel counts
+    const { data: novelsData } = await supabase
+      .from('novels')
+      .select('author_id')
+      .in('author_id', authorIds)
+      .eq('is_published', true);
+
+    const novelCounts: Record<number, number> = {};
+    (novelsData || []).forEach((n: any) => {
+      novelCounts[n.author_id] = (novelCounts[n.author_id] || 0) + 1;
+    });
+
+    const authorsMap = new Map((authorsData || []).map(a => [a.id, a]));
+
+    return featuredData.map((item: any) => {
+      const author = authorsMap.get(item.author_id);
+      return {
+        id: item.id,
+        authorId: item.author_id,
+        name: author?.name || 'Unknown',
+        avatarUrl: author?.avatar_url || null,
+        followersCount: followersCounts[item.author_id] || 0,
+        followingCount: followingCounts[item.author_id] || 0,
+        novelCount: novelCounts[item.author_id] || 0,
+        displayOrder: item.display_order,
+        addedAt: item.created_at,
+      };
+    });
+  } catch (error) {
+    console.error('Error in getFeaturedAuthors:', error);
+    return [];
+  }
+}
+
+export async function addToFeaturedAuthors(
+  adminId: number,
+  authorId: number,
+  displayOrder: number = 1
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('add_to_featured_authors', {
+      p_added_by: adminId,
+      p_author_id: authorId,
+      p_display_order: displayOrder
+    });
+
+    if (error) {
+      console.error('Error adding to featured authors:', error);
+      return { success: false, error: error.message };
+    }
+
+    return data as { success: boolean; error?: string };
+  } catch (error: any) {
+    console.error('Error in addToFeaturedAuthors:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function removeFromFeaturedAuthors(
+  authorId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { data, error } = await supabase.rpc('remove_from_featured_authors', {
+      p_author_id: authorId
+    });
+
+    if (error) {
+      console.error('Error removing from featured authors:', error);
+      return { success: false, error: error.message };
+    }
+
+    return data as { success: boolean; error?: string };
+  } catch (error: any) {
+    console.error('Error in removeFromFeaturedAuthors:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function searchAuthorsForFeatured(
+  searchQuery: string
+): Promise<{ id: number; name: string; avatarUrl: string | null; novelCount: number }[]> {
+  try {
+    // Get already featured author IDs
+    const { data: featuredData } = await supabase
+      .from('featured_authors')
+      .select('author_id');
+
+    const excludeIds = (featuredData || []).map((f: any) => f.author_id);
+
+    // Search writers
+    let query = supabase
+      .from('users')
+      .select('id, name, avatar_url')
+      .eq('is_writer', true)
+      .ilike('name', `%${searchQuery}%`)
+      .limit(20);
+
+    if (excludeIds.length > 0) {
+      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error searching authors:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Get novel counts
+    const authorIds = data.map(a => a.id);
+    const { data: novelsData } = await supabase
+      .from('novels')
+      .select('author_id')
+      .in('author_id', authorIds)
+      .eq('is_published', true);
+
+    const novelCounts: Record<number, number> = {};
+    (novelsData || []).forEach((n: any) => {
+      novelCounts[n.author_id] = (novelCounts[n.author_id] || 0) + 1;
+    });
+
+    return data.map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      avatarUrl: a.avatar_url,
+      novelCount: novelCounts[a.id] || 0,
+    }));
+  } catch (error) {
+    console.error('Error in searchAuthorsForFeatured:', error);
+    return [];
+  }
+}
