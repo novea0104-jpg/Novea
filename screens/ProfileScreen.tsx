@@ -23,6 +23,7 @@ import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
 import { ShareIcon } from "@/components/icons/ShareIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { ShareModal } from "@/components/ShareModal";
+import { WriterTermsModal } from "@/components/WriterTermsModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserFollowStats, FollowStats, getTotalUnreadCount, createTimelinePost } from "@/utils/supabase";
@@ -46,6 +47,8 @@ export default function ProfileScreen() {
   const [shareCaption, setShareCaption] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [showSocialShareModal, setShowSocialShareModal] = useState(false);
+  const [showWriterTerms, setShowWriterTerms] = useState(false);
+  const [isUpgradingToWriter, setIsUpgradingToWriter] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -106,6 +109,23 @@ export default function ProfileScreen() {
       Alert.alert("Error", "Terjadi kesalahan saat membagikan");
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handleAgreeToWriterTerms = async () => {
+    setIsUpgradingToWriter(true);
+    try {
+      await upgradeToWriter();
+      setShowWriterTerms(false);
+      Alert.alert(
+        "Selamat!",
+        "Kamu sekarang adalah Penulis Novea! Mulai bagikan ceritamu ke dunia.",
+        [{ text: "Mulai Menulis", onPress: () => navigation.navigate("WriterCenter") }]
+      );
+    } catch (error) {
+      Alert.alert("Gagal", "Terjadi kesalahan saat mengubah status. Silakan coba lagi.");
+    } finally {
+      setIsUpgradingToWriter(false);
     }
   };
 
@@ -299,7 +319,7 @@ export default function ProfileScreen() {
             icon="feather"
             title="Menjadi Penulis"
             subtitle="Bagikan ceritamu ke dunia"
-            onPress={upgradeToWriter}
+            onPress={() => setShowWriterTerms(true)}
           />
         )}
         <MenuItem
@@ -434,6 +454,13 @@ export default function ProfileScreen() {
         title={user?.name || "Profil Novea"}
         message={`Ikuti ${user?.name || "aku"} di Novea untuk update novel terbaru!`}
         url={`https://noveaindonesia.com/user/${user?.id}`}
+      />
+
+      <WriterTermsModal
+        visible={showWriterTerms}
+        onClose={() => setShowWriterTerms(false)}
+        onAgree={handleAgreeToWriterTerms}
+        isLoading={isUpgradingToWriter}
       />
     </ScreenScrollView>
   );
