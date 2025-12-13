@@ -147,48 +147,6 @@ export default function WriterCenterScreen() {
           />
         </View>
 
-        <View style={styles.sectionHeader}>
-          <ThemedText style={Typography.h2}>Novel Saya</ThemedText>
-          <Pressable
-            onPress={() => navigation.navigate('CreateNovel' as never)}
-            style={styles.createButton}
-          >
-            <LinearGradient
-              colors={GradientColors.purplePink.colors}
-              start={GradientColors.purplePink.start}
-              end={GradientColors.purplePink.end}
-              style={styles.createButtonGradient}
-            >
-              <PlusIcon size={20} color="#FFFFFF" />
-              <ThemedText style={styles.createButtonText}>Buat Novel</ThemedText>
-            </LinearGradient>
-          </Pressable>
-        </View>
-
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={GradientColors.purplePink.colors[0]} />
-          </View>
-        ) : novels.length === 0 ? (
-          <Card elevation={1} style={styles.emptyCard}>
-            <BookIcon size={48} color={theme.textMuted} />
-            <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
-              Belum ada novel. Mulai menulis sekarang!
-            </ThemedText>
-          </Card>
-        ) : (
-          <View style={styles.novelsList}>
-            {novels.map((novel) => (
-              <NovelCard
-                key={novel.id}
-                novel={novel}
-                onPress={() => (navigation as any).navigate('ManageNovel', { novelId: novel.id })}
-                theme={theme}
-              />
-            ))}
-          </View>
-        )}
-
         <View style={styles.dashboardSection}>
           <ThemedText style={Typography.h2}>Dashboard Penulis</ThemedText>
           
@@ -234,6 +192,48 @@ export default function WriterCenterScreen() {
             </View>
           </Pressable>
         </View>
+
+        <View style={styles.sectionHeader}>
+          <ThemedText style={Typography.h2}>Novel Saya</ThemedText>
+          <Pressable
+            onPress={() => navigation.navigate('CreateNovel' as never)}
+            style={styles.createButton}
+          >
+            <LinearGradient
+              colors={GradientColors.purplePink.colors}
+              start={GradientColors.purplePink.start}
+              end={GradientColors.purplePink.end}
+              style={styles.createButtonGradient}
+            >
+              <PlusIcon size={20} color="#FFFFFF" />
+              <ThemedText style={styles.createButtonText}>Buat Novel</ThemedText>
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={GradientColors.purplePink.colors[0]} />
+          </View>
+        ) : novels.length === 0 ? (
+          <Card elevation={1} style={styles.emptyCard}>
+            <BookIcon size={48} color={theme.textMuted} />
+            <ThemedText style={[styles.emptyText, { color: theme.textSecondary }]}>
+              Belum ada novel. Mulai menulis sekarang!
+            </ThemedText>
+          </Card>
+        ) : (
+          <View style={styles.novelsList}>
+            {novels.map((novel) => (
+              <NovelCard
+                key={novel.id}
+                novel={novel}
+                onPress={() => (navigation as any).navigate('ManageNovel', { novelId: novel.id })}
+                theme={theme}
+              />
+            ))}
+          </View>
+        )}
       </View>
     </ScreenScrollView>
   );
