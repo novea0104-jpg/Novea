@@ -11,6 +11,9 @@ import { BookIcon } from "@/components/icons/BookIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
 import { EyeIcon } from "@/components/icons/EyeIcon";
 import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
+import { HeartIcon } from "@/components/icons/HeartIcon";
+import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
+import { ImageIcon } from "@/components/icons/ImageIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -21,6 +24,7 @@ import {
   followUser, 
   unfollowUser,
   getOrCreateConversation,
+  supabase,
   PublicUserProfile,
   UserNovel,
   FollowStats 
@@ -54,6 +58,9 @@ export default function UserProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [isMessageLoading, setIsMessageLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'novels' | 'posts'>('novels');
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
 
   const isOwnProfile = currentUser && parseInt(currentUser.id) === parseInt(userId);
 
@@ -84,10 +91,32 @@ export default function UserProfileScreen() {
     setIsLoading(false);
   }, [userId, currentUser, isOwnProfile]);
 
+  const loadUserPosts = useCallback(async () => {
+    setPostsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('timeline_posts')
+        .select('id, content, image_url, likes_count, comments_count, created_at')
+        .eq('user_id', parseInt(userId))
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching posts:', error);
+        setUserPosts([]);
+      } else {
+        setUserPosts(data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching posts:', err);
+      setUserPosts([]);
+    }
+    setPostsLoading(false);
+  }, [userId]);
+
   useFocusEffect(
     useCallback(() => {
       loadUserProfile();
-    }, [loadUserProfile])
+      loadUserPosts();
+    }, [loadUserProfile, loadUserPosts])
   );
 
   const handleFollowToggle = async () => {
@@ -265,62 +294,135 @@ export default function UserProfileScreen() {
         </ThemedText>
       </Card>
 
-      {userNovels.length > 0 ? (
-        <View style={styles.section}>
-          <ThemedText style={[Typography.h3, styles.sectionTitle]}>
+      <View style={[styles.tabsContainer, { borderBottomColor: theme.backgroundSecondary }]}>
+        <Pressable 
+          onPress={() => setActiveTab("novels")} 
+          style={[styles.tab, activeTab === "novels" ? { borderBottomColor: theme.primary, borderBottomWidth: 2 } : null]}
+        >
+          <ThemedText style={[styles.tabText, { color: activeTab === "novels" ? theme.primary : theme.textSecondary }]}>
             Novel ({userNovels.length})
           </ThemedText>
-          {userNovels.map((novel) => (
-            <Pressable 
-              key={novel.id} 
-              onPress={() => handleNovelPress(novel.id)}
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
-            >
-              <Card elevation={1} style={styles.novelCard}>
-                {novel.coverUrl ? (
-                  <Image source={{ uri: novel.coverUrl }} style={styles.novelCover} />
-                ) : (
-                  <View style={[styles.novelCover, { backgroundColor: theme.backgroundSecondary }]}>
-                    <BookIcon size={24} color={theme.textMuted} />
-                  </View>
-                )}
-                <View style={styles.novelInfo}>
-                  <ThemedText style={styles.novelTitle} numberOfLines={2}>
-                    {novel.title}
-                  </ThemedText>
-                  <ThemedText style={[styles.novelGenre, { color: theme.textSecondary }]}>
-                    {novel.genre}
-                  </ThemedText>
-                  <View style={styles.novelStats}>
-                    <View style={styles.novelStatItem}>
-                      <StarIcon size={14} color="#F59E0B" />
-                      <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
-                        {novel.rating.toFixed(1)}
-                      </ThemedText>
+        </Pressable>
+        <Pressable 
+          onPress={() => setActiveTab("posts")} 
+          style={[styles.tab, activeTab === "posts" ? { borderBottomColor: theme.primary, borderBottomWidth: 2 } : null]}
+        >
+          <ThemedText style={[styles.tabText, { color: activeTab === "posts" ? theme.primary : theme.textSecondary }]}>
+            Postingan ({userPosts.length})
+          </ThemedText>
+        </Pressable>
+      </View>
+
+      {activeTab === 'novels' ? (
+        userNovels.length > 0 ? (
+          <View style={styles.section}>
+            {userNovels.map((novel) => (
+              <Pressable 
+                key={novel.id} 
+                onPress={() => handleNovelPress(novel.id)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              >
+                <Card elevation={1} style={styles.novelCard}>
+                  {novel.coverUrl ? (
+                    <Image source={{ uri: novel.coverUrl }} style={styles.novelCover} />
+                  ) : (
+                    <View style={[styles.novelCover, { backgroundColor: theme.backgroundSecondary }]}>
+                      <BookIcon size={24} color={theme.textMuted} />
                     </View>
-                    <View style={styles.novelStatItem}>
-                      <EyeIcon size={14} color={theme.textMuted} />
-                      <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
-                        {novel.totalReads}
-                      </ThemedText>
-                    </View>
-                    <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
-                      {novel.totalChapters} chapter
+                  )}
+                  <View style={styles.novelInfo}>
+                    <ThemedText style={styles.novelTitle} numberOfLines={2}>
+                      {novel.title}
                     </ThemedText>
-                  </View>
-                  <View style={[styles.statusBadge, { 
-                    backgroundColor: novel.status === 'Ongoing' ? '#14B8A620' : '#10B98120' 
-                  }]}>
-                    <ThemedText style={[styles.statusText, { 
-                      color: novel.status === 'Ongoing' ? '#14B8A6' : '#10B981' 
+                    <ThemedText style={[styles.novelGenre, { color: theme.textSecondary }]}>
+                      {novel.genre}
+                    </ThemedText>
+                    <View style={styles.novelStats}>
+                      <View style={styles.novelStatItem}>
+                        <StarIcon size={14} color="#F59E0B" />
+                        <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
+                          {novel.rating.toFixed(1)}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.novelStatItem}>
+                        <EyeIcon size={14} color={theme.textMuted} />
+                        <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
+                          {novel.totalReads}
+                        </ThemedText>
+                      </View>
+                      <ThemedText style={[styles.novelStatText, { color: theme.textSecondary }]}>
+                        {novel.totalChapters} chapter
+                      </ThemedText>
+                    </View>
+                    <View style={[styles.statusBadge, { 
+                      backgroundColor: novel.status === 'Ongoing' ? '#14B8A620' : '#10B98120' 
                     }]}>
-                      {novel.status}
+                      <ThemedText style={[styles.statusText, { 
+                        color: novel.status === 'Ongoing' ? '#14B8A6' : '#10B981' 
+                      }]}>
+                        {novel.status}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </Card>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <View style={styles.emptySection}>
+            <ThemedText style={{ color: theme.textSecondary }}>
+              Belum ada novel
+            </ThemedText>
+          </View>
+        )
+      ) : null}
+
+      {activeTab === 'posts' ? (
+        <View style={styles.section}>
+          {postsLoading ? (
+            <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: Spacing.lg }} />
+          ) : userPosts.length > 0 ? (
+            userPosts.map((post) => (
+              <Card key={post.id} elevation={1} style={styles.postCard}>
+                <ThemedText style={styles.postContent} numberOfLines={4}>
+                  {post.content}
+                </ThemedText>
+                {post.image_url ? (
+                  <View style={[styles.postImageIndicator, { backgroundColor: theme.backgroundSecondary }]}>
+                    <ImageIcon size={16} color={theme.textMuted} />
+                    <ThemedText style={[styles.postImageText, { color: theme.textMuted }]}>
+                      Gambar
                     </ThemedText>
                   </View>
+                ) : null}
+                <View style={[styles.postMeta, { borderTopColor: theme.backgroundSecondary }]}>
+                  <View style={styles.postStats}>
+                    <View style={styles.postStatItem}>
+                      <HeartIcon size={14} color={theme.textMuted} />
+                      <ThemedText style={[styles.postStatText, { color: theme.textMuted }]}>
+                        {post.likes_count || 0}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.postStatItem}>
+                      <MessageCircleIcon size={14} color={theme.textMuted} />
+                      <ThemedText style={[styles.postStatText, { color: theme.textMuted }]}>
+                        {post.comments_count || 0}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <ThemedText style={[styles.postDate, { color: theme.textMuted }]}>
+                    {formatDate(post.created_at)}
+                  </ThemedText>
                 </View>
               </Card>
-            </Pressable>
-          ))}
+            ))
+          ) : (
+            <View style={styles.emptySection}>
+              <ThemedText style={{ color: theme.textSecondary }}>
+                Belum ada postingan
+              </ThemedText>
+            </View>
+          )}
         </View>
       ) : null}
 
@@ -423,8 +525,26 @@ const styles = StyleSheet.create({
   joinDate: {
     fontSize: 12,
   },
+  tabsContainer: {
+    flexDirection: "row",
+    marginTop: Spacing.lg,
+    borderBottomWidth: 1,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: "center",
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
   section: {
-    marginTop: Spacing.xl,
+    marginTop: Spacing.lg,
+  },
+  emptySection: {
+    paddingVertical: Spacing["2xl"],
+    alignItems: "center",
   },
   sectionTitle: {
     marginBottom: Spacing.md,
@@ -481,5 +601,49 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: Spacing["2xl"],
+  },
+  postCard: {
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+  },
+  postContent: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: Spacing.sm,
+  },
+  postImageIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+    alignSelf: "flex-start",
+    marginBottom: Spacing.sm,
+  },
+  postImageText: {
+    fontSize: 12,
+  },
+  postMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+  },
+  postStats: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  postStatItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  postStatText: {
+    fontSize: 12,
+  },
+  postDate: {
+    fontSize: 12,
   },
 });
