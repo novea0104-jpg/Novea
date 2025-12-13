@@ -7,6 +7,11 @@
 ALTER TABLE novels DISABLE ROW LEVEL SECURITY;
 ALTER TABLE chapters DISABLE ROW LEVEL SECURITY;
 
+-- DROP trigger yang bermasalah (menyebabkan error "record new has no field user_id")
+DROP TRIGGER IF EXISTS trigger_notify_followers_novel ON novels;
+DROP TRIGGER IF EXISTS trigger_notify_followers_timeline ON timeline_posts;
+DROP FUNCTION IF EXISTS notify_followers_on_new_content() CASCADE;
+
 -- Pastikan kolom ada
 ALTER TABLE users ADD COLUMN IF NOT EXISTS coin_balance INTEGER DEFAULT 10;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS writer_balance INTEGER DEFAULT 0;
@@ -179,4 +184,75 @@ SET writer_balance = COALESCE((
 ), 0) - COALESCE(u.pending_withdrawal, 0)
 WHERE u.role IN ('penulis', 'editor', 'co_admin', 'super_admin');
 
-SELECT 'DONE! Data diperbaiki - semua pembelian chapter tercatat untuk penulis.' as result;
+-- =====================================================
+-- BUAT ULANG TRIGGER YANG SUDAH DIPERBAIKI
+-- =====================================================
+
+-- Function untuk notify followers ketika ada novel baru
+CREATE OR REPLACE FUNCTION notify_followers_new_novel()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    INSERT INTO notifications (user_id, type, title, message, actor_id, novel_id)
+    SELECT 
+        uf.follower_id,
+        'new_novel',
+        'Novel Baru dari ' || (SELECT name FROM users WHERE id = NEW.author_id),
+        (SELECT name FROM users WHERE id = NEW.author_id) || ' memposting novel baru: ' || NEW.title,
+        NEW.author_id,
+        NEW.id
+    FROM user_follows uf
+    WHERE uf.following_id = NEW.author_id;
+    
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    RETURN NEW;
+END;
+$$;
+
+-- Function untuk notify followers ketika ada timeline post baru  
+CREATE OR REPLACE FUNCTION notify_followers_new_timeline()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+    INSERT INTO notifications (user_id, type, title, message, actor_id, timeline_post_id)
+    SELECT 
+        uf.follower_id,
+        'new_timeline_post',
+        'Post Baru dari ' || (SELECT name FROM users WHERE id = NEW.user_id),
+        (SELECT name FROM users WHERE id = NEW.user_id) || ' membuat post baru di Linimasa',
+        NEW.user_id,
+        NEW.id
+    FROM user_follows uf
+    WHERE uf.following_id = NEW.user_id;
+    
+    RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+    RETURN NEW;
+END;
+$$;
+
+-- Buat trigger untuk novels
+DROP TRIGGER IF EXISTS trigger_notify_followers_novel ON novels;
+CREATE TRIGGER trigger_notify_followers_novel
+    AFTER INSERT ON novels
+    FOR EACH ROW
+    EXECUTE FUNCTION notify_followers_new_novel();
+
+-- Buat trigger untuk timeline_posts (jika table ada)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'timeline_posts') THEN
+        DROP TRIGGER IF EXISTS trigger_notify_followers_timeline ON timeline_posts;
+        CREATE TRIGGER trigger_notify_followers_timeline
+            AFTER INSERT ON timeline_posts
+            FOR EACH ROW
+            EXECUTE FUNCTION notify_followers_new_timeline();
+    END IF;
+END $$;
+
+SELECT 'DONE! Semua fix sudah diterapkan. Novel baru bisa dibuat.' as result;
