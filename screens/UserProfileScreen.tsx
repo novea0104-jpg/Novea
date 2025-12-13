@@ -383,29 +383,38 @@ export default function UserProfileScreen() {
             <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: Spacing.lg }} />
           ) : userPosts.length > 0 ? (
             userPosts.map((post) => (
-              <View key={post.id} style={[styles.compactPostRow, { borderBottomColor: theme.backgroundSecondary }]}>
-                <ThemedText style={[styles.compactPostContent, { color: theme.text }]} numberOfLines={2}>
+              <Card key={post.id} elevation={1} style={styles.postCard}>
+                <ThemedText style={styles.postContent} numberOfLines={4}>
                   {post.content}
                 </ThemedText>
-                <View style={styles.compactPostMeta}>
-                  <View style={styles.compactPostStats}>
-                    <HeartIcon size={12} color={theme.textMuted} />
-                    <ThemedText style={[styles.compactPostStatText, { color: theme.textMuted }]}>
-                      {post.likes_count || 0}
+                {post.image_url ? (
+                  <View style={[styles.postImageIndicator, { backgroundColor: theme.backgroundSecondary }]}>
+                    <ImageIcon size={16} color={theme.textMuted} />
+                    <ThemedText style={[styles.postImageText, { color: theme.textMuted }]}>
+                      Gambar
                     </ThemedText>
-                    <MessageCircleIcon size={12} color={theme.textMuted} />
-                    <ThemedText style={[styles.compactPostStatText, { color: theme.textMuted }]}>
-                      {post.comments_count || 0}
-                    </ThemedText>
-                    {post.image_url ? (
-                      <ImageIcon size={12} color={theme.textMuted} />
-                    ) : null}
                   </View>
-                  <ThemedText style={[styles.compactPostDate, { color: theme.textMuted }]}>
+                ) : null}
+                <View style={[styles.postMeta, { borderTopColor: theme.backgroundSecondary }]}>
+                  <View style={styles.postStats}>
+                    <View style={styles.postStatItem}>
+                      <HeartIcon size={14} color={theme.textMuted} />
+                      <ThemedText style={[styles.postStatText, { color: theme.textMuted }]}>
+                        {post.likes_count || 0}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.postStatItem}>
+                      <MessageCircleIcon size={14} color={theme.textMuted} />
+                      <ThemedText style={[styles.postStatText, { color: theme.textMuted }]}>
+                        {post.comments_count || 0}
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <ThemedText style={[styles.postDate, { color: theme.textMuted }]}>
                     {formatDate(post.created_at)}
                   </ThemedText>
                 </View>
-              </View>
+              </Card>
             ))
           ) : (
             <View style={styles.emptySection}>
@@ -593,31 +602,48 @@ const styles = StyleSheet.create({
   spacer: {
     height: Spacing["2xl"],
   },
-  compactPostRow: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
-    borderBottomWidth: 1,
+  postCard: {
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
   },
-  compactPostContent: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: 4,
+  postContent: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: Spacing.sm,
   },
-  compactPostMeta: {
+  postImageIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.xs,
+    alignSelf: "flex-start",
+    marginBottom: Spacing.sm,
+  },
+  postImageText: {
+    fontSize: 12,
+  },
+  postMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
   },
-  compactPostStats: {
+  postStats: {
+    flexDirection: "row",
+    gap: Spacing.md,
+  },
+  postStatItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
   },
-  compactPostStatText: {
-    fontSize: 11,
-    marginRight: 6,
+  postStatText: {
+    fontSize: 12,
   },
-  compactPostDate: {
-    fontSize: 11,
+  postDate: {
+    fontSize: 12,
   },
 });
