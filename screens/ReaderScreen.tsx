@@ -28,7 +28,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, toggleChapterLike, checkUserLikedChapter, getChapterLikeCount } from "@/utils/supabase";
+import { supabase, toggleChapterLike, checkUserLikedChapter, getChapterLikeCount, saveReadingProgress } from "@/utils/supabase";
 import { HeartIcon } from "@/components/icons/HeartIcon";
 import { Spacing, BorderRadius, Typography, Colors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -367,6 +367,15 @@ export default function ReaderScreen() {
       
       setChapters(fetchedChapters);
       setCurrentChapter(fetchedChapter);
+      
+      // Save reading progress to Supabase
+      if (user) {
+        saveReadingProgress(
+          parseInt(user.id),
+          parseInt(novelId),
+          parseInt(chapterId)
+        ).catch(err => console.log('Error saving reading progress:', err));
+      }
     } catch (error) {
       console.error('Error loading chapter:', error);
       setCurrentChapter(null);

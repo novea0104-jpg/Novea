@@ -71,6 +71,61 @@ export async function trackNovelView(userId: number, novelId: number): Promise<b
   }
 }
 
+// Save reading progress to Supabase
+export async function saveReadingProgress(
+  userId: number,
+  novelId: number,
+  chapterId: number,
+  progress: number = 0
+): Promise<boolean> {
+  try {
+    const { data: existing } = await supabase
+      .from('reading_progress')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('novel_id', novelId)
+      .single();
+
+    if (existing) {
+      // Update existing record
+      const { error } = await supabase
+        .from('reading_progress')
+        .update({
+          chapter_id: chapterId,
+          progress,
+          last_read_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+
+      if (error) {
+        console.error('Error updating reading progress:', error);
+        return false;
+      }
+    } else {
+      // Insert new record
+      const { error } = await supabase
+        .from('reading_progress')
+        .insert({
+          user_id: userId,
+          novel_id: novelId,
+          chapter_id: chapterId,
+          progress,
+          last_read_at: new Date().toISOString(),
+        });
+
+      if (error) {
+        console.error('Error inserting reading progress:', error);
+        return false;
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in saveReadingProgress:', error);
+    return false;
+  }
+}
+
 // Helper function to get view count for a novel
 export async function getNovelViewCount(novelId: number): Promise<number> {
   try {
