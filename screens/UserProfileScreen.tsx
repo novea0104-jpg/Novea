@@ -5,15 +5,13 @@ import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
+import { PostCard } from "@/components/PostCard";
 import { RoleBadge, UserRole } from "@/components/RoleBadge";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { BookIcon } from "@/components/icons/BookIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
 import { EyeIcon } from "@/components/icons/EyeIcon";
 import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
-import { HeartIcon } from "@/components/icons/HeartIcon";
-import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
-import { ImageIcon } from "@/components/icons/ImageIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
@@ -24,10 +22,16 @@ import {
   followUser, 
   unfollowUser,
   getOrCreateConversation,
-  supabase,
+  getUserTimelinePosts,
+  toggleTimelinePostLike,
+  deleteTimelinePost,
+  getTimelinePostComments,
+  addTimelinePostComment,
+  deleteTimelinePostComment,
   PublicUserProfile,
   UserNovel,
-  FollowStats 
+  FollowStats,
+  TimelinePost,
 } from "@/utils/supabase";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 
@@ -59,8 +63,9 @@ export default function UserProfileScreen() {
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [isMessageLoading, setIsMessageLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'novels' | 'posts'>('novels');
-  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [userPosts, setUserPosts] = useState<TimelinePost[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const { isGuest } = useAuth();
 
   const isOwnProfile = currentUser && parseInt(currentUser.id) === parseInt(userId);
 
@@ -94,23 +99,17 @@ export default function UserProfileScreen() {
   const loadUserPosts = useCallback(async () => {
     setPostsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('timeline_posts')
-        .select('id, content, image_url, likes_count, comments_count, created_at')
-        .eq('user_id', parseInt(userId))
-        .order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error fetching posts:', error);
-        setUserPosts([]);
-      } else {
-        setUserPosts(data || []);
-      }
+      const posts = await getUserTimelinePosts(
+        parseInt(userId),
+        currentUser?.id ? parseInt(currentUser.id) : null
+      );
+      setUserPosts(posts);
     } catch (err) {
       console.error('Error fetching posts:', err);
       setUserPosts([]);
     }
     setPostsLoading(false);
-  }, [userId]);
+  }, [userId, currentUser?.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -174,8 +173,67 @@ export default function UserProfileScreen() {
 
   const handleFollowListPress = (type: "followers" | "following") => {
     if (!userProfile) return;
-    // FollowList is available in the current stack (both BrowseStack and ProfileStack)
     navigation.navigate("FollowList", { userId: userId, type, userName: userProfile.name });
+  };
+
+  const handlePostLikePress = async (postId: number) => {
+    if (!currentUser?.id || isGuest) return;
+    const result = await toggleTimelinePostLike(parseInt(currentUser.id), postId);
+    if (!result.error) {
+      setUserPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { ...post, isLiked: result.isLiked, likesCount: result.likesCount }
+            : post
+        )
+      );
+    }
+  };
+
+  const handlePostDeletePress = async (postId: number) => {
+    if (!currentUser?.id) return;
+    const result = await deleteTimelinePost(postId, parseInt(currentUser.id));
+    if (result.success) {
+      setUserPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
+    }
+  };
+
+  const handlePostFetchComments = async (postId: number) => {
+    return await getTimelinePostComments(postId);
+  };
+
+  const handlePostAddComment = async (postId: number, content: string, parentId?: number) => {
+    if (!currentUser?.id) return false;
+    const result = await addTimelinePostComment(parseInt(currentUser.id), postId, content, parentId);
+    if (result) {
+      setUserPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { ...post, commentsCount: post.commentsCount + 1 }
+            : post
+        )
+      );
+      return true;
+    }
+    return false;
+  };
+
+  const handlePostDeleteComment = async (postId: number, commentId: number) => {
+    if (!currentUser?.id) return;
+    const result = await deleteTimelinePostComment(commentId, parseInt(currentUser.id), postId);
+    if (result.success) {
+      setUserPosts(prevPosts =>
+        prevPosts.map(post =>
+          post.id === postId
+            ? { ...post, commentsCount: Math.max(0, post.commentsCount - 1) }
+            : post
+        )
+      );
+    }
+  };
+
+  const handlePostUserPress = (postUserId: number) => {
+    navigation.push("UserProfile", { userId: postUserId.toString() });
   };
 
   if (isLoading) {
@@ -383,38 +441,19 @@ export default function UserProfileScreen() {
             <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: Spacing.lg }} />
           ) : userPosts.length > 0 ? (
             userPosts.map((post) => (
-              <Card key={post.id} elevation={1} style={styles.postCard}>
-                <ThemedText style={styles.postContent} numberOfLines={4}>
-                  {post.content}
-                </ThemedText>
-                {post.image_url ? (
-                  <View style={[styles.postImageIndicator, { backgroundColor: theme.backgroundSecondary }]}>
-                    <ImageIcon size={16} color={theme.textMuted} />
-                    <ThemedText style={[styles.postImageText, { color: theme.textMuted }]}>
-                      Gambar
-                    </ThemedText>
-                  </View>
-                ) : null}
-                <View style={[styles.postMeta, { borderTopColor: theme.backgroundSecondary }]}>
-                  <View style={styles.postStats}>
-                    <View style={styles.postStatItem}>
-                      <HeartIcon size={14} color={theme.textMuted} />
-                      <ThemedText style={[styles.postStatText, { color: theme.textMuted }]}>
-                        {post.likes_count || 0}
-                      </ThemedText>
-                    </View>
-                    <View style={styles.postStatItem}>
-                      <MessageCircleIcon size={14} color={theme.textMuted} />
-                      <ThemedText style={[styles.postStatText, { color: theme.textMuted }]}>
-                        {post.comments_count || 0}
-                      </ThemedText>
-                    </View>
-                  </View>
-                  <ThemedText style={[styles.postDate, { color: theme.textMuted }]}>
-                    {formatDate(post.created_at)}
-                  </ThemedText>
-                </View>
-              </Card>
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUserId={currentUser?.id ? parseInt(currentUser.id) : undefined}
+                onLikePress={handlePostLikePress}
+                onDeletePress={handlePostDeletePress}
+                onFetchComments={handlePostFetchComments}
+                onAddComment={handlePostAddComment}
+                onDeleteComment={handlePostDeleteComment}
+                onNovelPress={handleNovelPress}
+                onUserPress={handlePostUserPress}
+                isGuest={isGuest}
+              />
             ))
           ) : (
             <View style={styles.emptySection}>
@@ -601,49 +640,5 @@ const styles = StyleSheet.create({
   },
   spacer: {
     height: Spacing["2xl"],
-  },
-  postCard: {
-    marginBottom: Spacing.md,
-    padding: Spacing.md,
-  },
-  postContent: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: Spacing.sm,
-  },
-  postImageIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.xs,
-    alignSelf: "flex-start",
-    marginBottom: Spacing.sm,
-  },
-  postImageText: {
-    fontSize: 12,
-  },
-  postMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-  },
-  postStats: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  postStatItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  postStatText: {
-    fontSize: 12,
-  },
-  postDate: {
-    fontSize: 12,
   },
 });

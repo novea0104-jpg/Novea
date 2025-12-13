@@ -1217,6 +1217,75 @@ export async function getTimelineFeed(
   }
 }
 
+// Get all posts by a specific user (for profile page)
+export async function getUserTimelinePosts(
+  profileUserId: number,
+  currentUserId: number | null
+): Promise<TimelinePost[]> {
+  try {
+    const { data, error } = await supabase
+      .from('timeline_posts')
+      .select(`
+        *,
+        user:user_id (id, name, avatar_url, role),
+        novel:novel_id (id, title, cover_url)
+      `)
+      .eq('user_id', profileUserId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user posts:', error);
+      return [];
+    }
+
+    // Get liked posts for current user
+    let likedPostIds = new Set<number>();
+    if (currentUserId) {
+      const { data: likesData } = await supabase
+        .from('timeline_post_likes')
+        .select('post_id')
+        .eq('user_id', currentUserId);
+      likedPostIds = new Set((likesData || []).map(l => l.post_id));
+    }
+
+    // Get comment counts
+    const postIds = (data || []).map((p: any) => p.id);
+    const commentCountsMap = new Map<number, number>();
+    
+    if (postIds.length > 0) {
+      const { data: commentsData } = await supabase
+        .from('timeline_post_comments')
+        .select('post_id')
+        .in('post_id', postIds);
+      
+      (commentsData || []).forEach((c: any) => {
+        const current = commentCountsMap.get(c.post_id) || 0;
+        commentCountsMap.set(c.post_id, current + 1);
+      });
+    }
+
+    return (data || []).map((post: any) => ({
+      id: post.id,
+      userId: post.user_id,
+      userName: post.user?.name || 'Pengguna',
+      userAvatar: post.user?.avatar_url,
+      userRole: post.user?.role || 'pembaca',
+      content: post.content,
+      imageUrl: post.image_url,
+      novelId: post.novel_id,
+      novelTitle: post.novel?.title,
+      novelCover: post.novel?.cover_url,
+      likesCount: post.likes_count || 0,
+      commentsCount: commentCountsMap.get(post.id) || 0,
+      isLiked: likedPostIds.has(post.id),
+      createdAt: post.created_at,
+    }));
+  } catch (error) {
+    console.error('Error in getUserTimelinePosts:', error);
+    return [];
+  }
+}
+
 // Create a new timeline post
 export async function createTimelinePost(
   userId: number,
