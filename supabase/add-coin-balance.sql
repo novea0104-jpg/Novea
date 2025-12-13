@@ -8,7 +8,7 @@ BEGIN
         SELECT 1 FROM information_schema.columns 
         WHERE table_name = 'users' AND column_name = 'coin_balance'
     ) THEN
-        ALTER TABLE users ADD COLUMN coin_balance INTEGER DEFAULT 0;
+        ALTER TABLE users ADD COLUMN coin_balance INTEGER DEFAULT 10;
     END IF;
 END $$;
 
