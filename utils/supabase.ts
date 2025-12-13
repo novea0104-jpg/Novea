@@ -2670,20 +2670,24 @@ export async function searchNovelsForEditorsChoice(
   excludeIds: number[] = []
 ): Promise<{ id: number; title: string; authorName: string; coverUrl: string | null }[]> {
   try {
+    // First, get existing editors choice novel IDs to exclude
+    const { data: existingChoices } = await supabase
+      .from('editors_choice')
+      .select('novel_id');
+    
+    const existingNovelIds = (existingChoices || []).map(c => c.novel_id);
+    const allExcludeIds = [...new Set([...excludeIds, ...existingNovelIds])];
+
+    // Simple query without complex joins for speed
     let query = supabase
       .from('novels')
-      .select(`
-        id,
-        title,
-        cover_image_url,
-        author:users!novels_author_id_fkey (name)
-      `)
+      .select('id, title, cover_image_url, author_id')
       .eq('is_published', true)
       .ilike('title', `%${searchQuery}%`)
-      .limit(20);
+      .limit(10);
 
-    if (excludeIds.length > 0) {
-      query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+    if (allExcludeIds.length > 0) {
+      query = query.not('id', 'in', `(${allExcludeIds.join(',')})`);
     }
 
     const { data, error } = await query;
@@ -2693,10 +2697,23 @@ export async function searchNovelsForEditorsChoice(
       return [];
     }
 
-    return (data || []).map((n: any) => ({
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Fetch author names separately for speed
+    const authorIds = [...new Set(data.map(n => n.author_id).filter(Boolean))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', authorIds);
+    
+    const authorMap = new Map((authors || []).map(a => [a.id, a.name]));
+
+    return data.map((n: any) => ({
       id: n.id,
       title: n.title,
-      authorName: n.author?.name || 'Unknown',
+      authorName: authorMap.get(n.author_id) || 'Unknown',
       coverUrl: n.cover_image_url,
     }));
   } catch (error) {
