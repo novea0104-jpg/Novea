@@ -323,7 +323,7 @@ export default function BrowseHomeScreen() {
       const displayNovels = editorsPick.slice(0, columnsCount * 2);
       return (
         <View style={styles.section}>
-          {renderSectionTitle("Pilihan Editor", <AwardIcon size={16} color="#F59E0B" />, "#F59E0B")}
+          {renderSectionTitle("Pilihan Editor", <AwardIcon size={20} color="#F59E0B" />, "#F59E0B")}
           <View style={styles.desktopGrid}>
             {displayNovels.map((novel) => (
               <View key={novel.id} style={[styles.desktopGridItem, { width: `${100 / columnsCount}%` as any }]}>
@@ -339,7 +339,7 @@ export default function BrowseHomeScreen() {
     }
     return (
       <View style={styles.section}>
-        {renderSectionTitle("Pilihan Editor", <AwardIcon size={16} color="#F59E0B" />, "#F59E0B")}
+        {renderSectionTitle("Pilihan Editor", <AwardIcon size={20} color="#F59E0B" />, "#F59E0B")}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -365,7 +365,7 @@ export default function BrowseHomeScreen() {
       const displayNovels = freeNovels.slice(0, columnsCount * 2);
       return (
         <View style={styles.section}>
-          {renderSectionTitle("Novel Gratis", <GiftIcon size={16} color="#10B981" />, "#10B981")}
+          {renderSectionTitle("Novel Gratis", <GiftIcon size={20} color="#10B981" />, "#10B981")}
           <View style={styles.desktopGrid}>
             {displayNovels.map((novel) => (
               <View key={novel.id} style={[styles.desktopGridItem, { width: `${100 / columnsCount}%` as any }]}>
@@ -382,7 +382,7 @@ export default function BrowseHomeScreen() {
     }
     return (
       <View style={styles.section}>
-        {renderSectionTitle("Novel Gratis", <GiftIcon size={16} color="#10B981" />, "#10B981")}
+        {renderSectionTitle("Novel Gratis", <GiftIcon size={20} color="#10B981" />, "#10B981")}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -469,12 +469,12 @@ export default function BrowseHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {renderNovelSection("Sedang Trending", trendingNovels, <FlameIcon size={16} color="#EF4444" />, "#EF4444", "large")}
-        {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={16} color="#8B5CF6" />, "#8B5CF6")}
+        {renderNovelSection("Sedang Trending", trendingNovels, <FlameIcon size={20} color="#EF4444" />, "#EF4444", "large")}
+        {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={20} color="#8B5CF6" />, "#8B5CF6")}
         {renderEditorsPickSection()}
 
         <View style={styles.section}>
-          {renderSectionTitle("Jelajahi Genre", <CompassIcon size={16} color="#3B82F6" />, "#3B82F6")}
+          {renderSectionTitle("Jelajahi Genre", <CompassIcon size={20} color="#3B82F6" />, "#3B82F6")}
           {(isDesktop || isTablet) ? (
             <View style={styles.desktopGenreGrid}>
               {genres.map(renderGenreCard)}
