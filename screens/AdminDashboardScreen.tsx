@@ -1072,16 +1072,18 @@ export default function AdminDashboardScreen() {
 
   return (
     <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.md }]}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.tabsContainer}
-      >
-        {renderTabButton('stats', 'Statistik', BarChartIcon)}
-        {renderTabButton('users', 'Users', UsersIcon)}
-        {renderTabButton('novels', 'Novel', BookIcon)}
-        {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
-      </ScrollView>
+      <View style={styles.tabsWrapper}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {renderTabButton('stats', 'Statistik', BarChartIcon)}
+          {renderTabButton('users', 'Users', UsersIcon)}
+          {renderTabButton('novels', 'Novel', BookIcon)}
+          {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
+        </ScrollView>
+      </View>
 
       {activeTab === 'stats' ? (
         <ScreenScrollView
@@ -1364,20 +1366,25 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 16,
   },
+  tabsWrapper: {
+    flexShrink: 0,
+  },
   tabsContainer: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    alignItems: 'center',
   },
   tabButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: BorderRadius.md,
-    gap: Spacing.xs,
+    gap: 4,
+    height: 36,
   },
   tabLabel: {
     fontSize: 13,
