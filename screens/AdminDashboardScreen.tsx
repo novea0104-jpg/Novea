@@ -443,7 +443,8 @@ export default function AdminDashboardScreen() {
     }).format(amount);
   };
 
-  // Editors Choice handlers
+  const MAX_EDITORS_CHOICE = 20;
+
   const handleSearchNovels = async () => {
     if (!searchNovelQuery.trim()) return;
     setSearchingNovels(true);
@@ -454,6 +455,16 @@ export default function AdminDashboardScreen() {
 
   const handleAddToEditorsChoice = async (novelId: number) => {
     if (!user) return;
+    
+    if (editorsChoice.length >= MAX_EDITORS_CHOICE) {
+      Alert.alert(
+        'Pilihan Editor Penuh',
+        `Kamu sudah memilih ${MAX_EDITORS_CHOICE} novel favorit! Untuk menambahkan novel baru, hapus salah satu novel dari daftar Pilihan Editor terlebih dahulu.`,
+        [{ text: 'Mengerti', style: 'default' }]
+      );
+      return;
+    }
+    
     setActionLoading(true);
     const displayOrder = editorsChoice.length + 1;
     const result = await addToEditorsChoice(novelId, user.id, displayOrder);
@@ -1169,10 +1180,28 @@ export default function AdminDashboardScreen() {
       ) : activeTab === 'featured' ? (
         <View style={styles.listContainer}>
           <View style={styles.featuredHeader}>
-            <ThemedText style={[Typography.h3, { flex: 1 }]}>Pilihan Editor</ThemedText>
+            <View style={{ flex: 1 }}>
+              <ThemedText style={Typography.h3}>Pilihan Editor</ThemedText>
+              <ThemedText style={[styles.featuredCounter, { color: editorsChoice.length >= MAX_EDITORS_CHOICE ? theme.error : theme.textSecondary }]}>
+                {editorsChoice.length}/{MAX_EDITORS_CHOICE} novel dipilih
+              </ThemedText>
+            </View>
             <Pressable
-              onPress={() => setShowAddNovelModal(true)}
-              style={[styles.addButton, { backgroundColor: theme.primary }]}
+              onPress={() => {
+                if (editorsChoice.length >= MAX_EDITORS_CHOICE) {
+                  Alert.alert(
+                    'Pilihan Editor Penuh',
+                    `Kamu sudah memilih ${MAX_EDITORS_CHOICE} novel favorit! Untuk menambahkan novel baru, hapus salah satu novel dari daftar Pilihan Editor terlebih dahulu.`,
+                    [{ text: 'Mengerti', style: 'default' }]
+                  );
+                } else {
+                  setShowAddNovelModal(true);
+                }
+              }}
+              style={[
+                styles.addButton, 
+                { backgroundColor: editorsChoice.length >= MAX_EDITORS_CHOICE ? theme.textMuted : theme.primary }
+              ]}
             >
               <PlusIcon size={18} color="#FFFFFF" />
               <ThemedText style={styles.addButtonText}>Tambah</ThemedText>
@@ -1739,6 +1768,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+  },
+  featuredCounter: {
+    fontSize: 13,
+    marginTop: 2,
   },
   addButton: {
     flexDirection: 'row',
