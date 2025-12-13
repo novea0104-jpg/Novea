@@ -135,4 +135,48 @@ $$;
 GRANT EXECUTE ON FUNCTION unlock_chapter_secure(INTEGER, INTEGER, INTEGER) TO authenticated;
 GRANT EXECUTE ON FUNCTION unlock_chapter_secure(INTEGER, INTEGER, INTEGER) TO anon;
 
-SELECT 'DONE! RLS dimatikan, sekarang bisa insert/update chapter.' as result;
+-- =====================================================
+-- BACKFILL: Perbaiki data pembelian yang sudah ada
+-- =====================================================
+
+-- Insert missing writer_earnings records from unlocked_chapters
+INSERT INTO writer_earnings (writer_id, novel_id, chapter_id, reader_id, amount, writer_share, platform_share, created_at)
+SELECT DISTINCT
+    n.author_id as writer_id,
+    uc.novel_id,
+    uc.chapter_id,
+    uc.user_id as reader_id,
+    COALESCE(c.price, 1) as amount,
+    FLOOR(COALESCE(c.price, 1) * 0.80) as writer_share,
+    CEIL(COALESCE(c.price, 1) * 0.20) as platform_share,
+    uc.unlocked_at as created_at
+FROM unlocked_chapters uc
+JOIN novels n ON n.id = uc.novel_id
+JOIN chapters c ON c.id = uc.chapter_id
+WHERE n.author_id IS NOT NULL
+  AND c.is_free = false
+  AND NOT EXISTS (
+    SELECT 1 FROM writer_earnings we 
+    WHERE we.chapter_id = uc.chapter_id 
+      AND we.reader_id = uc.user_id
+  );
+
+-- Update total_earnings for all writers based on writer_earnings table
+UPDATE users u
+SET total_earnings = COALESCE((
+    SELECT SUM(we.writer_share) 
+    FROM writer_earnings we 
+    WHERE we.writer_id = u.id
+), 0)
+WHERE u.role IN ('penulis', 'editor', 'co_admin', 'super_admin');
+
+-- Update writer_balance to match total_earnings minus any withdrawals
+UPDATE users u
+SET writer_balance = COALESCE((
+    SELECT SUM(we.writer_share) 
+    FROM writer_earnings we 
+    WHERE we.writer_id = u.id
+), 0) - COALESCE(u.pending_withdrawal, 0)
+WHERE u.role IN ('penulis', 'editor', 'co_admin', 'super_admin');
+
+SELECT 'DONE! Data diperbaiki - semua pembelian chapter tercatat untuk penulis.' as result;
