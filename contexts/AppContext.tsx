@@ -407,6 +407,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         wordCount: ch.word_count,
         isFree: ch.is_free,
         publishedAt: new Date(ch.published_at),
+        price: ch.price || 0,
       }));
 
       return chapters;
@@ -436,6 +437,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         wordCount: chapterData.word_count,
         isFree: chapterData.is_free,
         publishedAt: new Date(chapterData.published_at),
+        price: chapterData.price || 0,
       };
 
       return chapter;

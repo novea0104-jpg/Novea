@@ -362,14 +362,16 @@ export default function ReaderScreen() {
   const hasNext = currentIndex >= 0 && currentIndex < chapters.length - 1;
   const hasPrev = currentIndex > 0;
 
+  const chapterPrice = currentChapter.price || novel.coinPerChapter || 0;
+  
   const handleUnlock = async () => {
-    if (!user || user.coinBalance < novel.coinPerChapter) {
+    if (!user || user.coinBalance < chapterPrice) {
       alert("Koin tidak cukup");
       return;
     }
 
-    await unlockChapter(chapterId, novel.coinPerChapter);
-    await updateCoinBalance(-novel.coinPerChapter);
+    await unlockChapter(chapterId, chapterPrice);
+    await updateCoinBalance(-chapterPrice);
   };
 
   const goToPrevChapter = () => {
@@ -393,10 +395,10 @@ export default function ReaderScreen() {
             Chapter Terkunci
           </ThemedText>
           <ThemedText style={[styles.lockedText, { color: theme.textSecondary, marginTop: Spacing.md }]}>
-            Buka chapter ini dengan {novel.coinPerChapter} koin
+            Buka chapter ini dengan {chapterPrice} koin
           </ThemedText>
           <Button onPress={handleUnlock} style={styles.unlockButton}>
-            Buka dengan {novel.coinPerChapter} koin
+            Buka dengan {chapterPrice} koin
           </Button>
           <ThemedText style={[styles.balance, { color: theme.textSecondary, marginTop: Spacing.lg }]}>
             Saldo kamu: {user?.coinBalance || 0} koin
@@ -894,7 +896,7 @@ export default function ReaderScreen() {
                             <View style={styles.chapterLockedRow}>
                               <LockSmallIcon size={12} color={theme.textMuted} />
                               <ThemedText style={[styles.chapterPriceText, { color: theme.textMuted }]}>
-                                {novel.coinPerChapter} Novoin
+                                {chapter.price || novel.coinPerChapter || 0} Novoin
                               </ThemedText>
                             </View>
                           ) : null}

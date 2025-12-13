@@ -45,6 +45,7 @@ export interface Chapter {
   isUnlocked?: boolean;
   publishedAt: Date;
   wordCount: number;
+  price: number;
 }
 
 export interface CoinPackage {
