@@ -25,7 +25,7 @@ import { ShareModal } from "@/components/ShareModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount, createTimelinePost } from "@/utils/supabase";
+import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount, createTimelinePost, getNovelChapterLikesCount } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -81,6 +81,7 @@ export default function NovelDetailScreen() {
   // Like and follow counts
   const [likeCount, setLikeCount] = useState(0);
   const [followCount, setFollowCount] = useState(0);
+  const [chapterLikesCount, setChapterLikesCount] = useState(0);
   
   // Novel genres
   const [novelGenres, setNovelGenres] = useState<{ id: number; name: string; slug: string; gradient_start: string; gradient_end: string }[]>([]);
@@ -182,12 +183,14 @@ export default function NovelDetailScreen() {
   }
   
   async function loadCounts() {
-    const [likes, follows] = await Promise.all([
+    const [likes, follows, chapterLikes] = await Promise.all([
       getNovelLikeCount(parseInt(novelId)),
       getNovelFollowCount(parseInt(novelId)),
+      getNovelChapterLikesCount(parseInt(novelId)),
     ]);
     setLikeCount(likes);
     setFollowCount(follows);
+    setChapterLikesCount(chapterLikes);
   }
 
   useEffect(() => {
@@ -532,9 +535,19 @@ export default function NovelDetailScreen() {
       </View>
 
       <View style={styles.section}>
-        <ThemedText style={[Typography.h3, styles.sectionTitle]}>
-          Chapters ({novel.totalChapters})
-        </ThemedText>
+        <View style={styles.sectionHeaderRow}>
+          <ThemedText style={[Typography.h3, styles.sectionTitle]}>
+            Chapters ({novel.totalChapters})
+          </ThemedText>
+          {chapterLikesCount > 0 ? (
+            <View style={[styles.chapterLikesBadge, { backgroundColor: theme.error + '15' }]}>
+              <HeartIcon size={14} color={theme.error} filled />
+              <ThemedText style={[styles.chapterLikesText, { color: theme.error }]}>
+                {chapterLikesCount.toLocaleString()} Disukai
+              </ThemedText>
+            </View>
+          ) : null}
+        </View>
         {isLoadingChapters ? (
           <View style={{ paddingVertical: Spacing.xl, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={theme.primary} />
@@ -1041,6 +1054,24 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     marginBottom: Spacing.md,
+  },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: Spacing.md,
+  },
+  chapterLikesBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+  },
+  chapterLikesText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   synopsis: {
     lineHeight: 24,

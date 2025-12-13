@@ -180,6 +180,97 @@ export async function getNovelFollowCount(novelId: number): Promise<number> {
   }
 }
 
+// ========== CHAPTER LIKES FUNCTIONS ==========
+
+// Toggle like for a chapter
+export async function toggleChapterLike(userId: number, chapterId: number, novelId: number): Promise<{ isLiked: boolean; error?: string }> {
+  try {
+    const { data: existing } = await supabase
+      .from('chapter_likes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('chapter_id', chapterId)
+      .single();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('chapter_likes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('chapter_id', chapterId);
+
+      if (error) throw error;
+      return { isLiked: false };
+    } else {
+      const { error } = await supabase
+        .from('chapter_likes')
+        .insert({ user_id: userId, chapter_id: chapterId, novel_id: novelId });
+
+      if (error) throw error;
+      return { isLiked: true };
+    }
+  } catch (error: any) {
+    console.error('Error toggling chapter like:', error);
+    return { isLiked: false, error: error.message };
+  }
+}
+
+// Check if user liked a chapter
+export async function checkUserLikedChapter(userId: number, chapterId: number): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('chapter_likes')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('chapter_id', chapterId)
+      .single();
+
+    return !!data && !error;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Get like count for a single chapter
+export async function getChapterLikeCount(chapterId: number): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('chapter_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('chapter_id', chapterId);
+
+    if (error) {
+      console.error('Error getting chapter like count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getChapterLikeCount:', error);
+    return 0;
+  }
+}
+
+// Get total likes count for all chapters of a novel
+export async function getNovelChapterLikesCount(novelId: number): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('chapter_likes')
+      .select('*', { count: 'exact', head: true })
+      .eq('novel_id', novelId);
+
+    if (error) {
+      console.error('Error getting novel chapter likes count:', error);
+      return 0;
+    }
+
+    return count || 0;
+  } catch (error) {
+    console.error('Error in getNovelChapterLikesCount:', error);
+    return 0;
+  }
+}
+
 // Helper function to get user's liked novels
 export async function getUserLikedNovels(userId: number): Promise<Set<string>> {
   try {

@@ -27,7 +27,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/utils/supabase";
+import { supabase, toggleChapterLike, checkUserLikedChapter, getChapterLikeCount } from "@/utils/supabase";
+import { HeartIcon } from "@/components/icons/HeartIcon";
 import { Spacing, BorderRadius, Typography, Colors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
 
@@ -85,6 +86,9 @@ export default function ReaderScreen() {
   const [showChaptersModal, setShowChaptersModal] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChapterComment | null>(null);
   const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
+  const [isChapterLiked, setIsChapterLiked] = useState(false);
+  const [chapterLikeCount, setChapterLikeCount] = useState(0);
+  const [isLiking, setIsLiking] = useState(false);
 
   useEffect(() => {
     loadReaderSettings();
@@ -127,8 +131,45 @@ export default function ReaderScreen() {
   useEffect(() => {
     if (chapterId) {
       loadComments();
+      loadChapterLikeStatus();
     }
   }, [chapterId]);
+
+  const loadChapterLikeStatus = async () => {
+    try {
+      const likeCount = await getChapterLikeCount(parseInt(chapterId));
+      setChapterLikeCount(likeCount);
+      
+      if (user) {
+        const isLiked = await checkUserLikedChapter(parseInt(user.id), parseInt(chapterId));
+        setIsChapterLiked(isLiked);
+      }
+    } catch (error) {
+      console.error('Error loading chapter like status:', error);
+    }
+  };
+
+  const handleToggleChapterLike = async () => {
+    if (!user) {
+      alert('Silakan masuk untuk menyukai chapter ini');
+      return;
+    }
+    
+    if (isLiking) return;
+    
+    setIsLiking(true);
+    try {
+      const result = await toggleChapterLike(parseInt(user.id), parseInt(chapterId), parseInt(novelId));
+      if (!result.error) {
+        setIsChapterLiked(result.isLiked);
+        setChapterLikeCount(prev => result.isLiked ? prev + 1 : prev - 1);
+      }
+    } catch (error) {
+      console.error('Error toggling chapter like:', error);
+    } finally {
+      setIsLiking(false);
+    }
+  };
 
   const loadComments = useCallback(async () => {
     setCommentsLoading(true);
@@ -440,6 +481,31 @@ export default function ReaderScreen() {
           </ThemedText>
           <View style={[styles.dividerLine, { backgroundColor: theme.textMuted }]} />
         </View>
+
+        <Pressable
+          onPress={handleToggleChapterLike}
+          disabled={isLiking}
+          style={({ pressed }) => [
+            styles.chapterLikeButton,
+            { 
+              backgroundColor: isChapterLiked ? theme.error + '15' : theme.backgroundSecondary,
+              borderColor: isChapterLiked ? theme.error : theme.backgroundSecondary,
+            },
+            pressed && { opacity: 0.7 },
+          ]}
+        >
+          <HeartIcon 
+            size={24} 
+            color={isChapterLiked ? theme.error : theme.textSecondary} 
+            filled={isChapterLiked}
+          />
+          <ThemedText style={[
+            styles.chapterLikeText, 
+            { color: isChapterLiked ? theme.error : theme.textSecondary }
+          ]}>
+            {chapterLikeCount > 0 ? chapterLikeCount.toLocaleString() : ''} {isChapterLiked ? 'Disukai' : 'Suka Chapter Ini'}
+          </ThemedText>
+        </Pressable>
 
       </ScrollView>
 
@@ -954,6 +1020,23 @@ const styles = StyleSheet.create({
   },
   chapterContent: {
     lineHeight: 32,
+  },
+  chapterLikeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    alignSelf: "center",
+  },
+  chapterLikeText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
   footer: {
     position: "absolute",
