@@ -99,27 +99,68 @@ export async function initializeBilling(userId?: string): Promise<boolean> {
 }
 
 async function processPendingPurchases(): Promise<void> {
-  if (!storedUserId) {
-    console.log('No user ID stored, skipping pending purchase processing');
-    return;
-  }
-
   const iap = await loadIAPModule();
   if (!iap) return;
 
   try {
     const purchases = await iap.getAvailablePurchases();
+    console.log('Found pending purchases:', purchases.length);
     
     for (const purchase of purchases) {
       const productId = purchase.productId as NovoinProductId;
       if (PRODUCT_COIN_MAP[productId]) {
         console.log('Processing pending purchase:', productId);
-        await handlePurchaseUpdate(purchase);
+        
+        // If we have a user, try to validate and add coins
+        if (storedUserId) {
+          await handlePurchaseUpdate(purchase);
+        } else {
+          // No user - just consume to clear the stuck purchase
+          console.log('No user ID, consuming stuck purchase:', productId);
+          try {
+            if (purchase.purchaseToken) {
+              await iap.consumePurchaseAndroid(purchase.purchaseToken);
+            }
+            await iap.finishTransaction({ purchase, isConsumable: true });
+            console.log('Cleared stuck purchase:', productId);
+          } catch (consumeErr) {
+            console.error('Error clearing stuck purchase:', consumeErr);
+          }
+        }
       }
     }
   } catch (error) {
     console.error('Error processing pending purchases:', error);
   }
+}
+
+// Function to force clear all stuck purchases
+export async function clearStuckPurchases(): Promise<number> {
+  const iap = await loadIAPModule();
+  if (!iap) return 0;
+
+  let clearedCount = 0;
+  try {
+    const purchases = await iap.getAvailablePurchases();
+    console.log('Clearing stuck purchases, found:', purchases.length);
+    
+    for (const purchase of purchases) {
+      try {
+        if (purchase.purchaseToken) {
+          await iap.consumePurchaseAndroid(purchase.purchaseToken);
+        }
+        await iap.finishTransaction({ purchase, isConsumable: true });
+        clearedCount++;
+        console.log('Cleared:', purchase.productId);
+      } catch (err) {
+        console.error('Error clearing purchase:', err);
+      }
+    }
+  } catch (error) {
+    console.error('Error getting purchases:', error);
+  }
+  
+  return clearedCount;
 }
 
 async function handlePurchaseUpdate(purchase: any) {
@@ -155,21 +196,25 @@ async function handlePurchaseUpdate(purchase: any) {
       purchase.transactionId || ''
     );
     
-    if (result.success && result.totalCoins > 0) {
+    // Always consume the purchase to allow buying again
+    // Even if server validation fails, we need to consume so user can retry
+    try {
       if (purchase.purchaseToken) {
         await iap.consumePurchaseAndroid(purchase.purchaseToken);
+        console.log('Purchase consumed:', productId);
       }
       await iap.finishTransaction({ purchase, isConsumable: true });
-      
+      console.log('Transaction finished:', productId);
+    } catch (consumeErr) {
+      console.error('Error consuming purchase:', consumeErr);
+    }
+    
+    if (result.success && result.totalCoins > 0) {
       if (callback && callback.productId === productId) {
         callback.onSuccess(result.totalCoins);
         currentPurchaseCallback = null;
       }
     } else if (result.success && result.totalCoins === 0) {
-      if (purchase.purchaseToken) {
-        await iap.consumePurchaseAndroid(purchase.purchaseToken);
-      }
-      await iap.finishTransaction({ purchase, isConsumable: true });
       console.log('Purchase already processed:', purchase.transactionId);
       if (callback && callback.productId === productId) {
         currentPurchaseCallback = null;
@@ -182,6 +227,18 @@ async function handlePurchaseUpdate(purchase: any) {
     }
   } catch (err: any) {
     console.error('Error processing purchase:', err);
+    
+    // Still try to consume even on error so user can retry
+    try {
+      if (purchase.purchaseToken) {
+        await iap.consumePurchaseAndroid(purchase.purchaseToken);
+        console.log('Purchase consumed after error:', productId);
+      }
+      await iap.finishTransaction({ purchase, isConsumable: true });
+    } catch (consumeErr) {
+      console.error('Error consuming after failure:', consumeErr);
+    }
+    
     if (callback && callback.productId === productId) {
       callback.onError(err.message || 'Gagal memproses pembelian');
       currentPurchaseCallback = null;
