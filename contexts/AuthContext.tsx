@@ -40,6 +40,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthPromptVisible(false);
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
+      } else if (event === 'TOKEN_REFRESHED') {
+        // Token was refreshed successfully, nothing to do
+        console.log('Auth token refreshed');
+      } else if (event === 'USER_UPDATED') {
+        // User was updated, reload profile
+        if (session?.user?.email) {
+          await loadUserProfile(session.user.email);
+        }
       }
     });
 
@@ -51,13 +59,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loadUser() {
     try {
       // Check if user session exists in Supabase Auth
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      // Handle refresh token errors - clear invalid session
+      if (error) {
+        console.error("Session error:", error);
+        // If refresh token is invalid, sign out to clear corrupted session
+        if (error.message?.includes('refresh_token') || error.code === 'refresh_token_not_found') {
+          console.log("Clearing invalid session...");
+          await supabase.auth.signOut();
+          setUser(null);
+          return;
+        }
+      }
       
       if (session?.user) {
         await loadUserProfile(session.user.email!);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error loading user:", error);
+      // If any auth error occurs, try to clean up
+      if (error?.message?.includes('refresh_token') || error?.__isAuthError) {
+        await supabase.auth.signOut();
+        setUser(null);
+      }
     } finally {
       setIsLoading(false);
     }
