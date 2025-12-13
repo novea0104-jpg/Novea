@@ -2681,8 +2681,7 @@ export async function searchNovelsForEditorsChoice(
     // Simple query without complex joins for speed
     let query = supabase
       .from('novels')
-      .select('id, title, cover_image_url, author_id')
-      .eq('is_published', true)
+      .select('id, title, cover_url, author_id')
       .ilike('title', `%${searchQuery}%`)
       .limit(10);
 
@@ -2714,7 +2713,7 @@ export async function searchNovelsForEditorsChoice(
       id: n.id,
       title: n.title,
       authorName: authorMap.get(n.author_id) || 'Unknown',
-      coverUrl: n.cover_image_url,
+      coverUrl: n.cover_url,
     }));
   } catch (error) {
     console.error('Error in searchNovelsForEditorsChoice:', error);
