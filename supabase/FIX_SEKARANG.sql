@@ -38,8 +38,34 @@ CREATE TABLE IF NOT EXISTS coin_transactions (
     type VARCHAR(50) NOT NULL,
     description TEXT,
     metadata JSONB,
+    reference_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Tambah kolom reference_id jika belum ada
+ALTER TABLE coin_transactions ADD COLUMN IF NOT EXISTS reference_id TEXT;
+
+-- Buat index untuk mencegah duplikat transaksi
+CREATE UNIQUE INDEX IF NOT EXISTS idx_coin_transactions_reference ON coin_transactions(reference_id) WHERE reference_id IS NOT NULL;
+
+-- Tabel untuk mencatat penjualan Novoin (untuk admin dashboard)
+CREATE TABLE IF NOT EXISTS novoin_sales (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    product_id VARCHAR(50) NOT NULL,
+    coins_purchased INTEGER NOT NULL,
+    bonus_coins INTEGER DEFAULT 0,
+    total_coins INTEGER NOT NULL,
+    amount_rupiah INTEGER NOT NULL,
+    payment_method VARCHAR(50) DEFAULT 'google_play',
+    transaction_id TEXT,
+    purchase_token TEXT,
+    status VARCHAR(20) DEFAULT 'completed',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Matikan RLS untuk novoin_sales
+ALTER TABLE novoin_sales DISABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS writer_earnings (
     id SERIAL PRIMARY KEY,
