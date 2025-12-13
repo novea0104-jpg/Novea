@@ -2018,12 +2018,27 @@ const styles = StyleSheet.create({
   featuredHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   featuredCounter: {
-    fontSize: 13,
-    marginTop: 2,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  addFeaturedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+  },
+  addFeaturedText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   addButton: {
     flexDirection: 'row',
