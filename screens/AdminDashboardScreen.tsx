@@ -59,9 +59,15 @@ import {
   removeFromEditorsChoice,
   searchNovelsForEditorsChoice,
   EditorsChoiceNovel,
+  getFeaturedAuthors,
+  addToFeaturedAuthors,
+  removeFromFeaturedAuthors,
+  searchAuthorsForFeatured,
+  FeaturedAuthor,
 } from "@/utils/supabase";
+import { UserIcon } from "@/components/icons/UserIcon";
 
-type TabType = 'stats' | 'users' | 'novels' | 'featured';
+type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -130,6 +136,14 @@ export default function AdminDashboardScreen() {
   const [showAddNovelModal, setShowAddNovelModal] = useState(false);
   const [searchingNovels, setSearchingNovels] = useState(false);
   
+  // Featured Authors states
+  const [featuredAuthors, setFeaturedAuthors] = useState<FeaturedAuthor[]>([]);
+  const [featuredAuthorsLoading, setFeaturedAuthorsLoading] = useState(false);
+  const [searchAuthorQuery, setSearchAuthorQuery] = useState('');
+  const [authorSearchResults, setAuthorSearchResults] = useState<{id: number; name: string; avatarUrl: string | null; novelCount: number}[]>([]);
+  const [showAddAuthorModal, setShowAddAuthorModal] = useState(false);
+  const [searchingAuthors, setSearchingAuthors] = useState(false);
+  
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
       return;
@@ -173,6 +187,13 @@ export default function AdminDashboardScreen() {
     setEditorsChoiceLoading(false);
   }, []);
 
+  const loadFeaturedAuthors = useCallback(async () => {
+    setFeaturedAuthorsLoading(true);
+    const data = await getFeaturedAuthors();
+    setFeaturedAuthors(data);
+    setFeaturedAuthorsLoading(false);
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -182,6 +203,7 @@ export default function AdminDashboardScreen() {
       }
       await loadNovels(1);
       await loadEditorsChoice();
+      await loadFeaturedAuthors();
       setLoading(false);
     };
     loadData();
@@ -197,6 +219,8 @@ export default function AdminDashboardScreen() {
       await loadNovels(1);
     } else if (activeTab === 'featured') {
       await loadEditorsChoice();
+    } else if (activeTab === 'authors') {
+      await loadFeaturedAuthors();
     }
     setRefreshing(false);
   };
@@ -496,6 +520,68 @@ export default function AdminDashboardScreen() {
             if (result.success) {
               await loadEditorsChoice();
               Alert.alert('Berhasil', 'Novel telah dihapus dari Pilihan Editor');
+            } else {
+              Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const MAX_FEATURED_AUTHORS = 20;
+
+  const handleSearchAuthors = async () => {
+    if (!searchAuthorQuery.trim()) return;
+    setSearchingAuthors(true);
+    const results = await searchAuthorsForFeatured(searchAuthorQuery.trim());
+    setAuthorSearchResults(results);
+    setSearchingAuthors(false);
+  };
+
+  const handleAddToFeaturedAuthors = async (authorId: number) => {
+    if (!user) return;
+    
+    if (featuredAuthors.length >= MAX_FEATURED_AUTHORS) {
+      Alert.alert(
+        'Author Terfavorit Penuh',
+        `Kamu sudah memilih ${MAX_FEATURED_AUTHORS} author! Untuk menambahkan author baru, hapus salah satu dari daftar terlebih dahulu.`,
+        [{ text: 'Mengerti', style: 'default' }]
+      );
+      return;
+    }
+    
+    setActionLoading(true);
+    const displayOrder = featuredAuthors.length + 1;
+    const result = await addToFeaturedAuthors(parseInt(user.id), authorId, displayOrder);
+    setActionLoading(false);
+    if (result.success) {
+      await loadFeaturedAuthors();
+      setShowAddAuthorModal(false);
+      setSearchAuthorQuery('');
+      setAuthorSearchResults([]);
+      Alert.alert('Berhasil', 'Author telah ditambahkan ke Author Terfavorit');
+    } else {
+      Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+    }
+  };
+
+  const handleRemoveFromFeaturedAuthors = async (authorId: number) => {
+    Alert.alert(
+      'Konfirmasi Hapus',
+      'Apakah Anda yakin ingin menghapus author ini dari Author Terfavorit?',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Hapus',
+          style: 'destructive',
+          onPress: async () => {
+            setActionLoading(true);
+            const result = await removeFromFeaturedAuthors(authorId);
+            setActionLoading(false);
+            if (result.success) {
+              await loadFeaturedAuthors();
+              Alert.alert('Berhasil', 'Author telah dihapus dari Author Terfavorit');
             } else {
               Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
             }
@@ -1082,6 +1168,7 @@ export default function AdminDashboardScreen() {
           {renderTabButton('users', 'Users', UsersIcon)}
           {renderTabButton('novels', 'Novel', BookIcon)}
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
+          {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
         </ScrollView>
       </View>
 
@@ -1263,7 +1350,162 @@ export default function AdminDashboardScreen() {
             />
           )}
         </View>
+      ) : activeTab === 'authors' ? (
+        <View style={styles.listContainer}>
+          <View style={styles.featuredHeader}>
+            <ThemedText style={[styles.featuredCounter, { color: featuredAuthors.length >= MAX_FEATURED_AUTHORS ? theme.error : theme.textSecondary }]}>
+              {featuredAuthors.length}/{MAX_FEATURED_AUTHORS} author dipilih
+            </ThemedText>
+            <Pressable
+              onPress={() => {
+                if (featuredAuthors.length >= MAX_FEATURED_AUTHORS) {
+                  Alert.alert(
+                    'Author Terfavorit Penuh',
+                    `Kamu sudah memilih ${MAX_FEATURED_AUTHORS} author! Untuk menambahkan author baru, hapus salah satu dari daftar terlebih dahulu.`,
+                    [{ text: 'Mengerti', style: 'default' }]
+                  );
+                  return;
+                }
+                setShowAddAuthorModal(true);
+              }}
+              style={[
+                styles.addFeaturedButton,
+                { backgroundColor: featuredAuthors.length >= MAX_FEATURED_AUTHORS ? theme.textMuted : theme.primary }
+              ]}
+            >
+              <PlusIcon size={16} color="#FFFFFF" />
+              <ThemedText style={styles.addFeaturedText}>Tambah</ThemedText>
+            </Pressable>
+          </View>
+          {featuredAuthorsLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={featuredAuthors}
+              renderItem={({ item }) => (
+                <Card elevation={1} style={[styles.listItem, { marginHorizontal: Spacing.md }]}>
+                  <Avatar uri={item.avatarUrl} name={item.name} size={48} />
+                  <View style={styles.listItemContent}>
+                    <ThemedText style={styles.listItemTitle} numberOfLines={1}>
+                      {item.name}
+                    </ThemedText>
+                    <View style={styles.listItemMeta}>
+                      <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]}>
+                        {item.novelCount} novel
+                      </ThemedText>
+                      <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]}>
+                        {item.followersCount} pengikut
+                      </ThemedText>
+                    </View>
+                  </View>
+                  <Pressable
+                    onPress={() => handleRemoveFromFeaturedAuthors(item.authorId)}
+                    style={[styles.removeButton, { backgroundColor: theme.error }]}
+                  >
+                    <TrashIcon size={16} color="#FFFFFF" />
+                  </Pressable>
+                </Card>
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <UserIcon size={48} color={theme.textMuted} />
+                  <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
+                    Belum ada author terfavorit
+                  </ThemedText>
+                  <ThemedText style={[styles.emptySubtext, { color: theme.textMuted }]}>
+                    Klik tombol Tambah untuk menambahkan author
+                  </ThemedText>
+                </View>
+              }
+            />
+          )}
+        </View>
       ) : null}
+
+      {/* Add Author to Featured Authors Modal */}
+      <Modal
+        visible={showAddAuthorModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          setShowAddAuthorModal(false);
+          setSearchAuthorQuery('');
+          setAuthorSearchResults([]);
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={Typography.h3}>Tambah Author Terfavorit</ThemedText>
+              <Pressable 
+                onPress={() => {
+                  setShowAddAuthorModal(false);
+                  setSearchAuthorQuery('');
+                  setAuthorSearchResults([]);
+                }}
+              >
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <View style={[styles.searchContainer, { backgroundColor: theme.backgroundSecondary, marginHorizontal: 0 }]}>
+                <SearchIcon size={20} color={theme.textMuted} />
+                <TextInput
+                  style={[styles.searchInput, { color: theme.text }]}
+                  placeholder="Cari author untuk ditambahkan..."
+                  placeholderTextColor={theme.textMuted}
+                  value={searchAuthorQuery}
+                  onChangeText={setSearchAuthorQuery}
+                  onSubmitEditing={handleSearchAuthors}
+                  returnKeyType="search"
+                />
+              </View>
+              <Button onPress={handleSearchAuthors} disabled={searchingAuthors} style={{ marginTop: Spacing.sm }}>
+                {searchingAuthors ? 'Mencari...' : 'Cari Author'}
+              </Button>
+              
+              {authorSearchResults.length > 0 ? (
+                <View style={{ marginTop: Spacing.lg }}>
+                  <ThemedText style={[Typography.body, { marginBottom: Spacing.sm, color: theme.textSecondary }]}>
+                    Hasil Pencarian ({authorSearchResults.length})
+                  </ThemedText>
+                  {authorSearchResults.map((author) => (
+                    <Pressable
+                      key={author.id}
+                      onPress={() => handleAddToFeaturedAuthors(author.id)}
+                      disabled={actionLoading}
+                    >
+                      <Card elevation={1} style={[styles.listItem, { marginBottom: Spacing.sm }]}>
+                        <Avatar uri={author.avatarUrl} name={author.name} size={40} />
+                        <View style={styles.listItemContent}>
+                          <ThemedText style={styles.listItemTitle} numberOfLines={1}>
+                            {author.name}
+                          </ThemedText>
+                          <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                            {author.novelCount} novel
+                          </ThemedText>
+                        </View>
+                        <PlusIcon size={20} color={theme.primary} />
+                      </Card>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : searchAuthorQuery && !searchingAuthors ? (
+                <ThemedText style={[styles.emptyText, { color: theme.textMuted, marginTop: Spacing.lg, textAlign: 'center' }]}>
+                  Tidak ada author ditemukan
+                </ThemedText>
+              ) : null}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Add Novel to Editors Choice Modal */}
       <Modal
