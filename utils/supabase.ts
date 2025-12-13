@@ -2546,49 +2546,73 @@ export interface EditorsChoiceNovel {
 
 export async function getEditorsChoiceNovels(): Promise<EditorsChoiceNovel[]> {
   try {
-    const { data, error } = await supabase
+    // Fetch editors choice entries
+    const { data: choicesData, error: choicesError } = await supabase
       .from('editors_choice')
-      .select(`
-        id,
-        novel_id,
-        display_order,
-        added_at,
-        novels (
-          id,
-          title,
-          cover_image_url,
-          genre,
-          view_count,
-          likes_count,
-          author:users!novels_author_id_fkey (
-            id,
-            name
-          )
-        ),
-        added_by_user:users!editors_choice_added_by_fkey (
-          name
-        )
-      `)
+      .select('id, novel_id, display_order, added_at, added_by')
       .order('display_order', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching editors choice:', error);
+    if (choicesError) {
+      console.error('Error fetching editors choice:', choicesError);
       return [];
     }
 
-    return (data || []).map((item: any) => ({
-      id: item.id,
-      novelId: item.novel_id,
-      title: item.novels?.title || '',
-      authorName: item.novels?.author?.name || 'Unknown',
-      coverUrl: item.novels?.cover_image_url,
-      genre: item.novels?.genre || '',
-      viewCount: item.novels?.view_count || 0,
-      likesCount: item.novels?.likes_count || 0,
-      displayOrder: item.display_order,
-      addedAt: item.added_at,
-      addedBy: item.added_by_user?.name || 'Admin',
-    }));
+    if (!choicesData || choicesData.length === 0) {
+      return [];
+    }
+
+    const novelIds = choicesData.map(c => c.novel_id);
+    const adminIds = [...new Set(choicesData.map(c => c.added_by).filter(Boolean))];
+
+    // Fetch novels data
+    const { data: novelsData } = await supabase
+      .from('novels')
+      .select('id, title, cover_url, genre, author_id')
+      .in('id', novelIds);
+
+    // Fetch view counts
+    const { count: viewCounts } = await supabase
+      .from('novel_views')
+      .select('novel_id', { count: 'exact', head: false })
+      .in('novel_id', novelIds);
+
+    // Fetch likes counts
+    const { data: likesData } = await supabase
+      .from('novel_likes')
+      .select('novel_id')
+      .in('novel_id', novelIds);
+
+    const likesCounts: Record<number, number> = {};
+    (likesData || []).forEach((l: any) => {
+      likesCounts[l.novel_id] = (likesCounts[l.novel_id] || 0) + 1;
+    });
+
+    // Fetch author names
+    const authorIds = [...new Set((novelsData || []).map(n => n.author_id).filter(Boolean))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', [...authorIds, ...adminIds]);
+    
+    const userMap = new Map((authors || []).map(a => [a.id, a.name]));
+    const novelsMap = new Map((novelsData || []).map(n => [n.id, n]));
+
+    return choicesData.map((item: any) => {
+      const novel = novelsMap.get(item.novel_id);
+      return {
+        id: item.id,
+        novelId: item.novel_id,
+        title: novel?.title || '',
+        authorName: userMap.get(novel?.author_id) || 'Unknown',
+        coverUrl: novel?.cover_url || null,
+        genre: novel?.genre || '',
+        viewCount: 0,
+        likesCount: likesCounts[item.novel_id] || 0,
+        displayOrder: item.display_order,
+        addedAt: item.added_at,
+        addedBy: userMap.get(item.added_by) || 'Admin',
+      };
+    });
   } catch (error) {
     console.error('Error in getEditorsChoiceNovels:', error);
     return [];
@@ -2732,47 +2756,70 @@ export async function getEditorsChoiceForHome(): Promise<{
   chapters: number;
 }[]> {
   try {
-    const { data, error } = await supabase
+    // First get the editors choice novel IDs
+    const { data: choicesData, error: choicesError } = await supabase
       .from('editors_choice')
-      .select(`
-        novels (
-          id,
-          title,
-          cover_image_url,
-          genre,
-          rating,
-          total_reads,
-          author:users!novels_author_id_fkey (name)
-        )
-      `)
+      .select('novel_id')
       .order('display_order', { ascending: true })
       .limit(20);
 
-    if (error) {
-      console.error('Error fetching editors choice for home:', error);
+    if (choicesError) {
+      console.error('Error fetching editors choice:', choicesError);
       return [];
     }
 
+    if (!choicesData || choicesData.length === 0) {
+      return [];
+    }
+
+    const novelIds = choicesData.map(c => c.novel_id);
+
+    // Fetch novels data
+    const { data: novelsData, error: novelsError } = await supabase
+      .from('novels')
+      .select('id, title, cover_url, genre, rating, total_reads, author_id')
+      .in('id', novelIds);
+
+    if (novelsError || !novelsData) {
+      console.error('Error fetching novels for editors choice:', novelsError);
+      return [];
+    }
+
+    // Fetch author names separately
+    const authorIds = [...new Set(novelsData.map(n => n.author_id).filter(Boolean))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', authorIds);
+    
+    const authorMap = new Map((authors || []).map(a => [a.id, a.name]));
+
+    // Fetch chapter counts
     const { data: chaptersData } = await supabase
       .from('chapters')
-      .select('novel_id');
+      .select('novel_id')
+      .in('novel_id', novelIds);
 
     const chapterCounts: Record<number, number> = {};
     (chaptersData || []).forEach((c: any) => {
       chapterCounts[c.novel_id] = (chapterCounts[c.novel_id] || 0) + 1;
     });
 
-    return (data || [])
-      .filter((item: any) => item.novels)
-      .map((item: any) => ({
-        id: String(item.novels.id),
-        title: item.novels.title,
-        author: item.novels.author?.name || 'Unknown',
-        coverUrl: item.novels.cover_image_url,
-        genre: item.novels.genre || '',
-        rating: item.novels.rating || 0,
-        followers: item.novels.total_reads || 0,
-        chapters: chapterCounts[item.novels.id] || 0,
+    // Maintain the order from editors_choice
+    const novelsMap = new Map(novelsData.map(n => [n.id, n]));
+    
+    return novelIds
+      .map(novelId => novelsMap.get(novelId))
+      .filter(Boolean)
+      .map((novel: any) => ({
+        id: String(novel.id),
+        title: novel.title,
+        author: authorMap.get(novel.author_id) || 'Unknown',
+        coverUrl: novel.cover_url,
+        genre: novel.genre || '',
+        rating: novel.rating || 0,
+        followers: novel.total_reads || 0,
+        chapters: chapterCounts[novel.id] || 0,
       }));
   } catch (error) {
     console.error('Error in getEditorsChoiceForHome:', error);

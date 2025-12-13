@@ -40,9 +40,9 @@ BEGIN
         RETURN '{"success":false,"error":"Tidak memiliki izin"}'::json;
     END IF;
     
-    -- Check if novel exists and is published
-    IF NOT EXISTS (SELECT 1 FROM novels WHERE id = p_novel_id AND is_published = true) THEN
-        RETURN '{"success":false,"error":"Novel tidak ditemukan atau belum dipublish"}'::json;
+    -- Check if novel exists
+    IF NOT EXISTS (SELECT 1 FROM novels WHERE id = p_novel_id) THEN
+        RETURN '{"success":false,"error":"Novel tidak ditemukan"}'::json;
     END IF;
     
     -- Check if already in editors choice
