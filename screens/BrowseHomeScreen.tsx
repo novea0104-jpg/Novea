@@ -15,6 +15,11 @@ import { ZapIcon } from "@/components/icons/ZapIcon";
 import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
 import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
+import { FlameIcon } from "@/components/icons/FlameIcon";
+import { SparklesIcon } from "@/components/icons/SparklesIcon";
+import { CompassIcon } from "@/components/icons/CompassIcon";
+import { AwardIcon } from "@/components/icons/AwardIcon";
+import { GiftIcon } from "@/components/icons/GiftIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -223,9 +228,18 @@ export default function BrowseHomeScreen() {
     </Pressable>
   );
 
-  const renderNovelSection = (title: string, novels: Novel[], variant: "large" | "medium" = "medium") => (
-    <View style={styles.section}>
+  const renderSectionTitle = (title: string, icon: React.ReactNode, iconColor: string) => (
+    <View style={styles.sectionTitleRow}>
+      <View style={[styles.sectionIconContainer, { backgroundColor: iconColor + "20" }]}>
+        {icon}
+      </View>
       <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
+    </View>
+  );
+
+  const renderNovelSection = (title: string, novels: Novel[], icon: React.ReactNode, iconColor: string, variant: "large" | "medium" = "medium") => (
+    <View style={styles.section}>
+      {renderSectionTitle(title, icon, iconColor)}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -245,7 +259,7 @@ export default function BrowseHomeScreen() {
 
   const renderEditorsPickSection = () => (
     <View style={styles.section}>
-      <ThemedText style={styles.sectionTitle}>Pilihan Editor</ThemedText>
+      {renderSectionTitle("Pilihan Editor", <AwardIcon size={16} color="#F59E0B" />, "#F59E0B")}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -266,7 +280,7 @@ export default function BrowseHomeScreen() {
 
   const renderFreeNovelsSection = () => (
     <View style={styles.section}>
-      <ThemedText style={styles.sectionTitle}>Novel Gratis</ThemedText>
+      {renderSectionTitle("Novel Gratis", <GiftIcon size={16} color="#10B981" />, "#10B981")}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -348,12 +362,12 @@ export default function BrowseHomeScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {renderNovelSection("Sedang Trending", trendingNovels, "large")}
-        {renderNovelSection("Novel Terbaru", newReleases)}
+        {renderNovelSection("Sedang Trending", trendingNovels, <FlameIcon size={16} color="#EF4444" />, "#EF4444", "large")}
+        {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={16} color="#8B5CF6" />, "#8B5CF6")}
         {renderEditorsPickSection()}
 
         <View style={styles.section}>
-          <ThemedText style={styles.sectionTitle}>Jelajahi Genre</ThemedText>
+          {renderSectionTitle("Jelajahi Genre", <CompassIcon size={16} color="#3B82F6" />, "#3B82F6")}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -442,8 +456,20 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: Spacing.xl,
   },
-  sectionTitle: {
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  sectionIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sectionTitle: {
     fontWeight: "700",
     fontSize: 16,
   },
