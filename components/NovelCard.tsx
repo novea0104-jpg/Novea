@@ -58,13 +58,6 @@ export function NovelCard({ novel, onPress, variant = "medium", showMetadata = t
         {showMetadata ? (
           <View style={styles.metadataRow}>
             <View style={styles.metadataItem}>
-              <BookOpenIcon size={10} color={theme.textSecondary} />
-              <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
-                {novel.totalChapters}
-              </ThemedText>
-            </View>
-            
-            <View style={styles.metadataItem}>
               <EyeIcon size={10} color={theme.textSecondary} />
               <ThemedText style={[styles.metadataText, { color: theme.textSecondary }]}>
                 {novel.followers > 1000 ? `${(novel.followers / 1000).toFixed(1)}k` : novel.followers}
