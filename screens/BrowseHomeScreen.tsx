@@ -256,9 +256,10 @@ export default function BrowseHomeScreen() {
   
   // Pilihan Editor: fetched from editors_choice table (fallback to rating sort if empty)
 
-  // Novel Gratis: Filter novels that have free chapters
+  // Novel Gratis: Filter novels that are completely free (no paid chapters)
+  // A novel is free if: all chapters are free OR no coin price set
   const freeNovels = [...novels]
-    .filter((n) => n.freeChapters > 0)
+    .filter((n) => n.freeChapters >= n.totalChapters || n.coinPerChapter === 0)
     .slice(0, 20);
 
   React.useLayoutEffect(() => {
