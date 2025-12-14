@@ -26,7 +26,7 @@ import { ShareModal } from "@/components/ShareModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount, createTimelinePost, getNovelChapterLikesCount } from "@/utils/supabase";
+import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount, createTimelinePost, getNovelChapterLikesCount, getNovelTags, Tag } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -89,6 +89,9 @@ export default function NovelDetailScreen() {
   // Novel genres
   const [novelGenres, setNovelGenres] = useState<{ id: number; name: string; slug: string; gradient_start: string; gradient_end: string }[]>([]);
   
+  // Novel tags
+  const [novelTags, setNovelTags] = useState<Tag[]>([]);
+  
   // Share modal state
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareCaption, setShareCaption] = useState("");
@@ -117,7 +120,17 @@ export default function NovelDetailScreen() {
     loadReviews();
     loadCounts();
     loadNovelGenres();
+    loadNovelTags();
   }, [novelId]);
+  
+  async function loadNovelTags() {
+    try {
+      const tags = await getNovelTags(parseInt(novelId));
+      setNovelTags(tags);
+    } catch (error) {
+      console.error("Error loading novel tags:", error);
+    }
+  }
   
   async function loadNovelGenres() {
     try {
@@ -469,6 +482,20 @@ export default function NovelDetailScreen() {
               </View>
             )}
           </View>
+          {novelTags.length > 0 ? (
+            <View style={styles.novelTagsContainer}>
+              {novelTags.map((tag) => (
+                <View 
+                  key={tag.id} 
+                  style={[styles.novelTag, { backgroundColor: theme.primary + '20', borderColor: theme.primary + '40' }]}
+                >
+                  <ThemedText style={[styles.novelTagText, { color: theme.primary }]}>
+                    {tag.name}
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
       </View>
 
@@ -1028,6 +1055,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: "#FFFFFF",
+  },
+  novelTagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  novelTag: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+  },
+  novelTagText: {
+    fontSize: 11,
+    fontWeight: "500",
   },
   actions: {
     flexDirection: "row",
