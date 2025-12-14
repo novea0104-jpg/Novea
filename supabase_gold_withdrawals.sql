@@ -1,10 +1,13 @@
 -- Gold Novoin Withdrawal Table
 -- Run this in Supabase SQL Editor
 
+-- Drop existing table if it exists (uncomment if needed)
+-- DROP TABLE IF EXISTS gold_withdrawals;
+
 CREATE TABLE IF NOT EXISTS gold_withdrawals (
   id SERIAL PRIMARY KEY,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  bank_account_id INTEGER NOT NULL REFERENCES writer_bank_accounts(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  bank_account_id BIGINT NOT NULL REFERENCES writer_bank_accounts(id) ON DELETE CASCADE,
   gold_amount INTEGER NOT NULL,
   rupiah_amount INTEGER NOT NULL,
   fee INTEGER NOT NULL DEFAULT 2500,
@@ -25,15 +28,15 @@ ALTER TABLE gold_withdrawals ENABLE ROW LEVEL SECURITY;
 -- Policy: Users can view their own withdrawals
 CREATE POLICY "Users can view own gold withdrawals"
 ON gold_withdrawals FOR SELECT
-USING (auth.uid()::text = user_id::text OR 
-       EXISTS (SELECT 1 FROM users WHERE id = auth.uid()::integer AND role IN ('super_admin', 'co_admin')));
+USING (user_id = (SELECT id FROM users WHERE auth.uid()::text = users.auth_id) OR 
+       EXISTS (SELECT 1 FROM users WHERE auth.uid()::text = users.auth_id AND role IN ('super_admin', 'co_admin')));
 
 -- Policy: Users can insert their own withdrawal requests
 CREATE POLICY "Users can create gold withdrawals"
 ON gold_withdrawals FOR INSERT
-WITH CHECK (auth.uid()::text = user_id::text);
+WITH CHECK (user_id = (SELECT id FROM users WHERE auth.uid()::text = users.auth_id));
 
 -- Policy: Admins can update withdrawals
 CREATE POLICY "Admins can update gold withdrawals"
 ON gold_withdrawals FOR UPDATE
-USING (EXISTS (SELECT 1 FROM users WHERE id = auth.uid()::integer AND role IN ('super_admin', 'co_admin')));
+USING (EXISTS (SELECT 1 FROM users WHERE auth.uid()::text = users.auth_id AND role IN ('super_admin', 'co_admin')));
