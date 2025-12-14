@@ -3013,16 +3013,49 @@ export async function getFeaturedAuthors(): Promise<FeaturedAuthor[]> {
       followingCounts[f.follower_id] = (followingCounts[f.follower_id] || 0) + 1;
     });
 
-    // Fetch novel counts (count all novels, not just published ones)
-    const { data: novelsData } = await supabase
+    // Get author names for matching novels by name as well
+    const authorNames = (authorsData || []).map(a => a.name).filter(Boolean);
+    
+    // Fetch novel counts - try both by author_id AND by author name
+    const { data: novelsById } = await supabase
       .from('novels')
       .select('author_id')
       .in('author_id', authorIds);
 
-    const novelCounts: Record<number, number> = {};
-    (novelsData || []).forEach((n: any) => {
-      novelCounts[n.author_id] = (novelCounts[n.author_id] || 0) + 1;
+    const { data: novelsByName } = await supabase
+      .from('novels')
+      .select('author')
+      .in('author', authorNames);
+
+    console.log('[getFeaturedAuthors] authorIds:', authorIds);
+    console.log('[getFeaturedAuthors] authorNames:', authorNames);
+    console.log('[getFeaturedAuthors] novelsById:', novelsById);
+    console.log('[getFeaturedAuthors] novelsByName:', novelsByName);
+
+    // Create name to id mapping
+    const nameToId: Record<string, number> = {};
+    (authorsData || []).forEach((a: any) => {
+      if (a.name) nameToId[a.name] = a.id;
     });
+
+    const novelCounts: Record<number, number> = {};
+    
+    // Count by author_id
+    (novelsById || []).forEach((n: any) => {
+      if (n.author_id) {
+        novelCounts[n.author_id] = (novelCounts[n.author_id] || 0) + 1;
+      }
+    });
+    
+    // Also count by author name (for novels without author_id)
+    (novelsByName || []).forEach((n: any) => {
+      const authorId = nameToId[n.author];
+      if (authorId) {
+        novelCounts[authorId] = (novelCounts[authorId] || 0) + 1;
+      }
+    });
+    
+    console.log('[getFeaturedAuthors] novelCounts:', novelCounts);
 
     const authorsMap = new Map((authorsData || []).map(a => [a.id, a]));
 
