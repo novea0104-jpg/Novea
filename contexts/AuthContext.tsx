@@ -14,7 +14,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
-  convertSilverToGold: () => Promise<{ success: boolean; error?: string }>;
+  convertSilverToGold: (goldAmount?: number) => Promise<{ success: boolean; error?: string }>;
   refreshUser: () => Promise<void>;
   updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
   requireAuth: (message?: string) => boolean;
@@ -299,20 +299,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
   }
 
-  async function convertSilverToGold(): Promise<{ success: boolean; error?: string }> {
+  async function convertSilverToGold(goldAmount: number = 1): Promise<{ success: boolean; error?: string }> {
     if (!user) return { success: false, error: "User tidak ditemukan" };
+    if (goldAmount < 1) return { success: false, error: "Jumlah konversi tidak valid" };
     
     const SILVER_PER_GOLD = 1000;
-    const silverBalance = user.silverBalance || 0;
-    
-    if (silverBalance < SILVER_PER_GOLD) {
-      return { success: false, error: `Silver Novoin tidak cukup. Kamu butuh ${SILVER_PER_GOLD} Silver untuk 1 Gold.` };
-    }
-    
-    const newSilverBalance = silverBalance - SILVER_PER_GOLD;
-    const newGoldBalance = user.coinBalance + 1;
+    const silverNeeded = goldAmount * SILVER_PER_GOLD;
     
     try {
+      // First fetch the latest balances from database to avoid stale state
+      const { data: currentUser, error: fetchError } = await supabase
+        .from('users')
+        .select('silver_balance, coin_balance')
+        .eq('id', parseInt(user.id))
+        .single();
+      
+      if (fetchError || !currentUser) {
+        console.error('Error fetching current balance:', fetchError);
+        return { success: false, error: "Gagal mengambil saldo. Silakan coba lagi." };
+      }
+      
+      const currentSilver = currentUser.silver_balance || 0;
+      const currentGold = currentUser.coin_balance || 0;
+      
+      if (currentSilver < silverNeeded) {
+        return { success: false, error: `Silver Novoin tidak cukup. Kamu butuh ${silverNeeded} Silver untuk ${goldAmount} Gold.` };
+      }
+      
+      const newSilverBalance = currentSilver - silverNeeded;
+      const newGoldBalance = currentGold + goldAmount;
+      
+      // Perform atomic update with both balances
       const { data, error } = await supabase
         .from('users')
         .update({ 

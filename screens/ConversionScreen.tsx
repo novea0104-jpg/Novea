@@ -19,7 +19,7 @@ const SILVER_PER_GOLD = 1000;
 export default function ConversionScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
-  const { user, convertSilverToGold, refreshUser } = useAuth();
+  const { user, convertSilverToGold } = useAuth();
   
   const [conversionAmount, setConversionAmount] = useState(1);
   const [isConverting, setIsConverting] = useState(false);
@@ -48,30 +48,16 @@ export default function ConversionScreen() {
 
     setIsConverting(true);
     try {
-      let successCount = 0;
-      for (let i = 0; i < conversionAmount; i++) {
-        const result = await convertSilverToGold();
-        if (result.success) {
-          successCount++;
-        } else {
-          break;
-        }
-      }
+      const result = await convertSilverToGold(conversionAmount);
 
-      if (successCount === conversionAmount) {
+      if (result.success) {
         Alert.alert(
           "Konversi Berhasil!",
-          `${successCount * SILVER_PER_GOLD} Silver Novoin telah dikonversi menjadi ${successCount} Gold Novoin.`,
+          `${conversionAmount * SILVER_PER_GOLD} Silver Novoin telah dikonversi menjadi ${conversionAmount} Gold Novoin.`,
           [{ text: "OK", onPress: () => navigation.goBack() }]
         );
-      } else if (successCount > 0) {
-        Alert.alert(
-          "Konversi Sebagian Berhasil",
-          `${successCount} dari ${conversionAmount} konversi berhasil.`
-        );
-        await refreshUser();
       } else {
-        Alert.alert("Gagal", "Konversi gagal. Silakan coba lagi.");
+        Alert.alert("Gagal", result.error || "Konversi gagal. Silakan coba lagi.");
       }
     } catch (error) {
       Alert.alert("Error", "Terjadi kesalahan. Silakan coba lagi.");
