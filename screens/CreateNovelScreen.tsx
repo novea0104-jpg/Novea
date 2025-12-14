@@ -37,6 +37,7 @@ export default function CreateNovelScreen() {
   const [coverUri, setCoverUri] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [status, setStatus] = useState<'ongoing' | 'completed'>('ongoing');
 
   useEffect(() => {
     fetchGenres();
@@ -196,7 +197,7 @@ export default function CreateNovelScreen() {
           genre: primaryGenre?.name || "Fantasy",
           description: description.trim(),
           cover_url: coverUrl,
-          status: 'ongoing',
+          status: status,
           chapter_price: 10,
           total_chapters: 0,
           free_chapters: 5,
@@ -295,6 +296,52 @@ export default function CreateNovelScreen() {
               onChangeText={setTitle}
               maxLength={100}
             />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <ThemedText style={styles.label}>Status Novel</ThemedText>
+            <View style={styles.statusSelector}>
+              <Pressable
+                onPress={() => setStatus('ongoing')}
+                style={[
+                  styles.statusOption,
+                  { backgroundColor: theme.backgroundSecondary },
+                  status === 'ongoing' && styles.statusOptionActive,
+                ]}
+              >
+                {status === 'ongoing' ? (
+                  <LinearGradient
+                    colors={GradientColors.purplePink.colors}
+                    start={GradientColors.purplePink.start}
+                    end={GradientColors.purplePink.end}
+                    style={StyleSheet.absoluteFill}
+                  />
+                ) : null}
+                <ThemedText style={[styles.statusText, status === 'ongoing' && { color: '#FFFFFF' }]}>
+                  Ongoing
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={() => setStatus('completed')}
+                style={[
+                  styles.statusOption,
+                  { backgroundColor: theme.backgroundSecondary },
+                  status === 'completed' && styles.statusOptionActive,
+                ]}
+              >
+                {status === 'completed' ? (
+                  <LinearGradient
+                    colors={GradientColors.purplePink.colors}
+                    start={GradientColors.purplePink.start}
+                    end={GradientColors.purplePink.end}
+                    style={StyleSheet.absoluteFill}
+                  />
+                ) : null}
+                <ThemedText style={[styles.statusText, status === 'completed' && { color: '#FFFFFF' }]}>
+                  Tamat
+                </ThemedText>
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.inputGroup}>
@@ -469,6 +516,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
+  },
+  statusSelector: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  statusOption: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  statusOptionActive: {
+    borderWidth: 0,
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   genreChip: {
     paddingHorizontal: Spacing.md,
