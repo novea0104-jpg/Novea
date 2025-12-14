@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   coverContainer: {
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.xs,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "#2A2A2A",
