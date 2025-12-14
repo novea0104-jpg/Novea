@@ -268,23 +268,25 @@ export default function ProfileScreen() {
         onPress={() => navigation.navigate("DailyReward")}
         style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
       >
-        <Card elevation={1} style={styles.dailyRewardTeaser}>
-          <LinearGradient
-            colors={["#C0C0C0", "#A8A8A8"]}
-            style={styles.dailyRewardIcon}
-          >
-            <GiftIcon size={24} color="#FFFFFF" />
-          </LinearGradient>
+        <LinearGradient
+          colors={["#FF6B35", "#F7931E", "#FFD700"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.dailyRewardTeaser}
+        >
+          <View style={styles.dailyRewardIconGlow}>
+            <GiftIcon size={28} color="#FFFFFF" />
+          </View>
           <View style={styles.dailyRewardInfo}>
-            <ThemedText style={styles.dailyRewardTitle}>Hadiah Harian</ThemedText>
-            <ThemedText style={[styles.dailyRewardSubtitle, { color: theme.textSecondary }]}>
+            <ThemedText style={styles.dailyRewardTitleBright}>Hadiah Harian</ThemedText>
+            <ThemedText style={styles.dailyRewardSubtitleBright}>
               {user.lastClaimDate && new Date(user.lastClaimDate).toDateString() === new Date().toDateString()
                 ? "Sudah diklaim hari ini!"
                 : "Klaim Silver Novoin gratis!"}
             </ThemedText>
           </View>
-          <ChevronRightIcon size={20} color={theme.textMuted} />
-        </Card>
+          <ChevronRightIcon size={20} color="rgba(255,255,255,0.8)" />
+        </LinearGradient>
       </Pressable>
 
       <View style={styles.walletSection}>
@@ -554,27 +556,31 @@ const styles = StyleSheet.create({
   dailyRewardTeaser: {
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.md,
+    padding: Spacing.lg,
     marginTop: Spacing.md,
     gap: Spacing.md,
+    borderRadius: BorderRadius.lg,
   },
-  dailyRewardIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  dailyRewardIconGlow: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.25)",
   },
   dailyRewardInfo: {
     flex: 1,
   },
-  dailyRewardTitle: {
-    fontSize: 15,
-    fontWeight: "600",
+  dailyRewardTitleBright: {
+    fontSize: 16,
+    fontWeight: "700",
     marginBottom: 2,
+    color: "#FFFFFF",
   },
-  dailyRewardSubtitle: {
-    fontSize: 12,
+  dailyRewardSubtitleBright: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.9)",
   },
   profileHeader: {
     flexDirection: "row",
