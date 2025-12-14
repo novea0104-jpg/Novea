@@ -3013,12 +3013,11 @@ export async function getFeaturedAuthors(): Promise<FeaturedAuthor[]> {
       followingCounts[f.follower_id] = (followingCounts[f.follower_id] || 0) + 1;
     });
 
-    // Fetch novel counts
+    // Fetch novel counts (count all novels, not just published ones)
     const { data: novelsData } = await supabase
       .from('novels')
       .select('author_id')
-      .in('author_id', authorIds)
-      .eq('is_published', true);
+      .in('author_id', authorIds);
 
     const novelCounts: Record<number, number> = {};
     (novelsData || []).forEach((n: any) => {
