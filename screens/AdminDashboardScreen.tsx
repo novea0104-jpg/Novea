@@ -197,13 +197,13 @@ export default function AdminDashboardScreen() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await loadStats();
-      if (canManageUsers) {
-        await loadUsers(1);
-      }
-      await loadNovels(1);
-      await loadEditorsChoice();
-      await loadFeaturedAuthors();
+      await Promise.all([
+        loadStats(),
+        canManageUsers ? loadUsers(1) : Promise.resolve(),
+        loadNovels(1),
+        loadEditorsChoice(),
+        loadFeaturedAuthors(),
+      ]);
       setLoading(false);
     };
     loadData();
