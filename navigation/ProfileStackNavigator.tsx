@@ -21,6 +21,7 @@ import NewMessageScreen from "@/screens/NewMessageScreen";
 import PolicyScreen from "@/screens/PolicyScreen";
 import ConversionScreen from "@/screens/ConversionScreen";
 import DailyRewardScreen from "@/screens/DailyRewardScreen";
+import GoldWithdrawalScreen from "@/screens/GoldWithdrawalScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -45,6 +46,7 @@ export type ProfileStackParamList = {
   Policy: undefined;
   Conversion: undefined;
   DailyReward: undefined;
+  GoldWithdrawal: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -153,6 +155,11 @@ export default function ProfileStackNavigator() {
         name="DailyReward"
         component={DailyRewardScreen}
         options={{ title: "Hadiah Harian" }}
+      />
+      <Stack.Screen
+        name="GoldWithdrawal"
+        component={GoldWithdrawalScreen}
+        options={{ title: "Tarik Gold Novoin" }}
       />
     </Stack.Navigator>
   );

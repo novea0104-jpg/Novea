@@ -366,6 +366,23 @@ export default function ProfileScreen() {
             </LinearGradient>
           </Pressable>
         </View>
+
+        {user?.role !== 'super_admin' && user?.role !== 'co_admin' && user?.role !== 'editor' ? (
+          <Pressable
+            onPress={() => navigation.navigate("GoldWithdrawal")}
+            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1, marginTop: Spacing.sm })}
+          >
+            <LinearGradient
+              colors={["#22c55e", "#16a34a"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.walletWithdrawButton}
+            >
+              <ThemedText style={styles.walletWithdrawButtonText}>Tarik Gold Novoin</ThemedText>
+              <ChevronRightIcon size={16} color="#FFFFFF" />
+            </LinearGradient>
+          </Pressable>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -796,6 +813,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.md,
     gap: Spacing.xs,
+  },
+  walletWithdrawButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+  },
+  walletWithdrawButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   walletBuyButtonText: {
     fontSize: 14,
