@@ -85,21 +85,21 @@ export default function NotificationsScreen() {
             novelId: String(notification.novelId) 
           });
         } else if (notification.novelId) {
-          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+          navigation.navigate("NovelDetail", { novelId: String(notification.novelId) });
         }
         break;
         
       case "new_novel":
         // Go to novel detail page
         if (notification.novelId) {
-          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+          navigation.navigate("NovelDetail", { novelId: String(notification.novelId) });
         }
         break;
         
       case "comment_reply":
         // Go to the novel detail where the review/comment is
         if (notification.novelId) {
-          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+          navigation.navigate("NovelDetail", { novelId: String(notification.novelId) });
         }
         break;
         
@@ -120,7 +120,7 @@ export default function NotificationsScreen() {
       default:
         // Fallback: try to navigate based on available data
         if (notification.novelId) {
-          navigation.navigate("NovelDetail", { novelId: notification.novelId });
+          navigation.navigate("NovelDetail", { novelId: String(notification.novelId) });
         } else if (notification.timelinePostId) {
           navigation.getParent()?.navigate("TimelineTab");
         }
