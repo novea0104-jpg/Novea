@@ -2,6 +2,12 @@ export type Genre = "Romance" | "Fantasy" | "Thriller" | "Mystery" | "Adventure"
 
 export type NovelStatus = "On-Going" | "Completed";
 
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 export type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 export interface User {
