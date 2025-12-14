@@ -8,6 +8,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useResponsive } from "@/hooks/useResponsive";
 import { Card } from "@/components/Card";
+import { DailyRewardCard } from "@/components/DailyRewardCard";
 import { RoleBadge } from "@/components/RoleBadge";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { CheckIcon } from "@/components/icons/CheckIcon";
@@ -262,6 +263,8 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
       </Card>
+
+      <DailyRewardCard />
 
       <View style={styles.walletSection}>
         <ThemedText style={[Typography.h3, styles.sectionTitle]}>Dompet</ThemedText>

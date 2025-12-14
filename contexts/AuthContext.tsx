@@ -15,6 +15,7 @@ interface AuthContextType {
   upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
   convertSilverToGold: (goldAmount?: number) => Promise<{ success: boolean; error?: string }>;
+  claimDailyReward: () => Promise<{ success: boolean; amount?: number; error?: string }>;
   refreshUser: () => Promise<void>;
   updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
   requireAuth: (message?: string) => boolean;
@@ -120,6 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           silverBalance: userProfile.silver_balance || 0,
           avatarUrl: userProfile.avatar_url || undefined,
           bio: userProfile.bio || undefined,
+          lastClaimDate: userProfile.last_claim_date || undefined,
+          claimStreak: userProfile.claim_streak || 0,
         };
         setUser(user);
       } else if (retryCount < 3) {
@@ -193,6 +196,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         silverBalance: userProfile.silver_balance || 0,
         avatarUrl: userProfile.avatar_url || undefined,
         bio: userProfile.bio || undefined,
+        lastClaimDate: userProfile.last_claim_date || undefined,
+        claimStreak: userProfile.claim_streak || 0,
       };
       setUser(newUser);
       console.log("🎉 Signup complete!");
@@ -265,6 +270,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
+      lastClaimDate: data.last_claim_date || undefined,
+      claimStreak: data.claim_streak || 0,
     };
     setUser(updatedUser);
   }
@@ -295,6 +302,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
+      lastClaimDate: data.last_claim_date || undefined,
+      claimStreak: data.claim_streak || 0,
     };
     setUser(updatedUser);
   }
@@ -355,12 +364,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         silverBalance: data.silver_balance || 0,
         avatarUrl: data.avatar_url || undefined,
         bio: data.bio || undefined,
+        lastClaimDate: data.last_claim_date || undefined,
+        claimStreak: data.claim_streak || 0,
       };
       setUser(updatedUser);
       
       return { success: true };
     } catch (error) {
       console.error('Convert error:', error);
+      return { success: false, error: "Terjadi kesalahan. Silakan coba lagi." };
+    }
+  }
+
+  async function claimDailyReward(): Promise<{ success: boolean; amount?: number; error?: string }> {
+    if (!user) return { success: false, error: "User tidak ditemukan" };
+
+    const DAILY_REWARDS = [1, 1, 1, 10, 10, 10, 20];
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+
+    try {
+      const { data: currentUser, error: fetchError } = await supabase
+        .from('users')
+        .select('silver_balance, last_claim_date, claim_streak')
+        .eq('id', parseInt(user.id))
+        .single();
+
+      if (fetchError || !currentUser) {
+        console.error('Error fetching user for claim:', fetchError);
+        return { success: false, error: "Gagal mengambil data. Silakan coba lagi." };
+      }
+
+      const lastClaimDate = currentUser.last_claim_date;
+      const currentStreak = currentUser.claim_streak || 0;
+      const currentSilver = currentUser.silver_balance || 0;
+
+      if (lastClaimDate === todayStr) {
+        return { success: false, error: "Kamu sudah klaim hadiah hari ini!" };
+      }
+
+      let newStreak = 1;
+      if (lastClaimDate) {
+        const lastDate = new Date(lastClaimDate);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        if (lastClaimDate === yesterdayStr) {
+          newStreak = currentStreak >= 7 ? 1 : currentStreak + 1;
+        }
+      }
+
+      const rewardIndex = Math.min(newStreak - 1, 6);
+      const rewardAmount = DAILY_REWARDS[rewardIndex];
+      const newSilverBalance = currentSilver + rewardAmount;
+
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          silver_balance: newSilverBalance,
+          last_claim_date: todayStr,
+          claim_streak: newStreak,
+        })
+        .eq('id', parseInt(user.id))
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error claiming daily reward:', error);
+        return { success: false, error: "Gagal klaim hadiah. Silakan coba lagi." };
+      }
+
+      const updatedUser: User = {
+        id: data.id.toString(),
+        name: data.name,
+        email: data.email,
+        isWriter: data.is_writer,
+        role: (data.role || 'pembaca') as any,
+        coinBalance: data.coin_balance,
+        silverBalance: data.silver_balance || 0,
+        avatarUrl: data.avatar_url || undefined,
+        bio: data.bio || undefined,
+        lastClaimDate: data.last_claim_date || undefined,
+        claimStreak: data.claim_streak || 0,
+      };
+      setUser(updatedUser);
+
+      return { success: true, amount: rewardAmount };
+    } catch (error) {
+      console.error('Claim error:', error);
       return { success: false, error: "Terjadi kesalahan. Silakan coba lagi." };
     }
   }
@@ -391,6 +483,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
+      lastClaimDate: data.last_claim_date || undefined,
+      claimStreak: data.claim_streak || 0,
     };
     setUser(updatedUser);
   }
@@ -428,6 +522,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
+      lastClaimDate: data.last_claim_date || undefined,
+      claimStreak: data.claim_streak || 0,
     };
     setUser(updatedUser);
   }
@@ -464,6 +560,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         upgradeToWriter,
         updateCoinBalance,
         convertSilverToGold,
+        claimDailyReward,
         refreshUser,
         updateProfile,
         requireAuth,

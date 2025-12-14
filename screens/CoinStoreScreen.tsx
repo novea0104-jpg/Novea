@@ -210,20 +210,6 @@ export default function CoinStoreScreen() {
         columnWrapperStyle={styles.packageRow}
       />
 
-      <ThemedText style={[Typography.h3, styles.sectionTitle, { marginTop: Spacing.xl }]}>
-        Dapatkan Novoin Gratis
-      </ThemedText>
-      <View style={[styles.freeCoinsCard, { backgroundColor: theme.backgroundDefault }]}>
-        <GiftIcon size={24} color={theme.secondary} />
-        <View style={styles.freeCoinsContent}>
-          <ThemedText style={styles.freeCoinsTitle}>Hadiah Login Harian</ThemedText>
-          <ThemedText style={[styles.freeCoinsText, { color: theme.textSecondary }]}>
-            Dapatkan 5 Novoin setiap hari
-          </ThemedText>
-        </View>
-        <Button style={styles.claimButton}>Klaim</Button>
-      </View>
-
       <Modal
         visible={showConfirmModal}
         animationType="slide"

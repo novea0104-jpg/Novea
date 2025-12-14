@@ -14,6 +14,8 @@ export interface User {
   silverBalance: number;
   avatarUrl?: string;
   bio?: string;
+  lastClaimDate?: string;
+  claimStreak: number;
 }
 
 export interface Novel {
