@@ -6,13 +6,14 @@ import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareS
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { TagSelector } from "@/components/TagSelector";
 import { ImageIcon } from "@/components/icons/ImageIcon";
 import { SaveIcon } from "@/components/icons/SaveIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApp } from "@/contexts/AppContext";
-import { supabase } from "@/utils/supabase";
+import { supabase, saveNovelTags, getNovelTags, Tag } from "@/utils/supabase";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
 import { Spacing, Typography, BorderRadius, GradientColors } from "@/constants/theme";
 
@@ -37,6 +38,7 @@ export default function EditNovelScreen() {
   const [title, setTitle] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [availableGenres, setAvailableGenres] = useState<GenreOption[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [description, setDescription] = useState("");
   const [coverUri, setCoverUri] = useState<string>("");
   const [existingCoverUrl, setExistingCoverUrl] = useState<string>("");
@@ -55,8 +57,19 @@ export default function EditNovelScreen() {
         setExistingCoverUrl(novel.coverImage);
       }
       fetchNovelGenres();
+      fetchNovelTagsData();
     }
   }, [novel, availableGenres]);
+
+  const fetchNovelTagsData = async () => {
+    if (!novelId) return;
+    try {
+      const tags = await getNovelTags(parseInt(novelId));
+      setSelectedTags(tags);
+    } catch (error) {
+      console.error("Error fetching novel tags:", error);
+    }
+  };
 
   const fetchGenres = async () => {
     try {
@@ -192,6 +205,11 @@ export default function EditNovelScreen() {
       return;
     }
 
+    if (selectedTags.length < 3) {
+      Alert.alert("Error", "Pilih minimal 3 tag untuk novel!");
+      return;
+    }
+
     if (!description.trim()) {
       Alert.alert("Error", "Sinopsis novel harus diisi!");
       return;
@@ -258,6 +276,14 @@ export default function EditNovelScreen() {
 
       if (genreError) {
         console.error('Error inserting genres:', genreError);
+      }
+
+      // Update tag relations
+      if (selectedTags.length > 0) {
+        const tagResult = await saveNovelTags(novelIdNum, selectedTags.map(t => t.id));
+        if (!tagResult.success) {
+          console.error('Error saving tags:', tagResult.error);
+        }
       }
 
       await refreshNovels();
@@ -390,6 +416,15 @@ export default function EditNovelScreen() {
                 );
               })}
             </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <TagSelector
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              minTags={3}
+              maxTags={7}
+            />
           </View>
 
           <View style={styles.inputGroup}>

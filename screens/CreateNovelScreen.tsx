@@ -6,12 +6,13 @@ import { ScreenKeyboardAwareScrollView } from "@/components/ScreenKeyboardAwareS
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { TagSelector } from "@/components/TagSelector";
 import { ImageIcon } from "@/components/icons/ImageIcon";
 import { CheckIcon } from "@/components/icons/CheckIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/utils/supabase";
+import { supabase, saveNovelTags, Tag } from "@/utils/supabase";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
 import { Spacing, Typography, BorderRadius, GradientColors } from "@/constants/theme";
 
@@ -31,6 +32,7 @@ export default function CreateNovelScreen() {
   const [title, setTitle] = useState("");
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [availableGenres, setAvailableGenres] = useState<GenreOption[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [description, setDescription] = useState("");
   const [coverUri, setCoverUri] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -146,6 +148,11 @@ export default function CreateNovelScreen() {
       return;
     }
 
+    if (selectedTags.length < 3) {
+      Alert.alert("Error", "Pilih minimal 3 tag untuk novel!");
+      return;
+    }
+
     if (!description.trim()) {
       Alert.alert("Error", "Sinopsis novel harus diisi!");
       return;
@@ -212,6 +219,14 @@ export default function CreateNovelScreen() {
 
       if (genreError) {
         console.error('Error inserting genres:', genreError);
+      }
+
+      // Insert tag relations
+      if (selectedTags.length > 0) {
+        const tagResult = await saveNovelTags(data.id, selectedTags.map(t => t.id));
+        if (!tagResult.success) {
+          console.error('Error inserting tags:', tagResult.error);
+        }
       }
 
       Alert.alert(
@@ -330,6 +345,15 @@ export default function CreateNovelScreen() {
                 );
               })}
             </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <TagSelector
+              selectedTags={selectedTags}
+              onTagsChange={setSelectedTags}
+              minTags={3}
+              maxTags={7}
+            />
           </View>
 
           <View style={styles.inputGroup}>

@@ -3149,3 +3149,118 @@ export async function searchAuthorsForFeatured(
     return [];
   }
 }
+
+// ========== TAG FUNCTIONS ==========
+
+export interface Tag {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export async function fetchAllTags(): Promise<Tag[]> {
+  try {
+    const { data, error } = await supabase
+      .from('tags')
+      .select('id, name, slug')
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching tags:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in fetchAllTags:', error);
+    return [];
+  }
+}
+
+export async function searchTags(query: string): Promise<Tag[]> {
+  try {
+    if (!query.trim()) {
+      return fetchAllTags();
+    }
+
+    const { data, error } = await supabase
+      .from('tags')
+      .select('id, name, slug')
+      .ilike('name', `%${query}%`)
+      .order('name')
+      .limit(20);
+
+    if (error) {
+      console.error('Error searching tags:', error);
+      return [];
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Error in searchTags:', error);
+    return [];
+  }
+}
+
+export async function getNovelTags(novelId: number): Promise<Tag[]> {
+  try {
+    const { data, error } = await supabase
+      .from('novel_tags')
+      .select(`
+        tags:tag_id (id, name, slug)
+      `)
+      .eq('novel_id', novelId);
+
+    if (error) {
+      console.error('Error getting novel tags:', error);
+      return [];
+    }
+
+    return (data || [])
+      .map((item: any) => item.tags)
+      .filter((tag: Tag | null) => tag !== null) as Tag[];
+  } catch (error) {
+    console.error('Error in getNovelTags:', error);
+    return [];
+  }
+}
+
+export async function saveNovelTags(
+  novelId: number,
+  tagIds: number[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Delete existing tags for this novel
+    const { error: deleteError } = await supabase
+      .from('novel_tags')
+      .delete()
+      .eq('novel_id', novelId);
+
+    if (deleteError) {
+      console.error('Error deleting existing novel tags:', deleteError);
+      return { success: false, error: deleteError.message };
+    }
+
+    // Insert new tags
+    if (tagIds.length > 0) {
+      const inserts = tagIds.map(tagId => ({
+        novel_id: novelId,
+        tag_id: tagId,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('novel_tags')
+        .insert(inserts);
+
+      if (insertError) {
+        console.error('Error inserting novel tags:', insertError);
+        return { success: false, error: insertError.message };
+      }
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error in saveNovelTags:', error);
+    return { success: false, error: error.message };
+  }
+}
