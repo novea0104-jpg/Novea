@@ -175,6 +175,13 @@ export default function NovelDetailScreen() {
       horror: { gradient_start: "#991B1B", gradient_end: "#000000" },
       comedy: { gradient_start: "#FBBF24", gradient_end: "#F59E0B" },
       action: { gradient_start: "#EF4444", gradient_end: "#DC2626" },
+      chicklit: { gradient_start: "#F472B6", gradient_end: "#EC4899" },
+      teenlit: { gradient_start: "#34D399", gradient_end: "#10B981" },
+      apocalypse: { gradient_start: "#78350F", gradient_end: "#451A03" },
+      pernikahan: { gradient_start: "#FB7185", gradient_end: "#F43F5E" },
+      sistem: { gradient_start: "#22D3EE", gradient_end: "#0891B2" },
+      urban: { gradient_start: "#64748B", gradient_end: "#475569" },
+      fanfiction: { gradient_start: "#C084FC", gradient_end: "#A855F7" },
     };
     const colors = genreColors[genreName.toLowerCase()] || { gradient_start: "#6B7280", gradient_end: "#4B5563" };
     return {

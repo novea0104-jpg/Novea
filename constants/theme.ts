@@ -36,6 +36,66 @@ export const GradientColors = {
     start: { x: 0, y: 0 } as const,
     end: { x: 0, y: 1 } as const,
   },
+  adventure: {
+    colors: ["#F59E0B", "#D97706"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  drama: {
+    colors: ["#A855F7", "#6366F1"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  horror: {
+    colors: ["#1F2937", "#000000"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  comedy: {
+    colors: ["#FBBF24", "#F97316"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  action: {
+    colors: ["#EF4444", "#B91C1C"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  chicklit: {
+    colors: ["#F472B6", "#EC4899"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  teenlit: {
+    colors: ["#34D399", "#10B981"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  apocalypse: {
+    colors: ["#78350F", "#451A03"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  pernikahan: {
+    colors: ["#FB7185", "#F43F5E"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  sistem: {
+    colors: ["#22D3EE", "#0891B2"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  urban: {
+    colors: ["#64748B", "#475569"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  fanfiction: {
+    colors: ["#C084FC", "#A855F7"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
 } as const;
 
 export const Colors = {

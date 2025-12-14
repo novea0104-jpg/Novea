@@ -24,7 +24,18 @@ const GENRE_CONFIG: Record<string, { gradient: readonly [string, string]; label:
   thriller: { gradient: GradientColors.thriller.colors, label: "Thriller" },
   mystery: { gradient: GradientColors.mystery.colors, label: "Mystery" },
   "sci-fi": { gradient: GradientColors.sciFi.colors, label: "Sci-Fi" },
-  adventure: { gradient: ["#F59E0B", "#D97706"] as const, label: "Adventure" },
+  adventure: { gradient: GradientColors.adventure.colors, label: "Adventure" },
+  drama: { gradient: GradientColors.drama.colors, label: "Drama" },
+  horror: { gradient: GradientColors.horror.colors, label: "Horror" },
+  comedy: { gradient: GradientColors.comedy.colors, label: "Comedy" },
+  action: { gradient: GradientColors.action.colors, label: "Action" },
+  chicklit: { gradient: GradientColors.chicklit.colors, label: "Chicklit" },
+  teenlit: { gradient: GradientColors.teenlit.colors, label: "Teenlit" },
+  apocalypse: { gradient: GradientColors.apocalypse.colors, label: "Apocalypse" },
+  pernikahan: { gradient: GradientColors.pernikahan.colors, label: "Pernikahan" },
+  sistem: { gradient: GradientColors.sistem.colors, label: "Sistem" },
+  urban: { gradient: GradientColors.urban.colors, label: "Urban" },
+  fanfiction: { gradient: GradientColors.fanfiction.colors, label: "Fanfiction" },
 };
 
 const coverImageSource: Record<string, any> = {

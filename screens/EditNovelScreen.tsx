@@ -78,6 +78,13 @@ export default function EditNovelScreen() {
           { id: 8, name: "Horror", slug: "horror" },
           { id: 9, name: "Comedy", slug: "comedy" },
           { id: 10, name: "Action", slug: "action" },
+          { id: 11, name: "Chicklit", slug: "chicklit" },
+          { id: 12, name: "Teenlit", slug: "teenlit" },
+          { id: 13, name: "Apocalypse", slug: "apocalypse" },
+          { id: 14, name: "Pernikahan", slug: "pernikahan" },
+          { id: 15, name: "Sistem", slug: "sistem" },
+          { id: 16, name: "Urban", slug: "urban" },
+          { id: 17, name: "Fanfiction", slug: "fanfiction" },
         ];
         setAvailableGenres(fallbackGenres);
         return;
@@ -91,6 +98,18 @@ export default function EditNovelScreen() {
         { id: 3, name: "Thriller", slug: "thriller" },
         { id: 4, name: "Mystery", slug: "mystery" },
         { id: 5, name: "Sci-Fi", slug: "sci-fi" },
+        { id: 6, name: "Adventure", slug: "adventure" },
+        { id: 7, name: "Drama", slug: "drama" },
+        { id: 8, name: "Horror", slug: "horror" },
+        { id: 9, name: "Comedy", slug: "comedy" },
+        { id: 10, name: "Action", slug: "action" },
+        { id: 11, name: "Chicklit", slug: "chicklit" },
+        { id: 12, name: "Teenlit", slug: "teenlit" },
+        { id: 13, name: "Apocalypse", slug: "apocalypse" },
+        { id: 14, name: "Pernikahan", slug: "pernikahan" },
+        { id: 15, name: "Sistem", slug: "sistem" },
+        { id: 16, name: "Urban", slug: "urban" },
+        { id: 17, name: "Fanfiction", slug: "fanfiction" },
       ];
       setAvailableGenres(fallbackGenres);
     }

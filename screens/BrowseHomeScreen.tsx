@@ -171,6 +171,18 @@ export default function BrowseHomeScreen() {
           { id: "3", slug: "thriller", name: "Thriller", icon: "zap", gradient: GradientColors.thriller.colors, count: novels.filter(n => n.genre.toLowerCase() === "thriller").length },
           { id: "4", slug: "mystery", name: "Mystery", icon: "search", gradient: GradientColors.mystery.colors, count: novels.filter(n => n.genre.toLowerCase() === "mystery").length },
           { id: "5", slug: "sci-fi", name: "Sci-Fi", icon: "cpu", gradient: GradientColors.sciFi.colors, count: novels.filter(n => n.genre.toLowerCase() === "sci-fi").length },
+          { id: "6", slug: "adventure", name: "Adventure", icon: "compass", gradient: GradientColors.adventure.colors, count: novels.filter(n => n.genre.toLowerCase() === "adventure").length },
+          { id: "7", slug: "drama", name: "Drama", icon: "film", gradient: GradientColors.drama.colors, count: novels.filter(n => n.genre.toLowerCase() === "drama").length },
+          { id: "8", slug: "horror", name: "Horror", icon: "skull", gradient: GradientColors.horror.colors, count: novels.filter(n => n.genre.toLowerCase() === "horror").length },
+          { id: "9", slug: "comedy", name: "Comedy", icon: "smile", gradient: GradientColors.comedy.colors, count: novels.filter(n => n.genre.toLowerCase() === "comedy").length },
+          { id: "10", slug: "action", name: "Action", icon: "target", gradient: GradientColors.action.colors, count: novels.filter(n => n.genre.toLowerCase() === "action").length },
+          { id: "11", slug: "chicklit", name: "Chicklit", icon: "heart", gradient: GradientColors.chicklit.colors, count: novels.filter(n => n.genre.toLowerCase() === "chicklit").length },
+          { id: "12", slug: "teenlit", name: "Teenlit", icon: "star", gradient: GradientColors.teenlit.colors, count: novels.filter(n => n.genre.toLowerCase() === "teenlit").length },
+          { id: "13", slug: "apocalypse", name: "Apocalypse", icon: "zap", gradient: GradientColors.apocalypse.colors, count: novels.filter(n => n.genre.toLowerCase() === "apocalypse").length },
+          { id: "14", slug: "pernikahan", name: "Pernikahan", icon: "heart", gradient: GradientColors.pernikahan.colors, count: novels.filter(n => n.genre.toLowerCase() === "pernikahan").length },
+          { id: "15", slug: "sistem", name: "Sistem", icon: "cpu", gradient: GradientColors.sistem.colors, count: novels.filter(n => n.genre.toLowerCase() === "sistem").length },
+          { id: "16", slug: "urban", name: "Urban", icon: "compass", gradient: GradientColors.urban.colors, count: novels.filter(n => n.genre.toLowerCase() === "urban").length },
+          { id: "17", slug: "fanfiction", name: "Fanfiction", icon: "star", gradient: GradientColors.fanfiction.colors, count: novels.filter(n => n.genre.toLowerCase() === "fanfiction").length },
         ];
         setGenres(fallbackGenres);
         return;
@@ -212,6 +224,18 @@ export default function BrowseHomeScreen() {
         { id: "3", slug: "thriller", name: "Thriller", icon: "zap", gradient: GradientColors.thriller.colors, count: novels.filter(n => n.genre.toLowerCase() === "thriller").length },
         { id: "4", slug: "mystery", name: "Mystery", icon: "search", gradient: GradientColors.mystery.colors, count: novels.filter(n => n.genre.toLowerCase() === "mystery").length },
         { id: "5", slug: "sci-fi", name: "Sci-Fi", icon: "cpu", gradient: GradientColors.sciFi.colors, count: novels.filter(n => n.genre.toLowerCase() === "sci-fi").length },
+        { id: "6", slug: "adventure", name: "Adventure", icon: "compass", gradient: GradientColors.adventure.colors, count: novels.filter(n => n.genre.toLowerCase() === "adventure").length },
+        { id: "7", slug: "drama", name: "Drama", icon: "film", gradient: GradientColors.drama.colors, count: novels.filter(n => n.genre.toLowerCase() === "drama").length },
+        { id: "8", slug: "horror", name: "Horror", icon: "skull", gradient: GradientColors.horror.colors, count: novels.filter(n => n.genre.toLowerCase() === "horror").length },
+        { id: "9", slug: "comedy", name: "Comedy", icon: "smile", gradient: GradientColors.comedy.colors, count: novels.filter(n => n.genre.toLowerCase() === "comedy").length },
+        { id: "10", slug: "action", name: "Action", icon: "target", gradient: GradientColors.action.colors, count: novels.filter(n => n.genre.toLowerCase() === "action").length },
+        { id: "11", slug: "chicklit", name: "Chicklit", icon: "heart", gradient: GradientColors.chicklit.colors, count: novels.filter(n => n.genre.toLowerCase() === "chicklit").length },
+        { id: "12", slug: "teenlit", name: "Teenlit", icon: "star", gradient: GradientColors.teenlit.colors, count: novels.filter(n => n.genre.toLowerCase() === "teenlit").length },
+        { id: "13", slug: "apocalypse", name: "Apocalypse", icon: "zap", gradient: GradientColors.apocalypse.colors, count: novels.filter(n => n.genre.toLowerCase() === "apocalypse").length },
+        { id: "14", slug: "pernikahan", name: "Pernikahan", icon: "heart", gradient: GradientColors.pernikahan.colors, count: novels.filter(n => n.genre.toLowerCase() === "pernikahan").length },
+        { id: "15", slug: "sistem", name: "Sistem", icon: "cpu", gradient: GradientColors.sistem.colors, count: novels.filter(n => n.genre.toLowerCase() === "sistem").length },
+        { id: "16", slug: "urban", name: "Urban", icon: "compass", gradient: GradientColors.urban.colors, count: novels.filter(n => n.genre.toLowerCase() === "urban").length },
+        { id: "17", slug: "fanfiction", name: "Fanfiction", icon: "star", gradient: GradientColors.fanfiction.colors, count: novels.filter(n => n.genre.toLowerCase() === "fanfiction").length },
       ];
       setGenres(fallbackGenres);
     }

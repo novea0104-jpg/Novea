@@ -1,4 +1,4 @@
-export type Genre = "Romance" | "Fantasy" | "Thriller" | "Mystery" | "Adventure";
+export type Genre = "Romance" | "Fantasy" | "Thriller" | "Mystery" | "Adventure" | "Sci-Fi" | "Drama" | "Horror" | "Comedy" | "Action" | "Chicklit" | "Teenlit" | "Apocalypse" | "Pernikahan" | "Sistem" | "Urban" | "Fanfiction";
 
 export type NovelStatus = "On-Going" | "Completed";
 
