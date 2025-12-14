@@ -2875,6 +2875,7 @@ export async function getEditorsChoiceForHome(): Promise<{
   author: string;
   coverUrl: string | null;
   genre: string;
+  description: string;
   rating: number;
   followers: number;
   chapters: number;
@@ -2901,7 +2902,7 @@ export async function getEditorsChoiceForHome(): Promise<{
     // Fetch novels data
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select('id, title, cover_url, genre, rating, total_reads, author_id')
+      .select('id, title, cover_url, genre, description, rating, total_reads, author_id')
       .in('id', novelIds);
 
     if (novelsError || !novelsData) {
@@ -2941,6 +2942,7 @@ export async function getEditorsChoiceForHome(): Promise<{
         author: authorMap.get(novel.author_id) || 'Unknown',
         coverUrl: novel.cover_url,
         genre: novel.genre || '',
+        description: novel.description || '',
         rating: novel.rating || 0,
         followers: novel.total_reads || 0,
         chapters: chapterCounts[novel.id] || 0,
