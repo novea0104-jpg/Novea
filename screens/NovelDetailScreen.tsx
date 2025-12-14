@@ -459,8 +459,12 @@ export default function NovelDetailScreen() {
                 {ratingStats.averageRating.toFixed(1)} ({ratingStats.totalReviews.toLocaleString()})
               </ThemedText>
             </View>
-            <View style={[styles.tag, { backgroundColor: theme.backgroundSecondary }]}>
-              <ThemedText style={styles.tagText}>{novel.status}</ThemedText>
+            <View style={[styles.tag, { 
+              backgroundColor: novel.status === 'ongoing' ? '#22c55e' : '#ef4444' 
+            }]}>
+              <ThemedText style={[styles.tagText, { color: '#fff' }]}>
+                {novel.status === 'ongoing' ? 'Ongoing' : 'Tamat'}
+              </ThemedText>
             </View>
           </View>
           <View style={styles.genreTags}>
