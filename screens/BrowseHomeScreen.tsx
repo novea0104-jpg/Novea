@@ -8,7 +8,6 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { NovelCard } from "@/components/NovelCard";
 import { EditorPickCard } from "@/components/EditorPickCard";
-import { CoinIcon } from "@/components/icons/CoinIcon";
 import { SearchIcon } from "@/components/icons/SearchIcon";
 import { HeartIcon } from "@/components/icons/HeartIcon";
 import { ZapIcon } from "@/components/icons/ZapIcon";
@@ -566,15 +565,6 @@ export default function BrowseHomeScreen() {
           >
             <SearchIcon size={22} color={theme.text} />
           </TouchableOpacity>
-          <LinearGradient
-            colors={GradientColors.yellowGreen.colors}
-            start={GradientColors.yellowGreen.start}
-            end={GradientColors.yellowGreen.end}
-            style={styles.coinBadge}
-          >
-            <CoinIcon size={12} color={theme.backgroundRoot} />
-            <ThemedText style={[styles.coinText, { color: theme.backgroundRoot }]}>{user?.coinBalance || 0}</ThemedText>
-          </LinearGradient>
         </View>
       </View>
 
@@ -658,19 +648,6 @@ const styles = StyleSheet.create({
   headerBadgeText: {
     color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: "700",
-  },
-  coinBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.xs,
-    marginLeft: Spacing.sm,
-    minWidth: 60,
-  },
-  coinText: {
-    fontSize: 14,
     fontWeight: "700",
   },
   scrollView: {
