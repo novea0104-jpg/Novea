@@ -20,6 +20,7 @@ import MessageThreadScreen from "@/screens/MessageThreadScreen";
 import NewMessageScreen from "@/screens/NewMessageScreen";
 import PolicyScreen from "@/screens/PolicyScreen";
 import ConversionScreen from "@/screens/ConversionScreen";
+import DailyRewardScreen from "@/screens/DailyRewardScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -43,6 +44,7 @@ export type ProfileStackParamList = {
   NewMessage: undefined;
   Policy: undefined;
   Conversion: undefined;
+  DailyReward: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -146,6 +148,11 @@ export default function ProfileStackNavigator() {
         name="Conversion"
         component={ConversionScreen}
         options={{ title: "Konversi Novoin" }}
+      />
+      <Stack.Screen
+        name="DailyReward"
+        component={DailyRewardScreen}
+        options={{ title: "Hadiah Harian" }}
       />
     </Stack.Navigator>
   );

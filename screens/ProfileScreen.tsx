@@ -8,8 +8,8 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { useResponsive } from "@/hooks/useResponsive";
 import { Card } from "@/components/Card";
-import { DailyRewardCard } from "@/components/DailyRewardCard";
 import { RoleBadge } from "@/components/RoleBadge";
+import { GiftIcon } from "@/components/icons/GiftIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { CheckIcon } from "@/components/icons/CheckIcon";
 import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
@@ -264,7 +264,28 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <DailyRewardCard />
+      <Pressable
+        onPress={() => navigation.navigate("DailyReward")}
+        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
+      >
+        <Card elevation={1} style={styles.dailyRewardTeaser}>
+          <LinearGradient
+            colors={["#C0C0C0", "#A8A8A8"]}
+            style={styles.dailyRewardIcon}
+          >
+            <GiftIcon size={24} color="#FFFFFF" />
+          </LinearGradient>
+          <View style={styles.dailyRewardInfo}>
+            <ThemedText style={styles.dailyRewardTitle}>Hadiah Harian</ThemedText>
+            <ThemedText style={[styles.dailyRewardSubtitle, { color: theme.textSecondary }]}>
+              {user.lastClaimDate && new Date(user.lastClaimDate).toDateString() === new Date().toDateString()
+                ? "Sudah diklaim hari ini!"
+                : "Klaim Silver Novoin gratis!"}
+            </ThemedText>
+          </View>
+          <ChevronRightIcon size={20} color={theme.textMuted} />
+        </Card>
+      </Pressable>
 
       <View style={styles.walletSection}>
         <ThemedText style={[Typography.h3, styles.sectionTitle]}>Dompet</ThemedText>
@@ -529,6 +550,31 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   profileCard: {
     padding: Spacing.lg,
+  },
+  dailyRewardTeaser: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    gap: Spacing.md,
+  },
+  dailyRewardIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dailyRewardInfo: {
+    flex: 1,
+  },
+  dailyRewardTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  dailyRewardSubtitle: {
+    fontSize: 12,
   },
   profileHeader: {
     flexDirection: "row",
