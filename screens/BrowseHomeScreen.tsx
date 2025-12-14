@@ -247,19 +247,19 @@ export default function BrowseHomeScreen() {
   // Sedang Trending: Sort by total_reads (most viewed)
   const trendingNovels = [...novels]
     .sort((a, b) => b.followers - a.followers) // followers = total_reads from database
-    .slice(0, 6);
+    .slice(0, 20);
   
   // Novel Terbaru: Sort by created_at (newest first)
   const newReleases = [...novels]
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 6);
+    .slice(0, 20);
   
   // Pilihan Editor: fetched from editors_choice table (fallback to rating sort if empty)
 
   // Novel Gratis: Filter novels that have free chapters
   const freeNovels = [...novels]
     .filter((n) => n.freeChapters > 0)
-    .slice(0, 10);
+    .slice(0, 20);
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
