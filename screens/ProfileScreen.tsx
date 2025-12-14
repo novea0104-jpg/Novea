@@ -277,7 +277,7 @@ export default function ProfileScreen() {
                 Silver Novoin
               </ThemedText>
               <ThemedText style={styles.walletCardValue}>
-                0
+                {user?.silverBalance || 0}
               </ThemedText>
             </View>
           </View>

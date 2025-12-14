@@ -116,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isWriter: userProfile.is_writer,
           role: (userProfile.role || 'pembaca') as any,
           coinBalance: userProfile.coin_balance,
+          silverBalance: userProfile.silver_balance || 0,
           avatarUrl: userProfile.avatar_url || undefined,
           bio: userProfile.bio || undefined,
         };
@@ -158,7 +159,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name,
           is_writer: false,
           role: 'pembaca',
-          coin_balance: 10,
+          coin_balance: 0,
+          silver_balance: 50,
         })
         .select()
         .single();
@@ -187,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isWriter: userProfile.is_writer,
         role: (userProfile.role || 'pembaca') as any,
         coinBalance: userProfile.coin_balance,
+        silverBalance: userProfile.silver_balance || 0,
         avatarUrl: userProfile.avatar_url || undefined,
         bio: userProfile.bio || undefined,
       };

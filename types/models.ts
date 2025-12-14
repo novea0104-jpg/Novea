@@ -11,6 +11,7 @@ export interface User {
   isWriter: boolean;
   role: UserRole;
   coinBalance: number;
+  silverBalance: number;
   avatarUrl?: string;
   bio?: string;
 }
