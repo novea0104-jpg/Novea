@@ -89,6 +89,8 @@ ALTER TABLE novel_tags ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Anyone can read tags" ON tags;
 DROP POLICY IF EXISTS "Anyone can read novel_tags" ON novel_tags;
 DROP POLICY IF EXISTS "Authors can manage their novel tags" ON novel_tags;
+DROP POLICY IF EXISTS "Writers can insert novel_tags" ON novel_tags;
+DROP POLICY IF EXISTS "Writers can delete novel_tags" ON novel_tags;
 
 -- RLS Policies for tags (everyone can read)
 CREATE POLICY "Anyone can read tags" ON tags
@@ -98,9 +100,22 @@ CREATE POLICY "Anyone can read tags" ON tags
 CREATE POLICY "Anyone can read novel_tags" ON novel_tags
   FOR SELECT USING (true);
 
-CREATE POLICY "Authors can manage their novel tags" ON novel_tags
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM novels WHERE novels.id = novel_tags.novel_id AND novels.author_id = auth.uid()::text::integer
+-- INSERT: Writers can add tags to their novels
+CREATE POLICY "Writers can insert novel_tags" ON novel_tags
+  FOR INSERT WITH CHECK (
+    novel_id IN (
+      SELECT id FROM novels WHERE author_id IN (
+        SELECT id FROM users WHERE email = auth.jwt() ->> 'email'
+      )
+    )
+  );
+
+-- DELETE: Writers can remove tags from their novels
+CREATE POLICY "Writers can delete novel_tags" ON novel_tags
+  FOR DELETE USING (
+    novel_id IN (
+      SELECT id FROM novels WHERE author_id IN (
+        SELECT id FROM users WHERE email = auth.jwt() ->> 'email'
+      )
     )
   );
