@@ -65,9 +65,11 @@ import {
   searchAuthorsForFeatured,
   FeaturedAuthor,
 } from "@/utils/supabase";
+import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/useGoldWithdrawal";
+import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 
-type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors';
+type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -142,6 +144,11 @@ export default function AdminDashboardScreen() {
   const [searchAuthorQuery, setSearchAuthorQuery] = useState('');
   const [authorSearchResults, setAuthorSearchResults] = useState<{id: number; name: string; avatarUrl: string | null; novelCount: number}[]>([]);
   const [showAddAuthorModal, setShowAddAuthorModal] = useState(false);
+  
+  // Gold Withdrawals states
+  const [goldWithdrawals, setGoldWithdrawals] = useState<any[]>([]);
+  const [goldWithdrawalsLoading, setGoldWithdrawalsLoading] = useState(false);
+  const [goldWdFilter, setGoldWdFilter] = useState<string>('');
   const [searchingAuthors, setSearchingAuthors] = useState(false);
   
   const handleTabChange = (tab: TabType) => {
@@ -194,6 +201,23 @@ export default function AdminDashboardScreen() {
     setFeaturedAuthorsLoading(false);
   }, []);
 
+  const loadGoldWithdrawals = useCallback(async (status?: string) => {
+    setGoldWithdrawalsLoading(true);
+    const data = await getAdminGoldWithdrawals(status);
+    setGoldWithdrawals(data);
+    setGoldWithdrawalsLoading(false);
+  }, []);
+
+  const handleUpdateGoldWdStatus = async (wdId: number, status: string, note?: string) => {
+    const result = await updateGoldWithdrawalStatus(wdId, status, note);
+    if (result.success) {
+      Alert.alert('Berhasil', 'Status penarikan berhasil diubah');
+      loadGoldWithdrawals(goldWdFilter);
+    } else {
+      Alert.alert('Error', result.error || 'Gagal mengubah status');
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -203,6 +227,7 @@ export default function AdminDashboardScreen() {
         loadNovels(1),
         loadEditorsChoice(),
         loadFeaturedAuthors(),
+        loadGoldWithdrawals(),
       ]);
       setLoading(false);
     };
@@ -221,6 +246,8 @@ export default function AdminDashboardScreen() {
       await loadEditorsChoice();
     } else if (activeTab === 'authors') {
       await loadFeaturedAuthors();
+    } else if (activeTab === 'gold_wd') {
+      await loadGoldWithdrawals(goldWdFilter);
     }
     setRefreshing(false);
   };
@@ -1169,6 +1196,7 @@ export default function AdminDashboardScreen() {
           {renderTabButton('novels', 'Novel', BookIcon)}
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
+          {renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon)}
         </ScrollView>
       </View>
 
@@ -1421,6 +1449,201 @@ export default function AdminDashboardScreen() {
                   </ThemedText>
                   <ThemedText style={[styles.emptySubtext, { color: theme.textMuted }]}>
                     Klik tombol Tambah untuk menambahkan author
+                  </ThemedText>
+                </View>
+              }
+            />
+          )}
+        </View>
+      ) : activeTab === 'gold_wd' ? (
+        <View style={styles.listContainer}>
+          <View style={styles.featuredHeader}>
+            <ThemedText style={Typography.h3}>Penarikan Gold Novoin</ThemedText>
+          </View>
+          <View style={[styles.filterContainer, { marginHorizontal: Spacing.md }]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {[
+                { value: '', label: 'Semua' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'processing', label: 'Diproses' },
+                { value: 'approved', label: 'Disetujui' },
+                { value: 'paid', label: 'Dibayar' },
+                { value: 'rejected', label: 'Ditolak' },
+              ].map((filter) => (
+                <Pressable
+                  key={filter.value}
+                  onPress={() => {
+                    setGoldWdFilter(filter.value);
+                    loadGoldWithdrawals(filter.value);
+                  }}
+                  style={[
+                    styles.filterChip,
+                    { 
+                      backgroundColor: goldWdFilter === filter.value ? theme.primary : theme.backgroundSecondary,
+                      borderColor: goldWdFilter === filter.value ? theme.primary : theme.backgroundTertiary,
+                    },
+                  ]}
+                >
+                  <ThemedText style={[
+                    styles.filterChipText,
+                    { color: goldWdFilter === filter.value ? '#FFFFFF' : theme.text },
+                  ]}>
+                    {filter.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+          {goldWithdrawalsLoading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={goldWithdrawals}
+              renderItem={({ item }) => {
+                const statusColors: Record<string, string> = {
+                  pending: theme.warning,
+                  processing: theme.link,
+                  approved: theme.success,
+                  paid: theme.success,
+                  rejected: theme.error,
+                  cancelled: theme.textMuted,
+                };
+                const statusLabels: Record<string, string> = {
+                  pending: 'Menunggu',
+                  processing: 'Diproses',
+                  approved: 'Disetujui',
+                  paid: 'Dibayar',
+                  rejected: 'Ditolak',
+                  cancelled: 'Dibatalkan',
+                };
+                return (
+                  <Card elevation={1} style={[styles.listItem, { marginHorizontal: Spacing.md, flexDirection: 'column', alignItems: 'stretch' }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText style={styles.listItemTitle} numberOfLines={1}>
+                          {item.userName}
+                        </ThemedText>
+                        <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                          {item.userEmail}
+                        </ThemedText>
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] + '20' }]}>
+                        <ThemedText style={[styles.statusBadgeText, { color: statusColors[item.status] }]}>
+                          {statusLabels[item.status] || item.status}
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <View style={[styles.goldWdDetails, { borderTopColor: theme.backgroundSecondary }]}>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Gold</ThemedText>
+                        <ThemedText style={[styles.goldWdValue, { color: theme.warning }]}>{item.goldAmount} Gold</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Rupiah</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{formatCurrency(item.rupiahAmount)}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Biaya</ThemedText>
+                        <ThemedText style={[styles.goldWdValue, { color: theme.error }]}>-{formatCurrency(item.fee)}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Diterima</ThemedText>
+                        <ThemedText style={[styles.goldWdValue, { color: theme.success }]}>{formatCurrency(item.netAmount)}</ThemedText>
+                      </View>
+                      <View style={[styles.goldWdRow, { marginTop: Spacing.xs }]}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Bank</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{item.bankName}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>No. Rekening</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{item.accountNumber}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Nama</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{item.accountHolderName}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Tanggal</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{new Date(item.createdAt).toLocaleDateString('id-ID')}</ThemedText>
+                      </View>
+                    </View>
+                    {item.status === 'pending' || item.status === 'processing' || item.status === 'approved' ? (
+                      <View style={styles.goldWdActions}>
+                        {item.status === 'pending' ? (
+                          <>
+                            <Pressable
+                              onPress={() => handleUpdateGoldWdStatus(item.id, 'processing')}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.link }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Proses</ThemedText>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                Alert.prompt ? Alert.prompt(
+                                  'Tolak Penarikan',
+                                  'Masukkan alasan penolakan:',
+                                  (note) => handleUpdateGoldWdStatus(item.id, 'rejected', note),
+                                  'plain-text'
+                                ) : handleUpdateGoldWdStatus(item.id, 'rejected', 'Ditolak oleh admin');
+                              }}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.error }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Tolak</ThemedText>
+                            </Pressable>
+                          </>
+                        ) : item.status === 'processing' ? (
+                          <>
+                            <Pressable
+                              onPress={() => handleUpdateGoldWdStatus(item.id, 'approved')}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.success }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Setujui</ThemedText>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                Alert.prompt ? Alert.prompt(
+                                  'Tolak Penarikan',
+                                  'Masukkan alasan penolakan:',
+                                  (note) => handleUpdateGoldWdStatus(item.id, 'rejected', note),
+                                  'plain-text'
+                                ) : handleUpdateGoldWdStatus(item.id, 'rejected', 'Ditolak oleh admin');
+                              }}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.error }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Tolak</ThemedText>
+                            </Pressable>
+                          </>
+                        ) : item.status === 'approved' ? (
+                          <Pressable
+                            onPress={() => handleUpdateGoldWdStatus(item.id, 'paid')}
+                            style={[styles.goldWdActionBtn, { backgroundColor: theme.success, flex: 1 }]}
+                          >
+                            <ThemedText style={styles.goldWdActionText}>Tandai Sudah Dibayar</ThemedText>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    ) : null}
+                    {item.adminNote ? (
+                      <View style={[styles.adminNoteContainer, { backgroundColor: theme.backgroundSecondary }]}>
+                        <ThemedText style={[styles.adminNoteLabel, { color: theme.textSecondary }]}>Catatan Admin:</ThemedText>
+                        <ThemedText style={styles.adminNoteText}>{item.adminNote}</ThemedText>
+                      </View>
+                    ) : null}
+                  </Card>
+                );
+              }}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <DollarSignIcon size={48} color={theme.textMuted} />
+                  <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
+                    Tidak ada permintaan penarikan
                   </ThemedText>
                 </View>
               }
@@ -2060,5 +2283,77 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
     textAlign: 'center',
+  },
+  filterContainer: {
+    marginBottom: Spacing.md,
+  },
+  filterChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    marginRight: Spacing.sm,
+    borderWidth: 1,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.md,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  goldWdDetails: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+  },
+  goldWdRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  goldWdLabel: {
+    fontSize: 13,
+  },
+  goldWdValue: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  goldWdActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  goldWdActionBtn: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  goldWdActionText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  adminNoteContainer: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  adminNoteLabel: {
+    fontSize: 12,
+    marginBottom: Spacing.xs,
+  },
+  adminNoteText: {
+    fontSize: 13,
   },
 });
