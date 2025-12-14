@@ -14,6 +14,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   upgradeToWriter: () => Promise<void>;
   updateCoinBalance: (amount: number) => Promise<void>;
+  convertSilverToGold: () => Promise<{ success: boolean; error?: string }>;
   refreshUser: () => Promise<void>;
   updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
   requireAuth: (message?: string) => boolean;
@@ -261,6 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: data.is_writer,
       role: data.role as any,
       coinBalance: data.coin_balance,
+      silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
     };
@@ -290,10 +292,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: data.is_writer,
       role: (data.role || 'pembaca') as any,
       coinBalance: data.coin_balance,
+      silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
     };
     setUser(updatedUser);
+  }
+
+  async function convertSilverToGold(): Promise<{ success: boolean; error?: string }> {
+    if (!user) return { success: false, error: "User tidak ditemukan" };
+    
+    const SILVER_PER_GOLD = 1000;
+    const silverBalance = user.silverBalance || 0;
+    
+    if (silverBalance < SILVER_PER_GOLD) {
+      return { success: false, error: `Silver Novoin tidak cukup. Kamu butuh ${SILVER_PER_GOLD} Silver untuk 1 Gold.` };
+    }
+    
+    const newSilverBalance = silverBalance - SILVER_PER_GOLD;
+    const newGoldBalance = user.coinBalance + 1;
+    
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ 
+          silver_balance: newSilverBalance,
+          coin_balance: newGoldBalance 
+        })
+        .eq('id', parseInt(user.id))
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error converting silver to gold:', error);
+        return { success: false, error: "Gagal konversi. Silakan coba lagi." };
+      }
+
+      const updatedUser: User = {
+        id: data.id.toString(),
+        name: data.name,
+        email: data.email,
+        isWriter: data.is_writer,
+        role: (data.role || 'pembaca') as any,
+        coinBalance: data.coin_balance,
+        silverBalance: data.silver_balance || 0,
+        avatarUrl: data.avatar_url || undefined,
+        bio: data.bio || undefined,
+      };
+      setUser(updatedUser);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Convert error:', error);
+      return { success: false, error: "Terjadi kesalahan. Silakan coba lagi." };
+    }
   }
 
   async function refreshUser() {
@@ -319,6 +371,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: data.is_writer,
       role: (data.role || 'pembaca') as any,
       coinBalance: data.coin_balance,
+      silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
     };
@@ -355,6 +408,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isWriter: data.is_writer,
       role: (data.role || 'pembaca') as any,
       coinBalance: data.coin_balance,
+      silverBalance: data.silver_balance || 0,
       avatarUrl: data.avatar_url || undefined,
       bio: data.bio || undefined,
     };
@@ -392,6 +446,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resetPassword,
         upgradeToWriter,
         updateCoinBalance,
+        convertSilverToGold,
         refreshUser,
         updateProfile,
         requireAuth,

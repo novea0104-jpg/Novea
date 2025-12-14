@@ -37,7 +37,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
   const { isDesktop, isTablet } = useResponsive();
-  const { user, logout, upgradeToWriter, showAuthPrompt } = useAuth();
+  const { user, logout, upgradeToWriter, convertSilverToGold, showAuthPrompt } = useAuth();
   
   const sidebarWidth = (isDesktop || isTablet) ? 220 : 0;
   const [followStats, setFollowStats] = useState<FollowStats>({ followersCount: 0, followingCount: 0 });
@@ -49,6 +49,7 @@ export default function ProfileScreen() {
   const [showSocialShareModal, setShowSocialShareModal] = useState(false);
   const [showWriterTerms, setShowWriterTerms] = useState(false);
   const [isUpgradingToWriter, setIsUpgradingToWriter] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -127,6 +128,45 @@ export default function ProfileScreen() {
     } finally {
       setIsUpgradingToWriter(false);
     }
+  };
+
+  const handleConvertSilverToGold = async () => {
+    if (!user) return;
+    
+    const silverBalance = user.silverBalance || 0;
+    if (silverBalance < 1000) {
+      Alert.alert(
+        "Silver Tidak Cukup",
+        `Kamu butuh minimal 1000 Silver Novoin untuk konversi ke 1 Gold Novoin. Saldo Silver kamu saat ini: ${silverBalance}`
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Konfirmasi Konversi",
+      `Tukar 1000 Silver Novoin menjadi 1 Gold Novoin?\n\nSaldo Silver: ${silverBalance}\nSaldo Gold: ${user.coinBalance}`,
+      [
+        { text: "Batal", style: "cancel" },
+        {
+          text: "Konversi",
+          onPress: async () => {
+            setIsConverting(true);
+            try {
+              const result = await convertSilverToGold();
+              if (result.success) {
+                Alert.alert("Berhasil!", "1000 Silver Novoin telah dikonversi menjadi 1 Gold Novoin.");
+              } else {
+                Alert.alert("Gagal", result.error || "Konversi gagal. Silakan coba lagi.");
+              }
+            } catch (error) {
+              Alert.alert("Error", "Terjadi kesalahan. Silakan coba lagi.");
+            } finally {
+              setIsConverting(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (!user) {
@@ -304,17 +344,28 @@ export default function ProfileScreen() {
 
         <View style={styles.walletActionsRow}>
           <Pressable
+            onPress={handleConvertSilverToGold}
+            disabled={isConverting}
             style={({ pressed }) => [
               styles.walletActionButton,
-              { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 }
+              { 
+                backgroundColor: theme.backgroundSecondary, 
+                opacity: (pressed || isConverting) ? 0.7 : 1 
+              }
             ]}
           >
-            <ThemedText style={[styles.walletActionText, { color: theme.textSecondary }]}>
-              1000 Silver = 1 Gold
-            </ThemedText>
-            <ThemedText style={[styles.walletActionLabel, { color: theme.text }]}>
-              Konversi
-            </ThemedText>
+            {isConverting ? (
+              <ActivityIndicator size="small" color={theme.text} />
+            ) : (
+              <>
+                <ThemedText style={[styles.walletActionText, { color: theme.textSecondary }]}>
+                  1000 Silver = 1 Gold
+                </ThemedText>
+                <ThemedText style={[styles.walletActionLabel, { color: theme.text }]}>
+                  Konversi
+                </ThemedText>
+              </>
+            )}
           </Pressable>
 
           <Pressable
