@@ -19,6 +19,7 @@ import MessagesHomeScreen from "@/screens/MessagesHomeScreen";
 import MessageThreadScreen from "@/screens/MessageThreadScreen";
 import NewMessageScreen from "@/screens/NewMessageScreen";
 import PolicyScreen from "@/screens/PolicyScreen";
+import ConversionScreen from "@/screens/ConversionScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -41,6 +42,7 @@ export type ProfileStackParamList = {
   MessageThread: { conversationId: string; recipientName: string; recipientAvatar?: string; recipientRole: string };
   NewMessage: undefined;
   Policy: undefined;
+  Conversion: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -139,6 +141,11 @@ export default function ProfileStackNavigator() {
         name="Policy"
         component={PolicyScreen}
         options={{ title: "Kebijakan dan Akun" }}
+      />
+      <Stack.Screen
+        name="Conversion"
+        component={ConversionScreen}
+        options={{ title: "Konversi Novoin" }}
       />
     </Stack.Navigator>
   );
