@@ -214,7 +214,7 @@ export function DailyRewardCard() {
               colors={
                 alreadyClaimedToday
                   ? [theme.backgroundSecondary, theme.backgroundSecondary]
-                  : ["#C0C0C0", "#A8A8A8"]
+                  : ["#9333EA", "#7C3AED", "#6366F1"]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
