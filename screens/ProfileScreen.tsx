@@ -275,7 +275,7 @@ export default function ProfileScreen() {
           style={styles.dailyRewardTeaser}
         >
           <View style={styles.dailyRewardIconGlow}>
-            <GiftIcon size={28} color="#FFFFFF" />
+            <GiftIcon size={28} color="#1A1A1A" />
           </View>
           <View style={styles.dailyRewardInfo}>
             <ThemedText style={styles.dailyRewardTitleBright}>Hadiah Harian</ThemedText>
@@ -285,7 +285,7 @@ export default function ProfileScreen() {
                 : "Klaim Silver Novoin gratis!"}
             </ThemedText>
           </View>
-          <ChevronRightIcon size={20} color="rgba(255,255,255,0.8)" />
+          <ChevronRightIcon size={20} color="#1A1A1A" />
         </LinearGradient>
       </Pressable>
 
@@ -574,13 +574,14 @@ const styles = StyleSheet.create({
   },
   dailyRewardTitleBright: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
     marginBottom: 2,
-    color: "#FFFFFF",
+    color: "#1A1A1A",
   },
   dailyRewardSubtitleBright: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.9)",
+    fontWeight: "500",
+    color: "#3D2000",
   },
   profileHeader: {
     flexDirection: "row",
