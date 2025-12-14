@@ -531,18 +531,11 @@ export default function BrowseHomeScreen() {
         )}
         <View style={styles.headerRight}>
           <TouchableOpacity
-            onPress={goToNotifications}
+            onPress={goToSearch}
             activeOpacity={0.6}
             style={styles.headerIconButton}
           >
-            <BellIcon size={22} color={theme.text} />
-            {unreadNotificationCount > 0 ? (
-              <View style={styles.headerBadge}>
-                <ThemedText style={styles.headerBadgeText}>
-                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
-                </ThemedText>
-              </View>
-            ) : null}
+            <SearchIcon size={22} color={theme.text} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={goToMessages}
@@ -559,11 +552,18 @@ export default function BrowseHomeScreen() {
             ) : null}
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={goToSearch}
+            onPress={goToNotifications}
             activeOpacity={0.6}
             style={styles.headerIconButton}
           >
-            <SearchIcon size={22} color={theme.text} />
+            <BellIcon size={22} color={theme.text} />
+            {unreadNotificationCount > 0 ? (
+              <View style={styles.headerBadge}>
+                <ThemedText style={styles.headerBadgeText}>
+                  {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                </ThemedText>
+              </View>
+            ) : null}
           </TouchableOpacity>
         </View>
       </View>
