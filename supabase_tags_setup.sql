@@ -85,6 +85,11 @@ ON CONFLICT (name) DO NOTHING;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE novel_tags ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for re-runs)
+DROP POLICY IF EXISTS "Anyone can read tags" ON tags;
+DROP POLICY IF EXISTS "Anyone can read novel_tags" ON novel_tags;
+DROP POLICY IF EXISTS "Authors can manage their novel tags" ON novel_tags;
+
 -- RLS Policies for tags (everyone can read)
 CREATE POLICY "Anyone can read tags" ON tags
   FOR SELECT USING (true);
