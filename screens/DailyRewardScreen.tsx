@@ -5,7 +5,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { DailyRewardCard } from "@/components/DailyRewardCard";
 import { useTheme } from "@/hooks/useTheme";
 import { useResponsive } from "@/hooks/useResponsive";
-import { Spacing, Typography } from "@/constants/theme";
+import { Spacing } from "@/constants/theme";
 
 export default function DailyRewardScreen() {
   const { theme } = useTheme();
@@ -14,14 +14,9 @@ export default function DailyRewardScreen() {
 
   return (
     <ScreenScrollView style={{ marginLeft: sidebarWidth }}>
-      <View style={styles.header}>
-        <ThemedText style={[Typography.h2, styles.title]}>
-          Hadiah Harian
-        </ThemedText>
-        <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Login setiap hari untuk mengumpulkan Silver Novoin gratis!
-        </ThemedText>
-      </View>
+      <ThemedText style={[styles.subtitle, { color: theme.textSecondary }]}>
+        Login setiap hari untuk mengumpulkan Silver Novoin gratis!
+      </ThemedText>
 
       <DailyRewardCard />
 
@@ -59,16 +54,10 @@ export default function DailyRewardScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: Spacing.lg,
-  },
-  title: {
-    fontWeight: "700",
-    marginBottom: Spacing.xs,
-  },
   subtitle: {
     fontSize: 14,
     lineHeight: 20,
+    marginBottom: Spacing.lg,
   },
   infoSection: {
     marginTop: Spacing.md,
