@@ -259,31 +259,80 @@ export default function ProfileScreen() {
         </View>
       </Card>
 
-      <Pressable 
-        onPress={() => navigation.navigate("CoinStore")}
-        style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}
-      >
-        <LinearGradient
-          colors={["#FFD700", "#FFA500"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.coinBalanceCard}
-        >
-          <View style={styles.coinBalanceLeft}>
-            <CoinIcon size={28} color="#000000" />
-            <View>
-              <ThemedText style={styles.coinBalanceLabel}>Saldo Novoin</ThemedText>
-              <ThemedText style={styles.coinBalanceValue}>
-                {user?.coinBalance || 0} Novoin
+      <View style={styles.walletSection}>
+        <ThemedText style={[Typography.h3, styles.sectionTitle]}>Dompet</ThemedText>
+        
+        <View style={styles.walletCardsRow}>
+          <View style={[styles.walletCard, { backgroundColor: theme.backgroundDefault }]}>
+            <LinearGradient
+              colors={["#C0C0C0", "#A8A8A8"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.walletIconContainer}
+            >
+              <CoinIcon size={20} color="#FFFFFF" />
+            </LinearGradient>
+            <View style={styles.walletCardInfo}>
+              <ThemedText style={[styles.walletCardLabel, { color: theme.textSecondary }]}>
+                Silver Novoin
+              </ThemedText>
+              <ThemedText style={styles.walletCardValue}>
+                0
               </ThemedText>
             </View>
           </View>
-          <View style={styles.coinBalanceRight}>
-            <ThemedText style={styles.coinBalanceAction}>Beli Novoin</ThemedText>
-            <ChevronRightIcon size={18} color="#000000" />
+
+          <View style={[styles.walletCard, { backgroundColor: theme.backgroundDefault }]}>
+            <LinearGradient
+              colors={["#FFD700", "#FFA500"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.walletIconContainer}
+            >
+              <CoinIcon size={20} color="#FFFFFF" />
+            </LinearGradient>
+            <View style={styles.walletCardInfo}>
+              <ThemedText style={[styles.walletCardLabel, { color: theme.textSecondary }]}>
+                Gold Novoin
+              </ThemedText>
+              <ThemedText style={styles.walletCardValue}>
+                {user?.coinBalance || 0}
+              </ThemedText>
+            </View>
           </View>
-        </LinearGradient>
-      </Pressable>
+        </View>
+
+        <View style={styles.walletActionsRow}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.walletActionButton,
+              { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
+            <ThemedText style={[styles.walletActionText, { color: theme.textSecondary }]}>
+              1000 Silver = 1 Gold
+            </ThemedText>
+            <ThemedText style={[styles.walletActionLabel, { color: theme.text }]}>
+              Konversi
+            </ThemedText>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate("CoinStore")}
+            style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1, flex: 1 })}
+          >
+            <LinearGradient
+              colors={["#FFD700", "#FFA500"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.walletBuyButton}
+            >
+              <ThemedText style={styles.walletBuyButtonText}>Beli Gold</ThemedText>
+              <ChevronRightIcon size={16} color="#000000" />
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </View>
 
       <View style={styles.section}>
         <ThemedText style={[Typography.h3, styles.sectionTitle]}>Akun</ThemedText>
@@ -621,36 +670,70 @@ const styles = StyleSheet.create({
   spacer: {
     height: Spacing["3xl"],
   },
-  coinBalanceCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.lg,
+  walletSection: {
     marginTop: Spacing.lg,
   },
-  coinBalanceLeft: {
+  walletCardsRow: {
     flexDirection: "row",
-    alignItems: "center",
     gap: Spacing.md,
+    marginTop: Spacing.sm,
   },
-  coinBalanceLabel: {
-    fontSize: 12,
-    color: "#000000",
-    opacity: 0.7,
-  },
-  coinBalanceValue: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000000",
-  },
-  coinBalanceRight: {
+  walletCard: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
     gap: Spacing.sm,
   },
-  coinBalanceAction: {
+  walletIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  walletCardInfo: {
+    flex: 1,
+  },
+  walletCardLabel: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  walletCardValue: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  walletActionsRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginTop: Spacing.md,
+  },
+  walletActionButton: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+  },
+  walletActionText: {
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  walletActionLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  walletBuyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+  },
+  walletBuyButtonText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#000000",
