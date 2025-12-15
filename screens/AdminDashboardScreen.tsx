@@ -73,6 +73,8 @@ import { UserIcon } from "@/components/icons/UserIcon";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
 import { CameraIcon } from "@/components/icons/CameraIcon";
 
+const noveaLogo = require("@/assets/images/novea-logo.png");
+
 type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
@@ -818,8 +820,8 @@ export default function AdminDashboardScreen() {
             contentFit="cover"
           />
         ) : (
-          <View style={[styles.novelCoverPlaceholder, { backgroundColor: theme.backgroundSecondary }]}>
-            <BookIcon size={24} color={theme.textMuted} />
+          <View style={[styles.novelCoverPlaceholder, { backgroundColor: '#1A1A1A' }]}>
+            <Image source={noveaLogo} style={styles.placeholderLogo} contentFit="contain" />
           </View>
         )}
         <View style={styles.listItemContent}>
@@ -1431,8 +1433,8 @@ export default function AdminDashboardScreen() {
                       contentFit="cover"
                     />
                   ) : (
-                    <View style={[styles.novelCoverPlaceholder, { backgroundColor: theme.backgroundSecondary }]}>
-                      <AwardIcon size={24} color={theme.warning} />
+                    <View style={[styles.novelCoverPlaceholder, { backgroundColor: '#1A1A1A' }]}>
+                      <Image source={noveaLogo} style={styles.placeholderLogo} contentFit="contain" />
                     </View>
                   )}
                   <View style={styles.listItemContent}>
@@ -2068,6 +2070,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  placeholderLogo: {
+    width: '50%',
+    height: '50%',
+    opacity: 0.4,
   },
   novelStats: {
     flexDirection: 'row',
