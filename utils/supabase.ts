@@ -2222,98 +2222,106 @@ export async function deleteNovelAdmin(
   novelId: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log('[deleteNovelAdmin] Starting delete for novelId:', novelId);
+    
     // Get all chapter IDs for this novel first
-    const { data: chapters } = await supabase
+    const { data: chapters, error: chaptersError } = await supabase
       .from('chapters')
       .select('id')
       .eq('novel_id', novelId);
     
+    if (chaptersError) {
+      console.error('[deleteNovelAdmin] Error fetching chapters:', chaptersError);
+    }
+    
     const chapterIds = (chapters || []).map((c: any) => c.id);
+    console.log('[deleteNovelAdmin] Found chapters:', chapterIds);
 
     // Delete chapter-related data if there are chapters
     if (chapterIds.length > 0) {
       // Delete unlocked chapters
-      await supabase
-        .from('unlocked_chapters')
-        .delete()
-        .in('chapter_id', chapterIds);
+      const { error: e1 } = await supabase.from('unlocked_chapters').delete().in('chapter_id', chapterIds);
+      if (e1) console.error('[deleteNovelAdmin] Error deleting unlocked_chapters:', e1);
 
       // Delete chapter comments
-      await supabase
-        .from('chapter_comments')
-        .delete()
-        .in('chapter_id', chapterIds);
+      const { error: e2 } = await supabase.from('chapter_comments').delete().in('chapter_id', chapterIds);
+      if (e2) console.error('[deleteNovelAdmin] Error deleting chapter_comments:', e2);
+      
+      // Delete chapter likes
+      const { error: e3 } = await supabase.from('chapter_likes').delete().in('chapter_id', chapterIds);
+      if (e3) console.error('[deleteNovelAdmin] Error deleting chapter_likes:', e3);
     }
 
     // Delete all chapters
-    await supabase
-      .from('chapters')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e4 } = await supabase.from('chapters').delete().eq('novel_id', novelId);
+    if (e4) console.error('[deleteNovelAdmin] Error deleting chapters:', e4);
 
     // Delete novel genres
-    await supabase
-      .from('novel_genres')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e5 } = await supabase.from('novel_genres').delete().eq('novel_id', novelId);
+    if (e5) console.error('[deleteNovelAdmin] Error deleting novel_genres:', e5);
 
     // Delete novel views
-    await supabase
-      .from('novel_views')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e6 } = await supabase.from('novel_views').delete().eq('novel_id', novelId);
+    if (e6) console.error('[deleteNovelAdmin] Error deleting novel_views:', e6);
 
     // Delete novel likes
-    await supabase
-      .from('novel_likes')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e7 } = await supabase.from('novel_likes').delete().eq('novel_id', novelId);
+    if (e7) console.error('[deleteNovelAdmin] Error deleting novel_likes:', e7);
 
     // Delete reading progress
-    await supabase
-      .from('reading_progress')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e8 } = await supabase.from('reading_progress').delete().eq('novel_id', novelId);
+    if (e8) console.error('[deleteNovelAdmin] Error deleting reading_progress:', e8);
 
-    // Delete novel reviews
-    await supabase
-      .from('novel_reviews')
-      .delete()
-      .eq('novel_id', novelId);
+    // Delete novel reviews (first delete review_replies)
+    const { data: reviews } = await supabase.from('novel_reviews').select('id').eq('novel_id', novelId);
+    if (reviews && reviews.length > 0) {
+      const reviewIds = reviews.map((r: any) => r.id);
+      const { error: e9a } = await supabase.from('review_replies').delete().in('review_id', reviewIds);
+      if (e9a) console.error('[deleteNovelAdmin] Error deleting review_replies:', e9a);
+    }
+    const { error: e9 } = await supabase.from('novel_reviews').delete().eq('novel_id', novelId);
+    if (e9) console.error('[deleteNovelAdmin] Error deleting novel_reviews:', e9);
 
     // Delete from editors choice
-    await supabase
-      .from('editors_choice')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e10 } = await supabase.from('editors_choice').delete().eq('novel_id', novelId);
+    if (e10) console.error('[deleteNovelAdmin] Error deleting editors_choice:', e10);
 
     // Delete novel tags
-    await supabase
-      .from('novel_tags')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e11 } = await supabase.from('novel_tags').delete().eq('novel_id', novelId);
+    if (e11) console.error('[deleteNovelAdmin] Error deleting novel_tags:', e11);
 
     // Delete user library entries
-    await supabase
-      .from('user_library')
-      .delete()
-      .eq('novel_id', novelId);
+    const { error: e12 } = await supabase.from('user_library').delete().eq('novel_id', novelId);
+    if (e12) console.error('[deleteNovelAdmin] Error deleting user_library:', e12);
+    
+    // Delete following novels
+    const { error: e13 } = await supabase.from('following_novels').delete().eq('novel_id', novelId);
+    if (e13) console.error('[deleteNovelAdmin] Error deleting following_novels:', e13);
+    
+    // Delete coin transactions related to novel chapters
+    const { error: e14 } = await supabase.from('coin_transactions').delete().eq('novel_id', novelId);
+    if (e14) console.error('[deleteNovelAdmin] Error deleting coin_transactions:', e14);
+
+    console.log('[deleteNovelAdmin] All related data deleted, now deleting novel...');
 
     // Delete the novel
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('novels')
       .delete()
-      .eq('id', novelId);
+      .eq('id', novelId)
+      .select();
+
+    console.log('[deleteNovelAdmin] Delete result:', { data, error });
 
     if (error) {
-      console.error('Error deleting novel:', error);
-      return { success: false, error: 'Gagal menghapus novel' };
+      console.error('[deleteNovelAdmin] Error deleting novel:', JSON.stringify(error, null, 2));
+      return { success: false, error: `Gagal menghapus novel: ${error.message}` };
     }
 
     return { success: true };
-  } catch (error) {
-    console.error('Error in deleteNovelAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan' };
+  } catch (error: any) {
+    console.error('[deleteNovelAdmin] Exception:', error);
+    return { success: false, error: `Terjadi kesalahan: ${error.message}` };
   }
 }
 
