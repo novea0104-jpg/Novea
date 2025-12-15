@@ -1,13 +1,12 @@
 import React from "react";
 import { View, Pressable, StyleSheet, Image } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
+import { PlaceholderCover } from "@/components/PlaceholderCover";
 import { EyeIcon } from "@/components/icons/EyeIcon";
 import { CheckCircleIcon } from "@/components/icons/CheckCircleIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { Novel } from "@/types/models";
 import { Spacing, BorderRadius } from "@/constants/theme";
-
-const noveaLogo = require("@/assets/images/novea-logo.png");
 
 interface EditorPickCardProps {
   novel: Novel;
@@ -47,9 +46,13 @@ export function EditorPickCard({ novel, onPress }: EditorPickCardProps) {
         {hasCover ? (
           <Image source={{ uri: novel.coverImage }} style={styles.cover} resizeMode="cover" />
         ) : (
-          <View style={styles.placeholderContainer}>
-            <Image source={noveaLogo} style={styles.placeholderLogo} resizeMode="contain" />
-          </View>
+          <PlaceholderCover 
+            width="100%" 
+            height="100%" 
+            genre={novel.genre} 
+            logoSize="medium"
+            borderRadius={0}
+          />
         )}
       </View>
       
@@ -102,18 +105,6 @@ const styles = StyleSheet.create({
   cover: {
     width: "100%",
     height: "100%",
-  },
-  placeholderContainer: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#1A1A1A",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeholderLogo: {
-    width: "50%",
-    height: "50%",
-    opacity: 0.4,
   },
   infoContainer: {
     flex: 1,

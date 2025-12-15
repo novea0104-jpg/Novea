@@ -1,15 +1,13 @@
 import React from "react";
 import { View, Pressable, StyleSheet, Image } from "react-native";
 import { ThemedText } from "@/components/ThemedText";
-import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
+import { PlaceholderCover } from "@/components/PlaceholderCover";
 import { EyeIcon } from "@/components/icons/EyeIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
 import { HeartIcon } from "@/components/icons/HeartIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { Novel } from "@/types/models";
 import { Spacing, BorderRadius } from "@/constants/theme";
-
-const noveaLogo = require("@/assets/images/novea-logo.png");
 
 interface NovelCardProps {
   novel: Novel;
@@ -38,9 +36,13 @@ export function NovelCard({ novel, onPress, variant = "medium", showMetadata = t
         {hasCover ? (
           <Image source={{ uri: novel.coverImage }} style={styles.cover} resizeMode="cover" />
         ) : (
-          <View style={styles.placeholderContainer}>
-            <Image source={noveaLogo} style={styles.placeholderLogo} resizeMode="contain" />
-          </View>
+          <PlaceholderCover 
+            width="100%" 
+            height="100%" 
+            genre={novel.genre} 
+            logoSize="small"
+            borderRadius={0}
+          />
         )}
       </View>
       
@@ -96,18 +98,6 @@ const styles = StyleSheet.create({
   cover: {
     width: "100%",
     height: "100%",
-  },
-  placeholderContainer: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "#1A1A1A",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeholderLogo: {
-    width: "50%",
-    height: "50%",
-    opacity: 0.4,
   },
   infoContainer: {
     paddingHorizontal: Spacing.sm,

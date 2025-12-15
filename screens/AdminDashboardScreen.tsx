@@ -72,8 +72,7 @@ import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
 import { CameraIcon } from "@/components/icons/CameraIcon";
-
-const noveaLogo = require("@/assets/images/novea-logo.png");
+import { PlaceholderCover } from "@/components/PlaceholderCover";
 
 type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
@@ -820,9 +819,13 @@ export default function AdminDashboardScreen() {
             contentFit="cover"
           />
         ) : (
-          <View style={[styles.novelCoverPlaceholder, { backgroundColor: '#1A1A1A' }]}>
-            <Image source={noveaLogo} style={styles.placeholderLogo} contentFit="contain" />
-          </View>
+          <PlaceholderCover 
+            width={60} 
+            height={80} 
+            genre={item.genre} 
+            logoSize="small"
+            borderRadius={8}
+          />
         )}
         <View style={styles.listItemContent}>
           <ThemedText style={styles.listItemTitle} numberOfLines={1}>
@@ -1433,9 +1436,13 @@ export default function AdminDashboardScreen() {
                       contentFit="cover"
                     />
                   ) : (
-                    <View style={[styles.novelCoverPlaceholder, { backgroundColor: '#1A1A1A' }]}>
-                      <Image source={noveaLogo} style={styles.placeholderLogo} contentFit="contain" />
-                    </View>
+                    <PlaceholderCover 
+                      width={60} 
+                      height={80} 
+                      genre={item.genre} 
+                      logoSize="small"
+                      borderRadius={8}
+                    />
                   )}
                   <View style={styles.listItemContent}>
                     <ThemedText style={styles.listItemTitle} numberOfLines={1}>
