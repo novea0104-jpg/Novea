@@ -9,6 +9,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { Novel } from "@/types/models";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
+const noveaLogo = require("@/assets/images/novea-logo.png");
+
 interface NovelCardProps {
   novel: Novel;
   onPress: () => void;
@@ -19,18 +21,7 @@ interface NovelCardProps {
 export function NovelCard({ novel, onPress, variant = "medium", showMetadata = true }: NovelCardProps) {
   const { theme } = useTheme();
 
-  const placeholderImages = {
-    romance: require("@/assets/images/novels/romance.png"),
-    fantasy: require("@/assets/images/novels/fantasy.png"),
-    thriller: require("@/assets/images/novels/thriller.png"),
-    mystery: require("@/assets/images/novels/mystery.png"),
-    adventure: require("@/assets/images/novels/adventure.png"),
-  };
-
-  const placeholderImage = placeholderImages[novel.genre.toLowerCase() as keyof typeof placeholderImages];
-  const imageSource = novel.coverImage 
-    ? { uri: novel.coverImage }
-    : placeholderImage;
+  const hasCover = !!novel.coverImage;
 
   const cardWidth = variant === "large" ? 100 : variant === "medium" ? 85 : 70;
   const coverHeight = variant === "large" ? 140 : variant === "medium" ? 120 : 100;
@@ -44,7 +35,13 @@ export function NovelCard({ novel, onPress, variant = "medium", showMetadata = t
       ]}
     >
       <View style={[styles.coverContainer, { height: coverHeight, backgroundColor: theme.backgroundSecondary }]}>
-        <Image source={imageSource} style={styles.cover} resizeMode="cover" />
+        {hasCover ? (
+          <Image source={{ uri: novel.coverImage }} style={styles.cover} resizeMode="cover" />
+        ) : (
+          <View style={styles.placeholderContainer}>
+            <Image source={noveaLogo} style={styles.placeholderLogo} resizeMode="contain" />
+          </View>
+        )}
       </View>
       
       <View style={[styles.infoContainer, { backgroundColor: theme.backgroundDefault }]}>
@@ -99,6 +96,18 @@ const styles = StyleSheet.create({
   cover: {
     width: "100%",
     height: "100%",
+  },
+  placeholderContainer: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#1A1A1A",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderLogo: {
+    width: "50%",
+    height: "50%",
+    opacity: 0.4,
   },
   infoContainer: {
     paddingHorizontal: Spacing.sm,

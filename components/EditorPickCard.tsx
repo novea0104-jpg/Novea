@@ -7,6 +7,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { Novel } from "@/types/models";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
+const noveaLogo = require("@/assets/images/novea-logo.png");
+
 interface EditorPickCardProps {
   novel: Novel;
   onPress: () => void;
@@ -15,18 +17,7 @@ interface EditorPickCardProps {
 export function EditorPickCard({ novel, onPress }: EditorPickCardProps) {
   const { theme } = useTheme();
 
-  const placeholderImages = {
-    romance: require("@/assets/images/novels/romance.png"),
-    fantasy: require("@/assets/images/novels/fantasy.png"),
-    thriller: require("@/assets/images/novels/thriller.png"),
-    mystery: require("@/assets/images/novels/mystery.png"),
-    adventure: require("@/assets/images/novels/adventure.png"),
-  };
-
-  const placeholderImage = placeholderImages[novel.genre.toLowerCase() as keyof typeof placeholderImages] || placeholderImages.fantasy;
-  const imageSource = novel.coverImage 
-    ? { uri: novel.coverImage }
-    : placeholderImage;
+  const hasCover = !!novel.coverImage;
 
   const formatReads = (count: number): string => {
     if (count >= 1000000) {
@@ -53,7 +44,13 @@ export function EditorPickCard({ novel, onPress }: EditorPickCardProps) {
       ]}
     >
       <View style={[styles.coverContainer, { backgroundColor: theme.backgroundTertiary }]}>
-        <Image source={imageSource} style={styles.cover} resizeMode="cover" />
+        {hasCover ? (
+          <Image source={{ uri: novel.coverImage }} style={styles.cover} resizeMode="cover" />
+        ) : (
+          <View style={styles.placeholderContainer}>
+            <Image source={noveaLogo} style={styles.placeholderLogo} resizeMode="contain" />
+          </View>
+        )}
       </View>
       
       <View style={styles.infoContainer}>
@@ -105,6 +102,18 @@ const styles = StyleSheet.create({
   cover: {
     width: "100%",
     height: "100%",
+  },
+  placeholderContainer: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#1A1A1A",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  placeholderLogo: {
+    width: "50%",
+    height: "50%",
+    opacity: 0.4,
   },
   infoContainer: {
     flex: 1,
