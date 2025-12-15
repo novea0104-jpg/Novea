@@ -321,6 +321,7 @@ export default function NovelDetailScreen() {
   const isFollowing = followingNovels.has(novelId);
   const isLiked = likedNovels.has(novelId);
   const isAuthor = user?.id === novel.authorId;
+  const isAdmin = user?.role && ['admin', 'co_admin', 'editor'].includes(user.role.toLowerCase());
   
   const handleToggleLike = async () => {
     if (!requireAuth("Masuk untuk menyukai novel ini")) return;
@@ -551,6 +552,14 @@ export default function NovelDetailScreen() {
             </Pressable>
           </View>
         )}
+        {isAdmin ? (
+          <Pressable 
+            style={[styles.iconButton, { backgroundColor: '#F59E0B' }]} 
+            onPress={() => navigation.navigate('EditNovel', { novelId })}
+          >
+            <EditIcon size={20} color="#FFFFFF" />
+          </Pressable>
+        ) : null}
         <Pressable style={styles.iconButton} onPress={handleOpenShareModal}>
           <ShareIcon size={20} color={theme.text} />
         </Pressable>
