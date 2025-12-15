@@ -407,6 +407,7 @@ export default function AdminDashboardScreen() {
   // Open edit novel modal
   const handleOpenEditNovel = () => {
     if (!selectedNovel) return;
+    setShowNovelModal(false);
     setEditNovelTitle(selectedNovel.title);
     setEditNovelSynopsis('');
     setEditNovelCoverUri(null);
