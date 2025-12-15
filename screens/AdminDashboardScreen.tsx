@@ -595,7 +595,7 @@ export default function AdminDashboardScreen() {
           style: 'destructive',
           onPress: async () => {
             setActionLoading(true);
-            const result = await removeFromEditorsChoice(novelId);
+            const result = await removeFromEditorsChoice(parseInt(user!.id), novelId);
             setActionLoading(false);
             if (result.success) {
               await loadEditorsChoice();
@@ -1445,7 +1445,7 @@ export default function AdminDashboardScreen() {
                       oleh {item.authorName}
                     </ThemedText>
                     <ThemedText style={[styles.novelStatText, { color: theme.textMuted }]}>
-                      Ditambahkan oleh {item.addedByName}
+                      Ditambahkan oleh {item.addedBy}
                     </ThemedText>
                   </View>
                   <Pressable
