@@ -2217,12 +2217,35 @@ export async function getAllNovelsAdmin(
   }
 }
 
-// Delete novel (for all admin roles)
+// Delete novel (for all admin roles: editor, co_admin, super_admin)
 export async function deleteNovelAdmin(
   novelId: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Delete all chapters first
+    // Get all chapter IDs for this novel first
+    const { data: chapters } = await supabase
+      .from('chapters')
+      .select('id')
+      .eq('novel_id', novelId);
+    
+    const chapterIds = (chapters || []).map((c: any) => c.id);
+
+    // Delete chapter-related data if there are chapters
+    if (chapterIds.length > 0) {
+      // Delete unlocked chapters
+      await supabase
+        .from('unlocked_chapters')
+        .delete()
+        .in('chapter_id', chapterIds);
+
+      // Delete chapter comments
+      await supabase
+        .from('chapter_comments')
+        .delete()
+        .in('chapter_id', chapterIds);
+    }
+
+    // Delete all chapters
     await supabase
       .from('chapters')
       .delete()
@@ -2243,6 +2266,36 @@ export async function deleteNovelAdmin(
     // Delete novel likes
     await supabase
       .from('novel_likes')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete reading progress
+    await supabase
+      .from('reading_progress')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete novel reviews
+    await supabase
+      .from('novel_reviews')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete from editors choice
+    await supabase
+      .from('editors_choice')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete novel tags
+    await supabase
+      .from('novel_tags')
+      .delete()
+      .eq('novel_id', novelId);
+
+    // Delete user library entries
+    await supabase
+      .from('user_library')
       .delete()
       .eq('novel_id', novelId);
 
