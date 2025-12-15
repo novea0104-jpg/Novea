@@ -2448,7 +2448,7 @@ export async function getChaptersAdmin(
 // Update novel admin
 export async function updateNovelAdmin(
   novelId: number,
-  updates: { title?: string; synopsis?: string; genre?: string; status?: string; coinPerChapter?: number }
+  updates: { title?: string; synopsis?: string; genre?: string; status?: string; coinPerChapter?: number; coverUrl?: string }
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const updateData: any = {};
@@ -2457,6 +2457,7 @@ export async function updateNovelAdmin(
     if (updates.genre !== undefined) updateData.genre = updates.genre;
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.coinPerChapter !== undefined) updateData.coin_per_chapter = updates.coinPerChapter;
+    if (updates.coverUrl !== undefined) updateData.cover_url = updates.coverUrl;
 
     const { error } = await supabase
       .from('novels')

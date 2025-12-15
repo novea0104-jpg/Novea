@@ -12,6 +12,7 @@ import {
   ScrollView,
 } from "react-native";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
@@ -69,6 +70,8 @@ import {
 import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/useGoldWithdrawal";
 import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
+import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
+import { CameraIcon } from "@/components/icons/CameraIcon";
 
 type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
@@ -127,6 +130,8 @@ export default function AdminDashboardScreen() {
   const [showEditNovelModal, setShowEditNovelModal] = useState(false);
   const [editNovelTitle, setEditNovelTitle] = useState('');
   const [editNovelSynopsis, setEditNovelSynopsis] = useState('');
+  const [editNovelCoverUri, setEditNovelCoverUri] = useState<string | null>(null);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [editChapterTitle, setEditChapterTitle] = useState('');
   const [editChapterContent, setEditChapterContent] = useState('');
   const [editChapterIsFree, setEditChapterIsFree] = useState(false);
@@ -404,20 +409,64 @@ export default function AdminDashboardScreen() {
     if (!selectedNovel) return;
     setEditNovelTitle(selectedNovel.title);
     setEditNovelSynopsis('');
+    setEditNovelCoverUri(null);
     setShowEditNovelModal(true);
+  };
+
+  // Pick cover image for admin edit
+  const handlePickCoverImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Izin Diperlukan', 'Mohon izinkan akses galeri untuk upload cover.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [2, 3],
+        quality: 0.85,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setEditNovelCoverUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Error', 'Gagal memilih gambar. Coba lagi.');
+    }
   };
 
   // Save novel edit
   const handleSaveNovel = async () => {
     if (!selectedNovel) return;
     setActionLoading(true);
+
+    let newCoverUrl: string | undefined = undefined;
+
+    // Upload cover if changed
+    if (editNovelCoverUri) {
+      try {
+        setIsUploadingCover(true);
+        newCoverUrl = await uploadNovelCoverAsync(editNovelCoverUri, `admin-${selectedNovel.authorId}`);
+        setIsUploadingCover(false);
+      } catch (error) {
+        setIsUploadingCover(false);
+        setActionLoading(false);
+        console.error('Error uploading cover:', error);
+        Alert.alert('Gagal', 'Gagal mengupload cover. Coba lagi.');
+        return;
+      }
+    }
+
     const result = await updateNovelAdmin(selectedNovel.id, {
       title: editNovelTitle,
+      ...(newCoverUrl && { coverUrl: newCoverUrl }),
     });
     setActionLoading(false);
     if (result.success) {
-      setNovels(prev => prev.map(n => n.id === selectedNovel.id ? { ...n, title: editNovelTitle } : n));
-      setSelectedNovel({ ...selectedNovel, title: editNovelTitle });
+      const updatedCover = newCoverUrl || selectedNovel.coverUrl;
+      setNovels(prev => prev.map(n => n.id === selectedNovel.id ? { ...n, title: editNovelTitle, coverUrl: updatedCover } : n));
+      setSelectedNovel({ ...selectedNovel, title: editNovelTitle, coverUrl: updatedCover });
       setShowEditNovelModal(false);
       Alert.alert('Berhasil', 'Novel telah diupdate');
     } else {
@@ -1060,49 +1109,77 @@ export default function AdminDashboardScreen() {
     );
   };
 
-  const renderEditNovelModal = () => (
-    <Modal
-      visible={showEditNovelModal}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setShowEditNovelModal(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
-          <View style={styles.modalHeader}>
-            <ThemedText style={Typography.h3}>Edit Novel</ThemedText>
-            <Pressable 
-              onPress={() => setShowEditNovelModal(false)}
-              android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
-            >
-              <XIcon size={24} color={theme.text} />
-            </Pressable>
-          </View>
-
-          <ScrollView style={styles.modalBody}>
-            <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Judul Novel</ThemedText>
-            <TextInput
-              style={[styles.textInput, { color: theme.text, backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
-              value={editNovelTitle}
-              onChangeText={setEditNovelTitle}
-              placeholder="Judul novel"
-              placeholderTextColor={theme.textMuted}
-            />
-
-            <View style={styles.actionButtons}>
-              <Button
-                onPress={handleSaveNovel}
-                disabled={actionLoading}
-                style={styles.actionButton}
+  const renderEditNovelModal = () => {
+    const currentCoverUrl = editNovelCoverUri || selectedNovel?.coverUrl;
+    
+    return (
+      <Modal
+        visible={showEditNovelModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowEditNovelModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={Typography.h3}>Edit Novel</ThemedText>
+              <Pressable 
+                onPress={() => setShowEditNovelModal(false)}
+                android_ripple={{ color: 'rgba(255,255,255,0.2)', borderless: true }}
               >
-                {actionLoading ? 'Menyimpan...' : 'Simpan'}
-              </Button>
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
             </View>
-          </ScrollView>
+
+            <ScrollView style={styles.modalBody}>
+              <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Cover Novel</ThemedText>
+              <Pressable onPress={handlePickCoverImage} style={styles.coverPickerContainer}>
+                {currentCoverUrl ? (
+                  <View style={styles.coverPreviewWrapper}>
+                    <Image
+                      source={{ uri: currentCoverUrl }}
+                      style={styles.coverPreviewImage}
+                      contentFit="cover"
+                    />
+                    <View style={styles.coverEditOverlay}>
+                      <CameraIcon size={24} color="#fff" />
+                      <ThemedText style={styles.coverEditText}>Ganti Cover</ThemedText>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={[styles.coverPlaceholder, { backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}>
+                    <CameraIcon size={32} color={theme.textMuted} />
+                    <ThemedText style={[styles.coverPlaceholderText, { color: theme.textMuted }]}>
+                      Pilih Cover
+                    </ThemedText>
+                  </View>
+                )}
+              </Pressable>
+
+              <ThemedText style={[styles.inputLabel, { color: theme.textSecondary, marginTop: Spacing.md }]}>Judul Novel</ThemedText>
+              <TextInput
+                style={[styles.textInput, { color: theme.text, backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
+                value={editNovelTitle}
+                onChangeText={setEditNovelTitle}
+                placeholder="Judul novel"
+                placeholderTextColor={theme.textMuted}
+              />
+
+              <View style={styles.actionButtons}>
+                <Button
+                  onPress={handleSaveNovel}
+                  disabled={actionLoading || isUploadingCover}
+                  style={styles.actionButton}
+                >
+                  {isUploadingCover ? 'Mengupload Cover...' : actionLoading ? 'Menyimpan...' : 'Simpan'}
+                </Button>
+              </View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   const renderChapterModal = () => {
     if (!selectedChapter) return null;
@@ -2376,5 +2453,50 @@ const styles = StyleSheet.create({
   },
   adminNoteText: {
     fontSize: 13,
+  },
+  coverPickerContainer: {
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  coverPreviewWrapper: {
+    width: 120,
+    height: 180,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  coverPreviewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  coverEditOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  coverEditText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  coverPlaceholder: {
+    width: 120,
+    height: 180,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coverPlaceholderText: {
+    fontSize: 12,
+    marginTop: Spacing.sm,
   },
 });
