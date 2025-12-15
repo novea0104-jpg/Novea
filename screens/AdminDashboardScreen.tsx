@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
@@ -760,9 +761,17 @@ export default function AdminDashboardScreen() {
       android_ripple={{ color: 'rgba(255,255,255,0.1)', borderless: false }}
     >
       <Card elevation={1} style={styles.listItem}>
-        <View style={[styles.novelIcon, { backgroundColor: theme.backgroundSecondary }]}>
-          <BookIcon size={24} color={theme.text} />
-        </View>
+        {item.coverUrl ? (
+          <Image
+            source={{ uri: item.coverUrl }}
+            style={styles.novelCover}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={[styles.novelCoverPlaceholder, { backgroundColor: theme.backgroundSecondary }]}>
+            <BookIcon size={24} color={theme.textMuted} />
+          </View>
+        )}
         <View style={styles.listItemContent}>
           <ThemedText style={styles.listItemTitle} numberOfLines={1}>
             {item.title}
@@ -1959,6 +1968,18 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  novelCover: {
+    width: 50,
+    height: 70,
+    borderRadius: BorderRadius.sm,
+  },
+  novelCoverPlaceholder: {
+    width: 50,
+    height: 70,
+    borderRadius: BorderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
   },

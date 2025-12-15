@@ -1942,6 +1942,7 @@ export interface AdminNovel {
   likesCount: number;
   chaptersCount: number;
   createdAt: string;
+  coverUrl: string | null;
 }
 
 export interface AdminStats {
@@ -2204,6 +2205,7 @@ export async function getAllNovelsAdmin(
           likesCount: likesCount || 0,
           chaptersCount: chaptersCount || 0,
           createdAt: n.created_at,
+          coverUrl: n.cover_url || null,
         };
       })
     );
