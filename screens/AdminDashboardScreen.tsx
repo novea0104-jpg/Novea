@@ -1424,9 +1424,17 @@ export default function AdminDashboardScreen() {
               data={editorsChoice}
               renderItem={({ item }) => (
                 <Card elevation={1} style={styles.listItem}>
-                  <View style={[styles.novelIcon, { backgroundColor: theme.backgroundSecondary }]}>
-                    <AwardIcon size={24} color={theme.warning} />
-                  </View>
+                  {item.coverUrl ? (
+                    <Image
+                      source={{ uri: item.coverUrl }}
+                      style={styles.novelCover}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View style={[styles.novelCoverPlaceholder, { backgroundColor: theme.backgroundSecondary }]}>
+                      <AwardIcon size={24} color={theme.warning} />
+                    </View>
+                  )}
                   <View style={styles.listItemContent}>
                     <ThemedText style={styles.listItemTitle} numberOfLines={1}>
                       {item.title}
