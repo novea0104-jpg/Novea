@@ -2323,20 +2323,30 @@ export async function toggleNovelPublishAdmin(
   isPublished: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const { error } = await supabase
+    console.log('[toggleNovelPublishAdmin] Called with:', { novelId, isPublished });
+    
+    const { data, error } = await supabase
       .from('novels')
       .update({ is_published: isPublished })
-      .eq('id', novelId);
+      .eq('id', novelId)
+      .select();
+
+    console.log('[toggleNovelPublishAdmin] Result:', { data, error });
 
     if (error) {
-      console.error('Error toggling novel publish:', error);
-      return { success: false, error: 'Gagal mengubah status novel' };
+      console.error('[toggleNovelPublishAdmin] Supabase error:', JSON.stringify(error, null, 2));
+      return { success: false, error: `Gagal mengubah status novel: ${error.message}` };
+    }
+
+    if (!data || data.length === 0) {
+      console.error('[toggleNovelPublishAdmin] No rows updated');
+      return { success: false, error: 'Novel tidak ditemukan atau tidak ada perubahan' };
     }
 
     return { success: true };
-  } catch (error) {
-    console.error('Error in toggleNovelPublishAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan' };
+  } catch (error: any) {
+    console.error('[toggleNovelPublishAdmin] Exception:', error);
+    return { success: false, error: `Terjadi kesalahan: ${error.message}` };
   }
 }
 
@@ -2451,6 +2461,8 @@ export async function updateNovelAdmin(
   updates: { title?: string; synopsis?: string; genre?: string; status?: string; coinPerChapter?: number; coverUrl?: string }
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log('[updateNovelAdmin] Called with:', { novelId, updates });
+    
     const updateData: any = {};
     if (updates.title !== undefined) updateData.title = updates.title;
     if (updates.synopsis !== undefined) updateData.synopsis = updates.synopsis;
@@ -2459,20 +2471,28 @@ export async function updateNovelAdmin(
     if (updates.coinPerChapter !== undefined) updateData.coin_per_chapter = updates.coinPerChapter;
     if (updates.coverUrl !== undefined) updateData.cover_url = updates.coverUrl;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('novels')
       .update(updateData)
-      .eq('id', novelId);
+      .eq('id', novelId)
+      .select();
+
+    console.log('[updateNovelAdmin] Result:', { data, error });
 
     if (error) {
-      console.error('Error updating novel:', error);
-      return { success: false, error: 'Gagal mengupdate novel' };
+      console.error('[updateNovelAdmin] Supabase error:', JSON.stringify(error, null, 2));
+      return { success: false, error: `Gagal mengupdate novel: ${error.message}` };
+    }
+
+    if (!data || data.length === 0) {
+      console.error('[updateNovelAdmin] No rows updated');
+      return { success: false, error: 'Novel tidak ditemukan atau tidak ada perubahan' };
     }
 
     return { success: true };
-  } catch (error) {
-    console.error('Error in updateNovelAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan' };
+  } catch (error: any) {
+    console.error('[updateNovelAdmin] Exception:', error);
+    return { success: false, error: `Terjadi kesalahan: ${error.message}` };
   }
 }
 
@@ -2482,25 +2502,35 @@ export async function updateChapterAdmin(
   updates: { title?: string; content?: string; isFree?: boolean }
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log('[updateChapterAdmin] Called with:', { chapterId, updates: { ...updates, content: updates.content ? `${updates.content.substring(0, 50)}...` : undefined } });
+    
     const updateData: any = {};
     if (updates.title !== undefined) updateData.title = updates.title;
     if (updates.content !== undefined) updateData.content = updates.content;
     if (updates.isFree !== undefined) updateData.is_free = updates.isFree;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('chapters')
       .update(updateData)
-      .eq('id', chapterId);
+      .eq('id', chapterId)
+      .select();
+
+    console.log('[updateChapterAdmin] Result:', { rowsUpdated: data?.length || 0, error });
 
     if (error) {
-      console.error('Error updating chapter:', error);
-      return { success: false, error: 'Gagal mengupdate chapter' };
+      console.error('[updateChapterAdmin] Supabase error:', JSON.stringify(error, null, 2));
+      return { success: false, error: `Gagal mengupdate chapter: ${error.message}` };
+    }
+
+    if (!data || data.length === 0) {
+      console.error('[updateChapterAdmin] No rows updated');
+      return { success: false, error: 'Chapter tidak ditemukan atau tidak ada perubahan' };
     }
 
     return { success: true };
-  } catch (error) {
-    console.error('Error in updateChapterAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan' };
+  } catch (error: any) {
+    console.error('[updateChapterAdmin] Exception:', error);
+    return { success: false, error: `Terjadi kesalahan: ${error.message}` };
   }
 }
 
@@ -2509,24 +2539,30 @@ export async function deleteChapterAdmin(
   chapterId: number
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    console.log('[deleteChapterAdmin] Called with:', { chapterId });
+    
     // Delete related data first
     await supabase.from('unlocked_chapters').delete().eq('chapter_id', chapterId);
     await supabase.from('chapter_comments').delete().eq('chapter_id', chapterId);
+    await supabase.from('chapter_likes').delete().eq('chapter_id', chapterId);
     
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('chapters')
       .delete()
-      .eq('id', chapterId);
+      .eq('id', chapterId)
+      .select();
+
+    console.log('[deleteChapterAdmin] Result:', { rowsDeleted: data?.length || 0, error });
 
     if (error) {
-      console.error('Error deleting chapter:', error);
-      return { success: false, error: 'Gagal menghapus chapter' };
+      console.error('[deleteChapterAdmin] Supabase error:', JSON.stringify(error, null, 2));
+      return { success: false, error: `Gagal menghapus chapter: ${error.message}` };
     }
 
     return { success: true };
-  } catch (error) {
-    console.error('Error in deleteChapterAdmin:', error);
-    return { success: false, error: 'Terjadi kesalahan' };
+  } catch (error: any) {
+    console.error('[deleteChapterAdmin] Exception:', error);
+    return { success: false, error: `Terjadi kesalahan: ${error.message}` };
   }
 }
 
