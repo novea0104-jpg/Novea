@@ -243,34 +243,13 @@ export default function GenreScreen() {
         onPress={() => navigation.navigate("NovelDetail", { novelId: item.id })}
         style={({ pressed }) => [
           styles.novelCard,
-          { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.8 : 1 },
+          { opacity: pressed ? 0.8 : 1 },
         ]}
       >
         <Image source={imageSource} style={styles.novelCover} resizeMode="cover" />
-        <View style={styles.novelInfo}>
-          <ThemedText style={styles.novelTitle} numberOfLines={2}>
-            {item.title}
-          </ThemedText>
-          <ThemedText style={[styles.novelAuthor, { color: theme.textSecondary }]} numberOfLines={1}>
-            {item.author}
-          </ThemedText>
-          <View style={styles.novelMeta}>
-            <ThemedText style={[styles.metaText, { color: theme.textMuted }]}>
-              {item.totalChapters} chapter
-            </ThemedText>
-            <View style={[styles.dot, { backgroundColor: theme.textMuted }]} />
-            <ThemedText style={[styles.metaText, { color: theme.textMuted }]}>
-              {item.followers.toLocaleString()} dibaca
-            </ThemedText>
-          </View>
-          {item.rating > 0 ? (
-            <View style={styles.ratingContainer}>
-              <ThemedText style={[styles.ratingText, { color: theme.warning }]}>
-                {item.rating.toFixed(1)}
-              </ThemedText>
-            </View>
-          ) : null}
-        </View>
+        <ThemedText style={styles.novelTitle} numberOfLines={2}>
+          {item.title}
+        </ThemedText>
       </Pressable>
     );
   };
@@ -315,6 +294,7 @@ export default function GenreScreen() {
         data={novels}
         renderItem={renderNovel}
         keyExtractor={(item) => item.id}
+        numColumns={3}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <EmptyState
@@ -323,6 +303,7 @@ export default function GenreScreen() {
             message={`Belum ada novel dengan genre ${genreName}`}
           />
         }
+        columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={[
           styles.listContent,
           { paddingBottom: screenInsets.paddingBottom },
@@ -391,53 +372,24 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: Spacing.xl,
   },
-  novelCard: {
-    flexDirection: "row",
-    marginHorizontal: Spacing.lg,
+  columnWrapper: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
     marginBottom: Spacing.md,
-    borderRadius: BorderRadius.md,
-    overflow: "hidden",
+  },
+  novelCard: {
+    flex: 1,
+    maxWidth: "33%",
   },
   novelCover: {
-    width: 80,
-    height: 120,
-    borderRadius: BorderRadius.sm,
-  },
-  novelInfo: {
-    flex: 1,
-    padding: Spacing.md,
-    justifyContent: "center",
-    gap: Spacing.xs,
+    width: "100%",
+    aspectRatio: 3 / 4,
+    borderRadius: BorderRadius.md,
   },
   novelTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    lineHeight: 22,
-  },
-  novelAuthor: {
-    fontSize: 13,
-  },
-  novelMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  metaText: {
     fontSize: 12,
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: Spacing.xs,
-  },
-  ratingText: {
-    fontSize: 13,
     fontWeight: "600",
+    marginTop: Spacing.xs,
+    lineHeight: 16,
   },
 });
