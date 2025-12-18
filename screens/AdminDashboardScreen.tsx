@@ -112,6 +112,10 @@ export default function AdminDashboardScreen() {
   const canManageUsers = isSuperAdmin || isCoAdmin;
   const canManageNews = isSuperAdmin || isCoAdmin || isEditor;
   
+  // Only main super admin can manage gold withdrawals
+  const MAIN_SUPER_ADMIN_EMAIL = 'novea0104@gmail.com';
+  const canManageWithdrawals = isSuperAdmin && user?.email === MAIN_SUPER_ADMIN_EMAIL;
+  
   const [activeTab, setActiveTab] = useState<TabType>('stats');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -1312,12 +1316,12 @@ export default function AdminDashboardScreen() {
           contentContainerStyle={styles.tabsContainer}
         >
           {renderTabButton('stats', 'Statistik', BarChartIcon)}
-          {renderTabButton('users', 'Users', UsersIcon)}
+          {canManageUsers ? renderTabButton('users', 'Users', UsersIcon) : null}
           {renderTabButton('novels', 'Novel', BookIcon)}
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
-          {renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon)}
-          {renderTabButton('news', 'N-News', BookIcon)}
+          {canManageWithdrawals ? renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon) : null}
+          {canManageNews ? renderTabButton('news', 'N-News', BookIcon) : null}
         </ScrollView>
       </View>
 
@@ -1585,7 +1589,7 @@ export default function AdminDashboardScreen() {
             />
           )}
         </View>
-      ) : activeTab === 'gold_wd' ? (
+      ) : activeTab === 'gold_wd' && canManageWithdrawals ? (
         <View style={styles.listContainer}>
           <View style={styles.featuredHeader}>
             <ThemedText style={Typography.h3}>Penarikan Gold Novoin</ThemedText>
