@@ -214,12 +214,18 @@ export default function CreateNovelScreen() {
         is_primary: index === 0,
       }));
 
-      const { error: genreError } = await supabase
+      console.log('Inserting genres:', JSON.stringify(genreInserts));
+      
+      const { data: insertedGenres, error: genreError } = await supabase
         .from('novel_genres')
-        .insert(genreInserts);
+        .insert(genreInserts)
+        .select();
+
+      console.log('Genre insert result:', { insertedGenres, genreError });
 
       if (genreError) {
         console.error('Error inserting genres:', genreError);
+        throw new Error(`Novel dibuat tapi gagal menyimpan genre: ${genreError.message}`);
       }
 
       // Insert tag relations
