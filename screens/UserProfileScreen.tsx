@@ -7,6 +7,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { Card } from "@/components/Card";
 import { PostCard } from "@/components/PostCard";
 import { RoleBadge, UserRole } from "@/components/RoleBadge";
+import { SocialLinksDisplay } from "@/components/SocialLinksDisplay";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { BookIcon } from "@/components/icons/BookIcon";
 import { StarIcon } from "@/components/icons/StarIcon";
@@ -281,6 +282,12 @@ export default function UserProfileScreen() {
           </View>
         ) : null}
 
+        {userProfile.socialLinks ? (
+          <View style={styles.socialLinksContainer}>
+            <SocialLinksDisplay socialLinks={userProfile.socialLinks} />
+          </View>
+        ) : null}
+
         <View style={styles.followStatsContainer}>
           <Pressable 
             style={styles.followStatItem}
@@ -512,6 +519,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: "center",
     fontStyle: "italic",
+  },
+  socialLinksContainer: {
+    width: "100%",
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+    alignItems: "center",
   },
   followStatsContainer: {
     flexDirection: "row",

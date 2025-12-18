@@ -10,6 +10,15 @@ export interface Tag {
 
 export type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
+export type SocialPlatform = 'instagram' | 'facebook' | 'tiktok' | 'telegram' | 'twitter' | 'youtube';
+
+export interface SocialLink {
+  url: string;
+  handle: string;
+}
+
+export type SocialLinks = Partial<Record<SocialPlatform, SocialLink>>;
+
 export interface User {
   id: string;
   name: string;
@@ -22,6 +31,7 @@ export interface User {
   bio?: string;
   lastClaimDate?: string;
   claimStreak: number;
+  socialLinks?: SocialLinks;
 }
 
 export interface Novel {

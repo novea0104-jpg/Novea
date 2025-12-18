@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { SocialLinks } from '@/types/models';
 
 // Supabase credentials
 // NOTE: These are PUBLIC keys (anon key is safe to expose in client-side code)
@@ -841,6 +842,7 @@ export interface PublicUserProfile {
   avatarUrl: string | null;
   role: string;
   createdAt: string;
+  socialLinks?: SocialLinks;
 }
 
 export interface UserNovel {
@@ -859,7 +861,7 @@ export async function getUserById(userId: number): Promise<PublicUserProfile | n
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('id, name, email, bio, avatar_url, role, created_at')
+      .select('id, name, email, bio, avatar_url, role, created_at, social_links')
       .eq('id', userId)
       .single();
 
@@ -876,6 +878,7 @@ export async function getUserById(userId: number): Promise<PublicUserProfile | n
       avatarUrl: data.avatar_url,
       role: data.role || 'Pembaca',
       createdAt: data.created_at,
+      socialLinks: data.social_links || undefined,
     };
   } catch (error) {
     console.error('Error in getUserById:', error);

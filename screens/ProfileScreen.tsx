@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, StyleSheet, Pressable, Image, Modal, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Image, Modal, TextInput, ActivityIndicator, Alert, Linking } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
@@ -25,6 +25,7 @@ import { ShareIcon } from "@/components/icons/ShareIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { ShareModal } from "@/components/ShareModal";
 import { WriterTermsModal } from "@/components/WriterTermsModal";
+import { SocialLinksDisplay } from "@/components/SocialLinksDisplay";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserFollowStats, FollowStats, getTotalUnreadCount, createTimelinePost } from "@/utils/supabase";
@@ -236,6 +237,8 @@ export default function ProfileScreen() {
             {user.bio}
           </ThemedText>
         ) : null}
+
+        {user.socialLinks ? <SocialLinksDisplay socialLinks={user.socialLinks} /> : null}
 
         <View style={styles.followStatsContainer}>
           <Pressable 

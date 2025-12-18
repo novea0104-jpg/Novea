@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { supabase } from "@/utils/supabase";
-import { User } from "@/types/models";
+import { User, SocialLinks } from "@/types/models";
 
 interface AuthContextType {
   user: User | null;
@@ -20,7 +20,7 @@ interface AuthContextType {
   convertSilverToGold: (goldAmount?: number) => Promise<{ success: boolean; error?: string }>;
   claimDailyReward: () => Promise<{ success: boolean; amount?: number; error?: string }>;
   refreshUser: () => Promise<void>;
-  updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string }) => Promise<void>;
+  updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string; socialLinks?: SocialLinks }) => Promise<void>;
   requireAuth: (message?: string) => boolean;
   showAuthPrompt: (message?: string) => void;
   hideAuthPrompt: () => void;
@@ -126,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           bio: userProfile.bio || undefined,
           lastClaimDate: userProfile.last_claim_date || undefined,
           claimStreak: userProfile.claim_streak || 0,
+          socialLinks: userProfile.social_links || undefined,
         };
         setUser(user);
       } else if (retryCount < 3) {
@@ -566,7 +567,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updatedUser);
   }
 
-  async function updateProfile(updates: { name?: string; bio?: string; avatarUrl?: string }) {
+  async function updateProfile(updates: { name?: string; bio?: string; avatarUrl?: string; socialLinks?: SocialLinks }) {
     if (!user) return;
 
     // Build update object with snake_case for database
@@ -574,6 +575,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
     if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+    if (updates.socialLinks !== undefined) dbUpdates.social_links = updates.socialLinks;
 
     // Update profile in Supabase
     const { data, error } = await supabase
