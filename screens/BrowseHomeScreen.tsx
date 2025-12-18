@@ -19,11 +19,12 @@ import { SparklesIcon } from "@/components/icons/SparklesIcon";
 import { CompassIcon } from "@/components/icons/CompassIcon";
 import { AwardIcon } from "@/components/icons/AwardIcon";
 import { GiftIcon } from "@/components/icons/GiftIcon";
+import { CheckIcon } from "@/components/icons/CheckIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
-import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome, getFeaturedAuthors, FeaturedAuthor, getAllAdminNews, NewsItem } from "@/utils/supabase";
+import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome, getFeaturedAuthors, FeaturedAuthor, getAllAdminNews, NewsItem, getMostLikedNovels, getMostReviewedNovels, getCompletedNovelsByViews, getNovelsByGenres, CollectionNovel } from "@/utils/supabase";
 import { Avatar } from "@/components/Avatar";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
@@ -69,6 +70,17 @@ export default function BrowseHomeScreen() {
   const [editorsPick, setEditorsPick] = useState<Novel[]>([]);
   const [featuredAuthors, setFeaturedAuthors] = useState<FeaturedAuthor[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [mostLiked, setMostLiked] = useState<CollectionNovel[]>([]);
+  const [mustRead, setMustRead] = useState<CollectionNovel[]>([]);
+  const [completedNovels, setCompletedNovels] = useState<CollectionNovel[]>([]);
+  const [womenPicks, setWomenPicks] = useState<CollectionNovel[]>([]);
+  const [menPicks, setMenPicks] = useState<CollectionNovel[]>([]);
+  const [easyStories, setEasyStories] = useState<CollectionNovel[]>([]);
+  const [horrorMystery, setHorrorMystery] = useState<CollectionNovel[]>([]);
+  const [fantasyWorld, setFantasyWorld] = useState<CollectionNovel[]>([]);
+  const [fanfictionPicks, setFanfictionPicks] = useState<CollectionNovel[]>([]);
+  const [sliceOfLife, setSliceOfLife] = useState<CollectionNovel[]>([]);
+  const [amazingStories, setAmazingStories] = useState<CollectionNovel[]>([]);
 
   const maxContentWidth = 1200;
   const shouldCenterContent = isDesktop && width > maxContentWidth;
@@ -79,7 +91,52 @@ export default function BrowseHomeScreen() {
     fetchEditorsChoice();
     fetchFeaturedAuthors();
     fetchNews();
+    fetchCollections();
   }, []);
+
+  const fetchCollections = async () => {
+    try {
+      const [
+        likedData,
+        reviewedData,
+        completedData,
+        womenData,
+        menData,
+        easyData,
+        horrorData,
+        fantasyData,
+        fanficData,
+        sliceData,
+        amazingData,
+      ] = await Promise.all([
+        getMostLikedNovels(20),
+        getMostReviewedNovels(20),
+        getCompletedNovelsByViews(20),
+        getNovelsByGenres(['drama', 'romance', 'pernikahan'], 20),
+        getNovelsByGenres(['action', 'adventure', 'fantasy', 'urban'], 20),
+        getNovelsByGenres(['teenlit', 'chicklit'], 20),
+        getNovelsByGenres(['horror', 'mystery'], 20),
+        getNovelsByGenres(['sci-fi', 'thriller', 'apocalypse', 'sistem'], 20),
+        getNovelsByGenres(['fanfiction'], 20),
+        getNovelsByGenres(['sosial', 'psikologis'], 20),
+        getNovelsByGenres(['fantim', 'fanbar', 'kolosal'], 20),
+      ]);
+
+      setMostLiked(likedData);
+      setMustRead(reviewedData);
+      setCompletedNovels(completedData);
+      setWomenPicks(womenData);
+      setMenPicks(menData);
+      setEasyStories(easyData);
+      setHorrorMystery(horrorData);
+      setFantasyWorld(fantasyData);
+      setFanfictionPicks(fanficData);
+      setSliceOfLife(sliceData);
+      setAmazingStories(amazingData);
+    } catch (error) {
+      console.error('Error fetching collections:', error);
+    }
+  };
 
   const fetchNews = async () => {
     try {
@@ -322,6 +379,78 @@ export default function BrowseHomeScreen() {
       <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
     </View>
   );
+
+  const collectionToNovel = (item: CollectionNovel): Novel => ({
+    id: item.id.toString(),
+    title: item.title,
+    author: item.authorName,
+    authorId: item.authorId.toString(),
+    genre: item.genre as any,
+    synopsis: "",
+    coverImage: item.coverUrl || "",
+    status: (item.status === "completed" ? "Completed" : "On-Going") as any,
+    rating: item.rating,
+    ratingCount: 0,
+    coinPerChapter: 0,
+    totalChapters: 0,
+    freeChapters: 0,
+    followers: item.totalReads,
+    totalLikes: item.totalLikes,
+    createdAt: new Date(item.createdAt),
+    lastUpdated: new Date(item.createdAt),
+  });
+
+  const renderCollectionSection = (
+    title: string,
+    items: CollectionNovel[],
+    icon: React.ReactNode,
+    iconColor: string,
+    variant: "large" | "medium" = "medium"
+  ) => {
+    if (items.length === 0) return null;
+    
+    const novelsData = items.map(collectionToNovel);
+    
+    if (isDesktop || isTablet) {
+      const columnsCount = isDesktop ? 6 : 4;
+      const displayNovels = novelsData.slice(0, columnsCount * 2);
+      return (
+        <View style={styles.section}>
+          {renderSectionTitle(title, icon, iconColor)}
+          <View style={styles.desktopGrid}>
+            {displayNovels.map((novel) => (
+              <View key={novel.id} style={[styles.desktopGridItem, { width: `${100 / columnsCount}%` as any }]}>
+                <NovelCard
+                  novel={novel}
+                  variant={variant}
+                  onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+                />
+              </View>
+            ))}
+          </View>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.section}>
+        {renderSectionTitle(title, icon, iconColor)}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.carousel}
+        >
+          {novelsData.map((novel) => (
+            <NovelCard
+              key={novel.id}
+              novel={novel}
+              variant={variant}
+              onPress={() => navigation.navigate("NovelDetail", { novelId: novel.id })}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
   const renderNovelSection = (title: string, novels: Novel[], icon: React.ReactNode, iconColor: string, variant: "large" | "medium" = "medium") => {
     if (isDesktop || isTablet) {
@@ -655,6 +784,9 @@ export default function BrowseHomeScreen() {
       >
         {renderNovelSection("Sedang Trending", trendingNovels, <FlameIcon size={20} color="#EF4444" />, "#EF4444", "large")}
         {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={20} color="#8B5CF6" />, "#8B5CF6")}
+        {renderCollectionSection("Yang Paling Disukai", mostLiked, <HeartIcon size={20} color="#EC4899" />, "#EC4899")}
+        {renderCollectionSection("Kamu Wajib Baca", mustRead, <MessageSquareIcon size={20} color="#F59E0B" />, "#F59E0B")}
+        {renderCollectionSection("Novel Tamat", completedNovels, <CheckIcon size={20} color="#10B981" />, "#10B981")}
         {renderFeaturedAuthorsSection()}
         {renderEditorsPickSection()}
         {renderNewsSection()}
@@ -680,6 +812,14 @@ export default function BrowseHomeScreen() {
           )}
         </View>
 
+        {renderCollectionSection("Pilihan Terbaik Wanita", womenPicks, <HeartIcon size={20} color="#F472B6" />, "#F472B6")}
+        {renderCollectionSection("Pilihan Terbaik Pria", menPicks, <ZapIcon size={20} color="#3B82F6" />, "#3B82F6")}
+        {renderCollectionSection("Yang Mudah Punya Cerita", easyStories, <BookOpenIcon size={20} color="#34D399" />, "#34D399")}
+        {renderCollectionSection("Anti Takut", horrorMystery, <FlameIcon size={20} color="#1F2937" />, "#1F2937")}
+        {renderCollectionSection("Fantasi Dunia", fantasyWorld, <StarIcon size={20} color="#06B6D4" />, "#06B6D4")}
+        {renderCollectionSection("Penggemar Sejati", fanfictionPicks, <SparklesIcon size={20} color="#C084FC" />, "#C084FC")}
+        {renderCollectionSection("Slice of Life", sliceOfLife, <CompassIcon size={20} color="#0EA5E9" />, "#0EA5E9")}
+        {renderCollectionSection("Kisah Memukau", amazingStories, <AwardIcon size={20} color="#FBBF24" />, "#FBBF24")}
         {renderFreeNovelsSection()}
       </ScrollView>
     </ThemedView>

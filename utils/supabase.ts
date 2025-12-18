@@ -3573,3 +3573,277 @@ export async function deleteAdminNews(
     return { success: false, error: error.message };
   }
 }
+
+export interface CollectionNovel {
+  id: number;
+  title: string;
+  coverUrl: string | null;
+  authorId: number;
+  authorName: string;
+  genre: string;
+  status: string;
+  rating: number;
+  totalReads: number;
+  totalLikes: number;
+  totalReviews: number;
+  createdAt: string;
+}
+
+export async function getMostLikedNovels(limit: number = 20): Promise<CollectionNovel[]> {
+  try {
+    const { data: likesData, error: likesError } = await supabase
+      .from('novel_likes')
+      .select('novel_id')
+      .order('created_at', { ascending: false });
+
+    if (likesError) {
+      console.error('Error fetching novel likes:', likesError);
+      return [];
+    }
+
+    const likeCounts: Record<number, number> = {};
+    (likesData || []).forEach((item: any) => {
+      likeCounts[item.novel_id] = (likeCounts[item.novel_id] || 0) + 1;
+    });
+
+    const sortedNovelIds = Object.entries(likeCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, limit)
+      .map(([id]) => parseInt(id));
+
+    if (sortedNovelIds.length === 0) return [];
+
+    const { data: novelsData, error: novelsError } = await supabase
+      .from('novels')
+      .select(`
+        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
+        author:users!novels_author_id_fkey(id, name)
+      `)
+      .in('id', sortedNovelIds);
+
+    if (novelsError) {
+      console.error('Error fetching novels:', novelsError);
+      return [];
+    }
+
+    const novelMap = new Map((novelsData || []).map((n: any) => [n.id, n]));
+    
+    return sortedNovelIds
+      .filter(id => novelMap.has(id))
+      .map(id => {
+        const novel = novelMap.get(id)!;
+        return {
+          id: novel.id,
+          title: novel.title,
+          coverUrl: novel.cover_url,
+          authorId: novel.author?.id || novel.author_id,
+          authorName: novel.author?.name || 'Unknown',
+          genre: novel.genre || '',
+          status: novel.status || 'ongoing',
+          rating: novel.rating || 0,
+          totalReads: novel.total_reads || 0,
+          totalLikes: likeCounts[id] || 0,
+          totalReviews: 0,
+          createdAt: novel.created_at,
+        };
+      });
+  } catch (error) {
+    console.error('Error in getMostLikedNovels:', error);
+    return [];
+  }
+}
+
+export async function getMostReviewedNovels(limit: number = 20): Promise<CollectionNovel[]> {
+  try {
+    const { data: reviewsData, error: reviewsError } = await supabase
+      .from('reviews')
+      .select('novel_id');
+
+    if (reviewsError) {
+      console.error('Error fetching reviews:', reviewsError);
+      return [];
+    }
+
+    const reviewCounts: Record<number, number> = {};
+    (reviewsData || []).forEach((item: any) => {
+      reviewCounts[item.novel_id] = (reviewCounts[item.novel_id] || 0) + 1;
+    });
+
+    const sortedNovelIds = Object.entries(reviewCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, limit)
+      .map(([id]) => parseInt(id));
+
+    if (sortedNovelIds.length === 0) return [];
+
+    const { data: novelsData, error: novelsError } = await supabase
+      .from('novels')
+      .select(`
+        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
+        author:users!novels_author_id_fkey(id, name)
+      `)
+      .in('id', sortedNovelIds);
+
+    if (novelsError) {
+      console.error('Error fetching novels:', novelsError);
+      return [];
+    }
+
+    const novelMap = new Map((novelsData || []).map((n: any) => [n.id, n]));
+    
+    return sortedNovelIds
+      .filter(id => novelMap.has(id))
+      .map(id => {
+        const novel = novelMap.get(id)!;
+        return {
+          id: novel.id,
+          title: novel.title,
+          coverUrl: novel.cover_url,
+          authorId: novel.author?.id || novel.author_id,
+          authorName: novel.author?.name || 'Unknown',
+          genre: novel.genre || '',
+          status: novel.status || 'ongoing',
+          rating: novel.rating || 0,
+          totalReads: novel.total_reads || 0,
+          totalLikes: 0,
+          totalReviews: reviewCounts[id] || 0,
+          createdAt: novel.created_at,
+        };
+      });
+  } catch (error) {
+    console.error('Error in getMostReviewedNovels:', error);
+    return [];
+  }
+}
+
+export async function getCompletedNovelsByViews(limit: number = 20): Promise<CollectionNovel[]> {
+  try {
+    const { data, error } = await supabase
+      .from('novels')
+      .select(`
+        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
+        author:users!novels_author_id_fkey(id, name)
+      `)
+      .eq('status', 'completed')
+      .order('total_reads', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching completed novels:', error);
+      return [];
+    }
+
+    return (data || []).map((novel: any) => ({
+      id: novel.id,
+      title: novel.title,
+      coverUrl: novel.cover_url,
+      authorId: novel.author?.id || novel.author_id,
+      authorName: novel.author?.name || 'Unknown',
+      genre: novel.genre || '',
+      status: novel.status || 'completed',
+      rating: novel.rating || 0,
+      totalReads: novel.total_reads || 0,
+      totalLikes: 0,
+      totalReviews: 0,
+      createdAt: novel.created_at,
+    }));
+  } catch (error) {
+    console.error('Error in getCompletedNovelsByViews:', error);
+    return [];
+  }
+}
+
+export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20): Promise<CollectionNovel[]> {
+  try {
+    const { data: genresData, error: genresError } = await supabase
+      .from('genres')
+      .select('id, slug')
+      .in('slug', genreSlugs);
+
+    if (genresError) {
+      console.error('Error fetching genres:', genresError);
+      return [];
+    }
+
+    const genreIds = (genresData || []).map((g: any) => g.id);
+    
+    if (genreIds.length === 0) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('novels')
+        .select(`
+          id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
+          author:users!novels_author_id_fkey(id, name)
+        `)
+        .or(genreSlugs.map(slug => `genre.ilike.%${slug}%`).join(','))
+        .order('total_reads', { ascending: false })
+        .limit(limit);
+
+      if (fallbackError) {
+        console.error('Error fetching novels by genre name:', fallbackError);
+        return [];
+      }
+
+      return (fallbackData || []).map((novel: any) => ({
+        id: novel.id,
+        title: novel.title,
+        coverUrl: novel.cover_url,
+        authorId: novel.author?.id || novel.author_id,
+        authorName: novel.author?.name || 'Unknown',
+        genre: novel.genre || '',
+        status: novel.status || 'ongoing',
+        rating: novel.rating || 0,
+        totalReads: novel.total_reads || 0,
+        totalLikes: 0,
+        totalReviews: 0,
+        createdAt: novel.created_at,
+      }));
+    }
+
+    const { data: novelGenresData, error: novelGenresError } = await supabase
+      .from('novel_genres')
+      .select('novel_id')
+      .in('genre_id', genreIds);
+
+    if (novelGenresError) {
+      console.error('Error fetching novel_genres:', novelGenresError);
+      return [];
+    }
+
+    const novelIds = [...new Set((novelGenresData || []).map((item: any) => item.novel_id))];
+    
+    if (novelIds.length === 0) return [];
+
+    const { data: novelsData, error: novelsError } = await supabase
+      .from('novels')
+      .select(`
+        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
+        author:users!novels_author_id_fkey(id, name)
+      `)
+      .in('id', novelIds)
+      .order('total_reads', { ascending: false })
+      .limit(limit);
+
+    if (novelsError) {
+      console.error('Error fetching novels:', novelsError);
+      return [];
+    }
+
+    return (novelsData || []).map((novel: any) => ({
+      id: novel.id,
+      title: novel.title,
+      coverUrl: novel.cover_url,
+      authorId: novel.author?.id || novel.author_id,
+      authorName: novel.author?.name || 'Unknown',
+      genre: novel.genre || '',
+      status: novel.status || 'ongoing',
+      rating: novel.rating || 0,
+      totalReads: novel.total_reads || 0,
+      totalLikes: 0,
+      totalReviews: 0,
+      createdAt: novel.created_at,
+    }));
+  } catch (error) {
+    console.error('Error in getNovelsByGenres:', error);
+    return [];
+  }
+}

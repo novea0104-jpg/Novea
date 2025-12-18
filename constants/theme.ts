@@ -96,6 +96,31 @@ export const GradientColors = {
     start: { x: 0, y: 0 } as const,
     end: { x: 0, y: 1 } as const,
   },
+  sosial: {
+    colors: ["#0EA5E9", "#0284C7"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  psikologis: {
+    colors: ["#6366F1", "#4F46E5"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  fantim: {
+    colors: ["#F472B6", "#A855F7"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  fanbar: {
+    colors: ["#FBBF24", "#EA580C"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
+  kolosal: {
+    colors: ["#78350F", "#92400E"] as const,
+    start: { x: 0, y: 0 } as const,
+    end: { x: 0, y: 1 } as const,
+  },
 } as const;
 
 export const Colors = {
