@@ -1109,32 +1109,15 @@ export interface TimelinePostComment {
   replyCount?: number;
 }
 
-// Get timeline feed for a user
-// Rules:
-// 1. Show all posts from Super Admin, Co Admin, Editor (to all users)
-// 2. Show posts from authors the user follows
-// 3. Show user's own posts
+// Get timeline feed - PUBLIC: all users can see all posts
 export async function getTimelineFeed(
   currentUserId: number | null,
-  limit: number = 20,
+  limit: number = 100,
   offset: number = 0
 ): Promise<TimelinePost[]> {
   try {
-    // First, get the list of user IDs the current user follows
-    let followingIds: number[] = [];
-    if (currentUserId) {
-      const { data: followingData } = await supabase
-        .from('user_follows')
-        .select('following_id')
-        .eq('follower_id', currentUserId);
-      followingIds = (followingData || []).map(f => f.following_id);
-    }
-
-    // Build the query - get posts where:
-    // 1. User role is super_admin, co_admin, or editor
-    // 2. User is in the following list
-    // 3. Post is from current user
-    let query = supabase
+    // Fetch ALL posts - no filtering, timeline is public
+    const { data, error } = await supabase
       .from('timeline_posts')
       .select(`
         *,
@@ -1144,29 +1127,12 @@ export async function getTimelineFeed(
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
-    const { data, error } = await query;
-
     if (error) {
       console.error('Error fetching timeline:', error);
       return [];
     }
 
-    // Filter posts according to rules
-    const adminRoles = ['super_admin', 'co_admin', 'editor'];
-    const filteredPosts = (data || []).filter((post: any) => {
-      const userRole = post.user?.role || 'pembaca';
-      
-      // Rule 1: Show all admin/editor posts
-      if (adminRoles.includes(userRole)) return true;
-      
-      // Rule 2: Show posts from followed users
-      if (followingIds.includes(post.user_id)) return true;
-      
-      // Rule 3: Show own posts
-      if (currentUserId && post.user_id === currentUserId) return true;
-      
-      return false;
-    });
+    const posts = data || [];
 
     // Get liked posts for current user
     let likedPostIds = new Set<number>();
@@ -1179,7 +1145,7 @@ export async function getTimelineFeed(
     }
 
     // Get actual comment counts from comments table (more reliable than denormalized count)
-    const postIds = filteredPosts.map((p: any) => p.id);
+    const postIds = posts.map((p: any) => p.id);
     const commentCountsMap = new Map<number, number>();
     
     if (postIds.length > 0) {
@@ -1195,7 +1161,7 @@ export async function getTimelineFeed(
       });
     }
 
-    return filteredPosts.map((post: any) => ({
+    return posts.map((post: any) => ({
       id: post.id,
       userId: post.user_id,
       userName: post.user?.name || 'Pengguna',
