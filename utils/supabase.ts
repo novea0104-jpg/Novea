@@ -3593,8 +3593,7 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
   try {
     const { data: likesData, error: likesError } = await supabase
       .from('novel_likes')
-      .select('novel_id')
-      .order('created_at', { ascending: false });
+      .select('novel_id');
 
     if (likesError) {
       console.error('Error fetching novel likes:', likesError);
@@ -3615,10 +3614,7 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
 
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select(`
-        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
-        author:users!novels_author_id_fkey(id, name)
-      `)
+      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
       .in('id', sortedNovelIds);
 
     if (novelsError) {
@@ -3626,6 +3622,13 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
       return [];
     }
 
+    const authorIds = [...new Set((novelsData || []).map((n: any) => n.author_id).filter(Boolean))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', authorIds);
+    
+    const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
     const novelMap = new Map((novelsData || []).map((n: any) => [n.id, n]));
     
     return sortedNovelIds
@@ -3636,8 +3639,8 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
           id: novel.id,
           title: novel.title,
           coverUrl: novel.cover_url,
-          authorId: novel.author?.id || novel.author_id,
-          authorName: novel.author?.name || 'Unknown',
+          authorId: novel.author_id,
+          authorName: authorMap.get(novel.author_id) || 'Unknown',
           genre: novel.genre || '',
           status: novel.status || 'ongoing',
           rating: novel.rating || 0,
@@ -3656,7 +3659,7 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
 export async function getMostReviewedNovels(limit: number = 20): Promise<CollectionNovel[]> {
   try {
     const { data: reviewsData, error: reviewsError } = await supabase
-      .from('reviews')
+      .from('novel_reviews')
       .select('novel_id');
 
     if (reviewsError) {
@@ -3678,10 +3681,7 @@ export async function getMostReviewedNovels(limit: number = 20): Promise<Collect
 
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select(`
-        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
-        author:users!novels_author_id_fkey(id, name)
-      `)
+      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
       .in('id', sortedNovelIds);
 
     if (novelsError) {
@@ -3689,6 +3689,13 @@ export async function getMostReviewedNovels(limit: number = 20): Promise<Collect
       return [];
     }
 
+    const authorIds = [...new Set((novelsData || []).map((n: any) => n.author_id).filter(Boolean))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', authorIds);
+    
+    const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
     const novelMap = new Map((novelsData || []).map((n: any) => [n.id, n]));
     
     return sortedNovelIds
@@ -3699,8 +3706,8 @@ export async function getMostReviewedNovels(limit: number = 20): Promise<Collect
           id: novel.id,
           title: novel.title,
           coverUrl: novel.cover_url,
-          authorId: novel.author?.id || novel.author_id,
-          authorName: novel.author?.name || 'Unknown',
+          authorId: novel.author_id,
+          authorName: authorMap.get(novel.author_id) || 'Unknown',
           genre: novel.genre || '',
           status: novel.status || 'ongoing',
           rating: novel.rating || 0,
@@ -3720,10 +3727,7 @@ export async function getCompletedNovelsByViews(limit: number = 20): Promise<Col
   try {
     const { data, error } = await supabase
       .from('novels')
-      .select(`
-        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
-        author:users!novels_author_id_fkey(id, name)
-      `)
+      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
       .eq('status', 'completed')
       .order('total_reads', { ascending: false })
       .limit(limit);
@@ -3733,12 +3737,20 @@ export async function getCompletedNovelsByViews(limit: number = 20): Promise<Col
       return [];
     }
 
+    const authorIds = [...new Set((data || []).map((n: any) => n.author_id).filter(Boolean))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', authorIds);
+    
+    const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
+
     return (data || []).map((novel: any) => ({
       id: novel.id,
       title: novel.title,
       coverUrl: novel.cover_url,
-      authorId: novel.author?.id || novel.author_id,
-      authorName: novel.author?.name || 'Unknown',
+      authorId: novel.author_id,
+      authorName: authorMap.get(novel.author_id) || 'Unknown',
       genre: novel.genre || '',
       status: novel.status || 'completed',
       rating: novel.rating || 0,
@@ -3770,10 +3782,7 @@ export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20
     if (genreIds.length === 0) {
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('novels')
-        .select(`
-          id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
-          author:users!novels_author_id_fkey(id, name)
-        `)
+        .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
         .or(genreSlugs.map(slug => `genre.ilike.%${slug}%`).join(','))
         .order('total_reads', { ascending: false })
         .limit(limit);
@@ -3783,12 +3792,20 @@ export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20
         return [];
       }
 
+      const authorIds = [...new Set((fallbackData || []).map((n: any) => n.author_id).filter(Boolean))];
+      const { data: authors } = await supabase
+        .from('users')
+        .select('id, name')
+        .in('id', authorIds);
+      
+      const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
+
       return (fallbackData || []).map((novel: any) => ({
         id: novel.id,
         title: novel.title,
         coverUrl: novel.cover_url,
-        authorId: novel.author?.id || novel.author_id,
-        authorName: novel.author?.name || 'Unknown',
+        authorId: novel.author_id,
+        authorName: authorMap.get(novel.author_id) || 'Unknown',
         genre: novel.genre || '',
         status: novel.status || 'ongoing',
         rating: novel.rating || 0,
@@ -3815,10 +3832,7 @@ export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20
 
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select(`
-        id, title, cover_url, author_id, genre, status, rating, total_reads, created_at,
-        author:users!novels_author_id_fkey(id, name)
-      `)
+      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
       .in('id', novelIds)
       .order('total_reads', { ascending: false })
       .limit(limit);
@@ -3828,12 +3842,20 @@ export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20
       return [];
     }
 
+    const authorIds = [...new Set((novelsData || []).map((n: any) => n.author_id).filter(Boolean))];
+    const { data: authors } = await supabase
+      .from('users')
+      .select('id, name')
+      .in('id', authorIds);
+    
+    const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
+
     return (novelsData || []).map((novel: any) => ({
       id: novel.id,
       title: novel.title,
       coverUrl: novel.cover_url,
-      authorId: novel.author?.id || novel.author_id,
-      authorName: novel.author?.name || 'Unknown',
+      authorId: novel.author_id,
+      authorName: authorMap.get(novel.author_id) || 'Unknown',
       genre: novel.genre || '',
       status: novel.status || 'ongoing',
       rating: novel.rating || 0,
