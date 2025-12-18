@@ -20,13 +20,14 @@ import { MessageCircleIcon } from "@/components/icons/MessageCircleIcon";
 import { HeartIcon } from "@/components/icons/HeartIcon";
 import { SendIcon } from "@/components/icons/SendIcon";
 import { UsersIcon } from "@/components/icons/UsersIcon";
+import { EyeIcon } from "@/components/icons/EyeIcon";
 import { XIcon } from "@/components/icons/XIcon";
 import { RoleBadge, UserRole } from "@/components/RoleBadge";
 import { ShareModal } from "@/components/ShareModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount, createTimelinePost, getNovelChapterLikesCount, getNovelTags, Tag } from "@/utils/supabase";
+import { supabase, trackNovelView, getNovelReviews, submitReview, getUserReview, NovelReview, getNovelRatingStats, ReviewReply, getReviewRepliesForNovel, submitReviewReply, getNovelLikeCount, getNovelFollowCount, createTimelinePost, getNovelChapterLikesCount, getNovelTags, Tag, getNovelViewCount } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, Typography, GradientColors } from "@/constants/theme";
 import { Chapter } from "@/types/models";
@@ -81,10 +82,11 @@ export default function NovelDetailScreen() {
   // Edit review state
   const [isEditingReview, setIsEditingReview] = useState(false);
   
-  // Like and follow counts
+  // Like, follow and view counts
   const [likeCount, setLikeCount] = useState(0);
   const [followCount, setFollowCount] = useState(0);
   const [chapterLikesCount, setChapterLikesCount] = useState(0);
+  const [viewCount, setViewCount] = useState(0);
   
   // Novel genres
   const [novelGenres, setNovelGenres] = useState<{ id: number; name: string; slug: string; gradient_start: string; gradient_end: string }[]>([]);
@@ -206,14 +208,16 @@ export default function NovelDetailScreen() {
   }
   
   async function loadCounts() {
-    const [likes, follows, chapterLikes] = await Promise.all([
+    const [likes, follows, chapterLikes, views] = await Promise.all([
       getNovelLikeCount(parseInt(novelId)),
       getNovelFollowCount(parseInt(novelId)),
       getNovelChapterLikesCount(parseInt(novelId)),
+      getNovelViewCount(parseInt(novelId)),
     ]);
     setLikeCount(likes);
     setFollowCount(follows);
     setChapterLikesCount(chapterLikes);
+    setViewCount(views);
   }
 
   useEffect(() => {
@@ -458,6 +462,12 @@ export default function NovelDetailScreen() {
               <StarIcon size={16} color={theme.secondary} filled />
               <ThemedText style={{ color: theme.textSecondary }}>
                 {ratingStats.averageRating.toFixed(1)} ({ratingStats.totalReviews.toLocaleString()})
+              </ThemedText>
+            </View>
+            <View style={styles.viewCount}>
+              <EyeIcon size={16} color={theme.textSecondary} />
+              <ThemedText style={{ color: theme.textSecondary }}>
+                {viewCount.toLocaleString()} Dibaca
               </ThemedText>
             </View>
             <View style={[styles.tag, { 
@@ -1038,6 +1048,11 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   rating: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  viewCount: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.xs,
