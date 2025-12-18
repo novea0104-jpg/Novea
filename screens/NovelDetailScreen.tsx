@@ -520,38 +520,37 @@ export default function NovelDetailScreen() {
               <ThemedText style={styles.editButtonText}>Kelola Novel</ThemedText>
             </LinearGradient>
           </Pressable>
-        ) : (
-          <View style={styles.socialActions}>
-            <Pressable
-              onPress={handleToggleLike}
-              style={[styles.socialButton, { backgroundColor: isLiked ? theme.error + '20' : theme.backgroundSecondary }]}
-            >
-              <HeartIcon size={18} color={isLiked ? theme.error : theme.text} filled={isLiked} />
-              <View style={styles.socialButtonContent}>
-                <ThemedText style={[styles.socialButtonCount, { color: isLiked ? theme.error : theme.text }]}>
-                  {(likeCount + chapterLikesCount).toLocaleString()}
-                </ThemedText>
-                <ThemedText style={[styles.socialButtonLabel, { color: isLiked ? theme.error : theme.textSecondary }]}>
-                  {isLiked ? 'Disukai' : 'Suka'}
-                </ThemedText>
-              </View>
-            </Pressable>
-            <Pressable
-              onPress={handleToggleFollow}
-              style={[styles.socialButton, { backgroundColor: isFollowing ? theme.primary + '20' : theme.backgroundSecondary }]}
-            >
-              <UsersIcon size={18} color={isFollowing ? theme.primary : theme.text} />
-              <View style={styles.socialButtonContent}>
-                <ThemedText style={[styles.socialButtonCount, { color: isFollowing ? theme.primary : theme.text }]}>
-                  {followCount.toLocaleString()}
-                </ThemedText>
-                <ThemedText style={[styles.socialButtonLabel, { color: isFollowing ? theme.primary : theme.textSecondary }]}>
-                  {isFollowing ? 'Mengikuti' : 'Ikuti'}
-                </ThemedText>
-              </View>
-            </Pressable>
-          </View>
-        )}
+        ) : null}
+        <View style={styles.socialActions}>
+          <Pressable
+            onPress={handleToggleLike}
+            style={[styles.socialButton, { backgroundColor: isLiked ? theme.error + '20' : theme.backgroundSecondary }]}
+          >
+            <HeartIcon size={18} color={isLiked ? theme.error : theme.text} filled={isLiked} />
+            <View style={styles.socialButtonContent}>
+              <ThemedText style={[styles.socialButtonCount, { color: isLiked ? theme.error : theme.text }]}>
+                {(likeCount + chapterLikesCount).toLocaleString()}
+              </ThemedText>
+              <ThemedText style={[styles.socialButtonLabel, { color: isLiked ? theme.error : theme.textSecondary }]}>
+                {isLiked ? 'Disukai' : 'Suka'}
+              </ThemedText>
+            </View>
+          </Pressable>
+          <Pressable
+            onPress={handleToggleFollow}
+            style={[styles.socialButton, { backgroundColor: isFollowing ? theme.primary + '20' : theme.backgroundSecondary }]}
+          >
+            <UsersIcon size={18} color={isFollowing ? theme.primary : theme.text} />
+            <View style={styles.socialButtonContent}>
+              <ThemedText style={[styles.socialButtonCount, { color: isFollowing ? theme.primary : theme.text }]}>
+                {followCount.toLocaleString()}
+              </ThemedText>
+              <ThemedText style={[styles.socialButtonLabel, { color: isFollowing ? theme.primary : theme.textSecondary }]}>
+                {isFollowing ? 'Mengikuti' : 'Ikuti'}
+              </ThemedText>
+            </View>
+          </Pressable>
+        </View>
         {isAdmin ? (
           <Pressable 
             style={[styles.iconButton, { backgroundColor: '#F59E0B' }]} 
