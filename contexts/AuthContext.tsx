@@ -226,7 +226,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function loginWithGoogle() {
     try {
-      const redirectUrl = Linking.createURL("google-auth");
+      // Google OAuth only works on native (Expo Go) - not on web preview
+      const { Platform } = require("react-native");
+      if (Platform.OS === "web") {
+        throw new Error("Login dengan Google hanya tersedia di aplikasi mobile. Silakan test menggunakan Expo Go di HP kamu.");
+      }
+
+      // Use the app scheme for redirect
+      const redirectUrl = "novea://google-auth";
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
