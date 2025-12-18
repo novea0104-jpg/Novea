@@ -2759,17 +2759,11 @@ export async function getEditorsChoiceNovels(): Promise<EditorsChoiceNovel[]> {
     const novelIds = choicesData.map(c => c.novel_id);
     const adminIds = [...new Set(choicesData.map(c => c.added_by).filter(Boolean))];
 
-    // Fetch novels data
+    // Fetch novels data with total_reads
     const { data: novelsData } = await supabase
       .from('novels')
-      .select('id, title, cover_url, genre, author_id')
+      .select('id, title, cover_url, genre, author_id, total_reads')
       .in('id', novelIds);
-
-    // Fetch view counts
-    const { count: viewCounts } = await supabase
-      .from('novel_views')
-      .select('novel_id', { count: 'exact', head: false })
-      .in('novel_id', novelIds);
 
     // Fetch likes counts
     const { data: likesData } = await supabase
@@ -2801,7 +2795,7 @@ export async function getEditorsChoiceNovels(): Promise<EditorsChoiceNovel[]> {
         authorName: userMap.get(novel?.author_id) || 'Unknown',
         coverUrl: novel?.cover_url || null,
         genre: novel?.genre || '',
-        viewCount: 0,
+        viewCount: novel?.total_reads || 0,
         likesCount: likesCounts[item.novel_id] || 0,
         displayOrder: item.display_order,
         addedAt: item.added_at,
