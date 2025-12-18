@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { ADMOB_CONFIG, isAdMobAvailable } from '@/utils/admob';
 
@@ -58,7 +58,8 @@ export const AdMobProvider: React.FC<AdMobProviderProps> = ({ children }) => {
   const [isRewardedLoaded, setIsRewardedLoaded] = useState(false);
   const [interstitialAd, setInterstitialAd] = useState<any>(null);
   const [rewardedAd, setRewardedAd] = useState<any>(null);
-  const [rewardCallback, setRewardCallback] = useState<((reward: { type: string; amount: number }) => void) | null>(null);
+  
+  const rewardCallbackRef = useRef<((reward: { type: string; amount: number }) => void) | null>(null);
 
   useEffect(() => {
     const initializeAdMob = async () => {
@@ -122,20 +123,22 @@ export const AdMobProvider: React.FC<AdMobProviderProps> = ({ children }) => {
     });
 
     const unsubscribeEarned = ad.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward: any) => {
-      if (rewardCallback) {
-        rewardCallback({ type: reward.type, amount: reward.amount });
-        setRewardCallback(null);
+      if (rewardCallbackRef.current) {
+        rewardCallbackRef.current({ type: reward.type, amount: reward.amount });
+        rewardCallbackRef.current = null;
       }
     });
 
     const unsubscribeClosed = ad.addAdEventListener(AdEventType.CLOSED, () => {
       setIsRewardedLoaded(false);
+      rewardCallbackRef.current = null;
       loadRewarded();
     });
 
     const unsubscribeError = ad.addAdEventListener(AdEventType.ERROR, (error: any) => {
       console.error('Rewarded ad error:', error);
       setIsRewardedLoaded(false);
+      rewardCallbackRef.current = null;
     });
 
     ad.load();
@@ -147,7 +150,7 @@ export const AdMobProvider: React.FC<AdMobProviderProps> = ({ children }) => {
       unsubscribeClosed();
       unsubscribeError();
     };
-  }, [isInitialized, rewardCallback]);
+  }, [isInitialized]);
 
   useEffect(() => {
     if (isInitialized) {
@@ -178,11 +181,12 @@ export const AdMobProvider: React.FC<AdMobProviderProps> = ({ children }) => {
     }
 
     try {
-      setRewardCallback(() => onRewarded);
+      rewardCallbackRef.current = onRewarded;
       await rewardedAd.show();
       return true;
     } catch (error) {
       console.error('Failed to show rewarded ad:', error);
+      rewardCallbackRef.current = null;
       return false;
     }
   }, [isRewardedLoaded, rewardedAd]);

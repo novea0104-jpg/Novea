@@ -1,5 +1,7 @@
 const IS_EAS_BUILD = process.env.EAS_BUILD === 'true';
 
+const GOOGLE_TEST_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
+
 const config = {
   expo: {
     name: "Novea",
@@ -54,19 +56,21 @@ const config = {
       eas: {
         projectId: "novea"
       },
-      admobAppId: process.env.ADMOB_APP_ID || "ca-app-pub-4233873340910338~9509478256",
-      admobBannerId: process.env.ADMOB_BANNER_ID || "ca-app-pub-4233873340910338/6726584004",
-      admobInterstitialId: process.env.ADMOB_INTERSTITIAL_ID || "ca-app-pub-4233873340910338/8627641424",
-      admobRewardedId: process.env.ADMOB_REWARDED_ID || "ca-app-pub-4233873340910338/4119945424",
+      admobAppId: process.env.ADMOB_APP_ID || null,
+      admobBannerId: process.env.ADMOB_BANNER_ID || null,
+      admobInterstitialId: process.env.ADMOB_INTERSTITIAL_ID || null,
+      admobRewardedId: process.env.ADMOB_REWARDED_ID || null,
     }
   }
 };
 
 if (IS_EAS_BUILD) {
+  const admobAppId = process.env.ADMOB_APP_ID || GOOGLE_TEST_APP_ID;
+  
   config.expo.plugins.push([
     "react-native-google-mobile-ads",
     {
-      androidAppId: process.env.ADMOB_APP_ID || "ca-app-pub-4233873340910338~9509478256",
+      androidAppId: admobAppId,
     }
   ]);
 }
