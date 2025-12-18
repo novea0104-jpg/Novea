@@ -34,8 +34,9 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [isSendingReset, setIsSendingReset] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const { login, signup, resetPassword } = useAuth();
+  const { login, loginWithGoogle, signup, resetPassword } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -190,6 +191,18 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
     setConfirmPassword("");
     setName("");
     setShowPassword(false);
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+      onClose?.();
+    } catch (error: any) {
+      Alert.alert("Kesalahan", error.message || "Gagal masuk dengan Google");
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   return (
@@ -429,6 +442,33 @@ export default function AuthScreen({ onClose }: AuthScreenProps) {
                 </>
               )}
             </LinearGradient>
+          </Pressable>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.cardBorder }]} />
+            <ThemedText style={[styles.dividerText, { color: theme.textMuted }]}>atau</ThemedText>
+            <View style={[styles.dividerLine, { backgroundColor: theme.cardBorder }]} />
+          </View>
+
+          {/* Google Sign In Button */}
+          <Pressable
+            onPress={handleGoogleLogin}
+            disabled={isGoogleLoading || isLoading}
+            style={({ pressed }) => [
+              styles.googleButton,
+              { backgroundColor: theme.backgroundRoot, borderColor: theme.cardBorder },
+              pressed && styles.submitButtonPressed,
+            ]}
+          >
+            <View style={styles.googleIconContainer}>
+              <View style={styles.googleIcon}>
+                <ThemedText style={styles.googleIconText}>G</ThemedText>
+              </View>
+            </View>
+            <ThemedText style={[styles.googleButtonText, { color: theme.text }]}>
+              {isGoogleLoading ? "Menghubungkan..." : "Lanjutkan dengan Google"}
+            </ThemedText>
           </Pressable>
 
           {/* Additional Info */}
@@ -713,5 +753,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     marginBottom: Spacing.xl,
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: Spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: Spacing.md,
+    fontSize: 13,
+  },
+  googleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: Spacing.buttonHeight,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  googleIconContainer: {
+    marginRight: Spacing.xs,
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  googleIconText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#4285F4",
+  },
+  googleButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

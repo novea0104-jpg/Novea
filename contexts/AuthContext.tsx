@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { supabase } from "@/utils/supabase";
 import { User } from "@/types/models";
 
@@ -9,6 +11,7 @@ interface AuthContextType {
   isAuthPromptVisible: boolean;
   authPromptMessage: string;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -219,6 +222,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Load user profile from users table
     await loadUserProfile(email);
+  }
+
+  async function loginWithGoogle() {
+    try {
+      const redirectUrl = Linking.createURL("google-auth");
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            prompt: "select_account",
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (!data.url) throw new Error("Tidak ada URL autentikasi");
+
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+      if (result.type === "success" && result.url) {
+        const url = new URL(result.url);
+        const params = new URLSearchParams(url.hash.substring(1));
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+
+          if (sessionError) throw sessionError;
+
+          if (sessionData.user?.email) {
+            const { data: existingUser } = await supabase
+              .from("users")
+              .select("id")
+              .eq("email", sessionData.user.email)
+              .maybeSingle();
+
+            if (!existingUser) {
+              const userName = sessionData.user.user_metadata?.full_name || 
+                               sessionData.user.user_metadata?.name ||
+                               sessionData.user.email?.split("@")[0] || 
+                               "User";
+              
+              await supabase.from("users").insert({
+                email: sessionData.user.email,
+                name: userName,
+                is_writer: false,
+                role: "pembaca",
+                coin_balance: 0,
+                silver_balance: 50,
+                avatar_url: sessionData.user.user_metadata?.avatar_url || null,
+              });
+            }
+
+            await loadUserProfile(sessionData.user.email);
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      throw new Error(error.message || "Gagal masuk dengan Google");
+    }
   }
 
   async function logout() {
@@ -554,6 +624,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthPromptVisible,
         authPromptMessage,
         login,
+        loginWithGoogle,
         signup,
         logout,
         resetPassword,
