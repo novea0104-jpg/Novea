@@ -33,6 +33,40 @@ Preferred communication style: Simple, everyday language.
 **Coin Economy:** A virtual currency (Novoin) for unlocking chapters, supported by coin packages and balance tracking.
 **Payment Gateway:** Google Play Billing integration via `react-native-iap` for in-app purchases on Android, with server-side validation using a Supabase Edge Function.
 **Writer Monetization:** Writers receive 80% revenue share, with a dashboard for sales analytics, bank account management, and withdrawal requests.
+**AdMob Integration:** Banner, Interstitial, and Rewarded ads for monetization. Configured for development builds only (requires EAS Build, not compatible with Expo Go).
+
+### AdMob Configuration
+
+**Status:** Configured and ready for production builds.
+**Credentials:** Stored as Replit Secrets (ADMOB_APP_ID, ADMOB_BANNER_ID, ADMOB_INTERSTITIAL_ID, ADMOB_REWARDED_ID).
+**Files:**
+- `utils/admob.ts`: Ad unit configuration with test/production ID switching
+- `contexts/AdMobContext.tsx`: AdMob state management and initialization
+- `components/ads/BannerAd.tsx`: Banner ad component
+- `hooks/useAds.ts`: Hooks for interstitial and rewarded ads
+- `app.config.js`: Dynamic plugin configuration for EAS builds
+
+**Build Requirements:**
+- AdMob requires `react-native-google-mobile-ads` native module
+- Development/Preview/Production builds via EAS Build include AdMob plugin
+- Expo Go development does NOT include AdMob (graceful fallback to null)
+
+**Usage:**
+```typescript
+// Banner Ad
+import { AdBanner } from '@/components/ads/BannerAd';
+<AdBanner size="ANCHORED_ADAPTIVE_BANNER" />
+
+// Interstitial Ad
+import { useInterstitialAd } from '@/hooks/useAds';
+const { show, isLoaded } = useInterstitialAd();
+if (isLoaded) await show();
+
+// Rewarded Ad
+import { useRewardedAd } from '@/hooks/useAds';
+const { show } = useRewardedAd();
+await show((reward) => { console.log('Earned:', reward.amount); });
+```
 
 ### Core Features
 

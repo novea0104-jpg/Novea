@@ -12,6 +12,7 @@ import AuthScreen from "@/screens/AuthScreen";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppProvider } from "@/contexts/AppContext";
+import { AdMobProvider } from "@/contexts/AdMobContext";
 import { ThemedText } from "@/components/ThemedText";
 import { Colors, Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 
@@ -82,10 +83,12 @@ function AppContent() {
 
   return (
     <AppProvider>
-      <NavigationContainer>
-        <MainTabNavigator />
-      </NavigationContainer>
-      <AuthPromptModal />
+      <AdMobProvider>
+        <NavigationContainer>
+          <MainTabNavigator />
+        </NavigationContainer>
+        <AuthPromptModal />
+      </AdMobProvider>
     </AppProvider>
   );
 }
