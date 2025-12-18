@@ -23,7 +23,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
-import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome, getFeaturedAuthors, FeaturedAuthor } from "@/utils/supabase";
+import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome, getFeaturedAuthors, FeaturedAuthor, getAllAdminNews, NewsItem } from "@/utils/supabase";
 import { Avatar } from "@/components/Avatar";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
@@ -68,6 +68,7 @@ export default function BrowseHomeScreen() {
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [editorsPick, setEditorsPick] = useState<Novel[]>([]);
   const [featuredAuthors, setFeaturedAuthors] = useState<FeaturedAuthor[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
 
   const maxContentWidth = 1200;
   const shouldCenterContent = isDesktop && width > maxContentWidth;
@@ -77,7 +78,17 @@ export default function BrowseHomeScreen() {
     fetchGenres();
     fetchEditorsChoice();
     fetchFeaturedAuthors();
+    fetchNews();
   }, []);
+
+  const fetchNews = async () => {
+    try {
+      const newsData = await getAllAdminNews();
+      setNews(newsData.slice(0, 5));
+    } catch (error) {
+      console.error("Error fetching news:", error);
+    }
+  };
 
   const fetchFeaturedAuthors = async () => {
     try {
@@ -473,6 +484,74 @@ export default function BrowseHomeScreen() {
     );
   };
 
+  const renderNewsSection = () => {
+    if (news.length === 0) return null;
+    
+    const noveaLogo = require("@/assets/images/novea-logo.png");
+    
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionTitleContainer}>
+          <View style={[styles.iconContainer, { backgroundColor: "#8B5CF620" }]}>
+            <Image
+              source={noveaLogo}
+              style={{ width: 18, height: 18 }}
+              resizeMode="contain"
+            />
+          </View>
+          <ThemedText style={styles.sectionTitle}>N-News</ThemedText>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.newsCarousel}
+        >
+          {news.map((item) => (
+            <Pressable
+              key={item.id}
+              style={({ pressed }) => [
+                styles.newsCard,
+                { 
+                  backgroundColor: theme.backgroundSecondary,
+                  opacity: pressed ? 0.8 : 1,
+                },
+              ]}
+            >
+              {item.imageUrl ? (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.newsCardImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <LinearGradient
+                  colors={["#8B5CF6", "#6366F1"]}
+                  style={styles.newsCardImage}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Image
+                    source={noveaLogo}
+                    style={{ width: 40, height: 40 }}
+                    resizeMode="contain"
+                  />
+                </LinearGradient>
+              )}
+              <View style={styles.newsCardContent}>
+                <ThemedText style={styles.newsCardTitle} numberOfLines={2}>
+                  {item.title}
+                </ThemedText>
+                <ThemedText style={[styles.newsCardMeta, { color: theme.textSecondary }]} numberOfLines={1}>
+                  {item.authorName} • {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                </ThemedText>
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderFreeNovelsSection = () => {
     if (isDesktop || isTablet) {
       const columnsCount = isDesktop ? 6 : 4;
@@ -578,6 +657,7 @@ export default function BrowseHomeScreen() {
         {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={20} color="#8B5CF6" />, "#8B5CF6")}
         {renderFeaturedAuthorsSection()}
         {renderEditorsPickSection()}
+        {renderNewsSection()}
 
         <View style={styles.section}>
           {renderSectionTitle("Jelajahi Genre", <CompassIcon size={20} color="#3B82F6" />, "#3B82F6")}
@@ -783,5 +863,31 @@ const styles = StyleSheet.create({
   authorStatDivider: {
     width: 1,
     height: 20,
+  },
+  newsCarousel: {
+    paddingRight: Spacing.lg,
+    gap: Spacing.md,
+  },
+  newsCard: {
+    width: 200,
+    borderRadius: BorderRadius.lg,
+    overflow: "hidden",
+  },
+  newsCardImage: {
+    width: "100%",
+    height: 90,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  newsCardContent: {
+    padding: Spacing.sm,
+  },
+  newsCardTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  newsCardMeta: {
+    fontSize: 11,
   },
 });

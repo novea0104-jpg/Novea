@@ -66,6 +66,10 @@ import {
   removeFromFeaturedAuthors,
   searchAuthorsForFeatured,
   FeaturedAuthor,
+  getAllAdminNews,
+  createAdminNews,
+  deleteAdminNews,
+  NewsItem,
 } from "@/utils/supabase";
 import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/useGoldWithdrawal";
 import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
@@ -75,7 +79,7 @@ import { CameraIcon } from "@/components/icons/CameraIcon";
 
 const noveaLogo = require("@/assets/images/novea-logo.png");
 
-type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd';
+type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd' | 'news';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -159,6 +163,15 @@ export default function AdminDashboardScreen() {
   const [goldWdFilter, setGoldWdFilter] = useState<string>('');
   const [searchingAuthors, setSearchingAuthors] = useState(false);
   
+  // N-News states
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [showCreateNewsModal, setShowCreateNewsModal] = useState(false);
+  const [newNewsTitle, setNewNewsTitle] = useState('');
+  const [newNewsContent, setNewNewsContent] = useState('');
+  const [newNewsImageUri, setNewNewsImageUri] = useState<string | null>(null);
+  const [creatingNews, setCreatingNews] = useState(false);
+  
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
       return;
@@ -216,6 +229,13 @@ export default function AdminDashboardScreen() {
     setGoldWithdrawalsLoading(false);
   }, []);
 
+  const loadNews = useCallback(async () => {
+    setNewsLoading(true);
+    const data = await getAllAdminNews();
+    setNewsList(data);
+    setNewsLoading(false);
+  }, []);
+
   const handleUpdateGoldWdStatus = async (wdId: number, status: string, note?: string) => {
     const result = await updateGoldWithdrawalStatus(wdId, status, note);
     if (result.success) {
@@ -236,6 +256,7 @@ export default function AdminDashboardScreen() {
         loadEditorsChoice(),
         loadFeaturedAuthors(),
         loadGoldWithdrawals(),
+        loadNews(),
       ]);
       setLoading(false);
     };
@@ -256,6 +277,8 @@ export default function AdminDashboardScreen() {
       await loadFeaturedAuthors();
     } else if (activeTab === 'gold_wd') {
       await loadGoldWithdrawals(goldWdFilter);
+    } else if (activeTab === 'news') {
+      await loadNews();
     }
     setRefreshing(false);
   };
@@ -1286,6 +1309,7 @@ export default function AdminDashboardScreen() {
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
           {renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon)}
+          {renderTabButton('news', 'N-News', BookIcon)}
         </ScrollView>
       </View>
 
@@ -1748,6 +1772,186 @@ export default function AdminDashboardScreen() {
           )}
         </View>
       ) : null}
+
+      {activeTab === 'news' ? (
+        <ScreenScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+          }
+        >
+          <View style={styles.content}>
+            <View style={styles.newsHeader}>
+              <View style={styles.newsTitleRow}>
+                <Image source={noveaLogo} style={styles.newsLogoIcon} />
+                <ThemedText style={[Typography.h2, { marginLeft: Spacing.sm }]}>N-News</ThemedText>
+              </View>
+              <Pressable
+                onPress={() => setShowCreateNewsModal(true)}
+                style={[styles.addNewsBtn, { backgroundColor: theme.primary }]}
+              >
+                <PlusIcon size={18} color="#FFFFFF" />
+                <ThemedText style={styles.addNewsBtnText}>Buat News</ThemedText>
+              </Pressable>
+            </View>
+            <ThemedText style={[styles.roleInfo, { color: theme.textSecondary, marginTop: Spacing.xs }]}>
+              Kelola berita, promo, dan info event untuk ditampilkan di Home
+            </ThemedText>
+
+            {newsLoading ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color={theme.primary} />
+              </View>
+            ) : newsList.length > 0 ? (
+              <View style={{ marginTop: Spacing.lg }}>
+                {newsList.map((news) => (
+                  <Card key={news.id} elevation={1} style={styles.newsCard}>
+                    {news.imageUrl ? (
+                      <Image source={{ uri: news.imageUrl }} style={styles.newsCardImage} contentFit="cover" />
+                    ) : null}
+                    <View style={styles.newsCardContent}>
+                      <View style={styles.newsCardHeader}>
+                        <View style={{ flex: 1 }}>
+                          <ThemedText style={styles.newsCardTitle} numberOfLines={2}>{news.title}</ThemedText>
+                          <ThemedText style={[styles.newsCardMeta, { color: theme.textSecondary }]}>
+                            {news.authorName} • {new Date(news.createdAt).toLocaleDateString('id-ID')}
+                          </ThemedText>
+                        </View>
+                        <Pressable
+                          onPress={() => {
+                            Alert.alert(
+                              'Hapus News',
+                              `Yakin ingin menghapus "${news.title}"?`,
+                              [
+                                { text: 'Batal', style: 'cancel' },
+                                { 
+                                  text: 'Hapus', 
+                                  style: 'destructive',
+                                  onPress: async () => {
+                                    const result = await deleteAdminNews(news.id, parseInt(user?.id || '0'));
+                                    if (result.success) {
+                                      setNewsList(prev => prev.filter(n => n.id !== news.id));
+                                      Alert.alert('Berhasil', 'News berhasil dihapus');
+                                    } else {
+                                      Alert.alert('Error', result.error || 'Gagal menghapus news');
+                                    }
+                                  }
+                                }
+                              ]
+                            );
+                          }}
+                          style={[styles.newsDeleteBtn, { backgroundColor: '#EF444420' }]}
+                        >
+                          <TrashIcon size={18} color="#EF4444" />
+                        </Pressable>
+                      </View>
+                      <ThemedText style={[styles.newsCardDesc, { color: theme.textSecondary }]} numberOfLines={3}>
+                        {news.content}
+                      </ThemedText>
+                    </View>
+                  </Card>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <BookIcon size={48} color={theme.textMuted} />
+                <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
+                  Belum ada N-News
+                </ThemedText>
+                <ThemedText style={[styles.emptySubtext, { color: theme.textMuted }]}>
+                  Buat news untuk promo, info event, atau pengumuman
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </ScreenScrollView>
+      ) : null}
+
+      {/* Create News Modal */}
+      <Modal
+        visible={showCreateNewsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCreateNewsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.modalHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Image source={noveaLogo} style={{ width: 24, height: 24, marginRight: Spacing.sm }} />
+                <ThemedText style={Typography.h3}>Buat N-News</ThemedText>
+              </View>
+              <Pressable onPress={() => setShowCreateNewsModal(false)}>
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Judul News</ThemedText>
+              <TextInput
+                style={[styles.textInput, { color: theme.text, backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
+                value={newNewsTitle}
+                onChangeText={setNewNewsTitle}
+                placeholder="Judul news atau pengumuman"
+                placeholderTextColor={theme.textMuted}
+              />
+
+              <ThemedText style={[styles.inputLabel, { color: theme.textSecondary, marginTop: Spacing.md }]}>Konten</ThemedText>
+              <TextInput
+                style={[styles.textInputMultiline, { color: theme.text, backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
+                value={newNewsContent}
+                onChangeText={setNewNewsContent}
+                placeholder="Isi konten news..."
+                placeholderTextColor={theme.textMuted}
+                multiline
+                numberOfLines={6}
+                textAlignVertical="top"
+              />
+
+              <View style={styles.actionButtons}>
+                <Pressable
+                  onPress={() => {
+                    setShowCreateNewsModal(false);
+                    setNewNewsTitle('');
+                    setNewNewsContent('');
+                  }}
+                  style={[styles.cancelButton, { backgroundColor: theme.backgroundSecondary, flex: 1 }]}
+                >
+                  <ThemedText style={styles.cancelButtonText}>Batal</ThemedText>
+                </Pressable>
+                <Button
+                  onPress={async () => {
+                    if (!newNewsTitle.trim() || !newNewsContent.trim()) {
+                      Alert.alert('Error', 'Judul dan konten harus diisi');
+                      return;
+                    }
+                    setCreatingNews(true);
+                    const result = await createAdminNews(
+                      parseInt(user?.id || '0'),
+                      newNewsTitle.trim(),
+                      newNewsContent.trim(),
+                      newNewsImageUri || undefined
+                    );
+                    setCreatingNews(false);
+                    if (result.success) {
+                      Alert.alert('Berhasil', 'N-News berhasil dibuat');
+                      setShowCreateNewsModal(false);
+                      setNewNewsTitle('');
+                      setNewNewsContent('');
+                      setNewNewsImageUri(null);
+                      loadNews();
+                    } else {
+                      Alert.alert('Error', result.error || 'Gagal membuat news');
+                    }
+                  }}
+                  disabled={creatingNews}
+                  style={{ flex: 1 }}
+                >
+                  {creatingNews ? 'Menyimpan...' : 'Simpan'}
+                </Button>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* Add Author to Featured Authors Modal */}
       <Modal
@@ -2514,5 +2718,74 @@ const styles = StyleSheet.create({
   coverPlaceholderText: {
     fontSize: 12,
     marginTop: Spacing.sm,
+  },
+  newsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  newsTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  newsLogoIcon: {
+    width: 28,
+    height: 28,
+  },
+  addNewsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+  },
+  addNewsBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  newsCard: {
+    marginBottom: Spacing.md,
+    overflow: 'hidden',
+  },
+  newsCardImage: {
+    width: '100%',
+    height: 120,
+  },
+  newsCardContent: {
+    padding: Spacing.md,
+  },
+  newsCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.sm,
+  },
+  newsCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  newsCardMeta: {
+    fontSize: 12,
+  },
+  newsDeleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.sm,
+  },
+  newsCardDesc: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
   },
 });

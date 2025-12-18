@@ -3405,6 +3405,49 @@ export interface NewsItem {
   updatedAt: string;
 }
 
+export async function getAllAdminNews(): Promise<NewsItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('admin_news')
+      .select(`
+        id,
+        title,
+        content,
+        image_url,
+        created_at,
+        updated_at,
+        author:users!admin_news_author_id_fkey (
+          id,
+          name,
+          avatar_url,
+          role
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching all admin news:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      authorId: item.author?.id || 0,
+      authorName: item.author?.name || 'Unknown',
+      authorAvatar: item.author?.avatar_url || null,
+      authorRole: item.author?.role || 'editor',
+      title: item.title,
+      content: item.content,
+      imageUrl: item.image_url,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    }));
+  } catch (error) {
+    console.error('Error in getAllAdminNews:', error);
+    return [];
+  }
+}
+
 export async function getAdminNews(authorId: number): Promise<NewsItem[]> {
   try {
     const { data, error } = await supabase
