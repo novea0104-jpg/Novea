@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, FlatList, Pressable, Image, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useMemo } from "react";
+import { View, StyleSheet, FlatList, Pressable, Image, ActivityIndicator, ScrollView } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,12 +8,22 @@ import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { EmptyState } from "@/components/EmptyState";
 import { ChevronLeftIcon } from "@/components/icons/ChevronLeftIcon";
+import { ClockIcon } from "@/components/icons/ClockIcon";
+import { FlameIcon } from "@/components/icons/FlameIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useScreenInsets } from "@/hooks/useScreenInsets";
 import { supabase } from "@/utils/supabase";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
 import { Spacing, BorderRadius, GradientColors } from "@/constants/theme";
 import { Novel } from "@/types/models";
+
+type FilterType = "newest" | "oldest" | "popular";
+
+const FILTER_OPTIONS: { key: FilterType; label: string; icon: "clock" | "flame" }[] = [
+  { key: "newest", label: "Terbaru", icon: "clock" },
+  { key: "oldest", label: "Terlama", icon: "clock" },
+  { key: "popular", label: "Terpopuler", icon: "flame" },
+];
 
 type NavigationProp = NativeStackNavigationProp<BrowseStackParamList>;
 type GenreRouteProp = RouteProp<BrowseStackParamList, "Genre">;
@@ -56,6 +66,21 @@ export default function GenreScreen() {
 
   const [novels, setNovels] = useState<Novel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterType>("newest");
+
+  const sortedNovels = useMemo(() => {
+    const sorted = [...novels];
+    switch (activeFilter) {
+      case "newest":
+        return sorted.sort((a, b) => b.lastUpdated.getTime() - a.lastUpdated.getTime());
+      case "oldest":
+        return sorted.sort((a, b) => a.lastUpdated.getTime() - b.lastUpdated.getTime());
+      case "popular":
+        return sorted.sort((a, b) => b.followers - a.followers);
+      default:
+        return sorted;
+    }
+  }, [novels, activeFilter]);
 
   const genreConfig = GENRE_CONFIG[genreId.toLowerCase()] || { 
     gradient: ["#6B7280", "#4B5563"] as const, 
@@ -145,8 +170,9 @@ export default function GenreScreen() {
           ratingCount: 0,
           totalReviews: 0,
           coinPerChapter: 0,
+          freeChapters: 0,
+          totalLikes: 0,
           createdAt: new Date(novel.created_at),
-          updatedAt: new Date(novel.updated_at),
           lastUpdated: new Date(novel.updated_at),
         }));
 
@@ -215,8 +241,9 @@ export default function GenreScreen() {
         ratingCount: 0,
         totalReviews: 0,
         coinPerChapter: 0,
+        freeChapters: 0,
+        totalLikes: 0,
         createdAt: new Date(novel.created_at),
-        updatedAt: new Date(novel.updated_at),
         lastUpdated: new Date(novel.updated_at),
       }));
 
@@ -254,30 +281,71 @@ export default function GenreScreen() {
     );
   };
 
+  const renderFilterIcon = (iconType: "clock" | "flame", isActive: boolean) => {
+    const iconColor = isActive ? "#FFFFFF" : theme.textSecondary;
+    if (iconType === "flame") {
+      return <FlameIcon size={14} color={iconColor} />;
+    }
+    return <ClockIcon size={14} color={iconColor} />;
+  };
+
   const renderHeader = () => (
-    <LinearGradient
-      colors={genreConfig.gradient}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={[styles.headerBanner, { paddingTop: insets.top + Spacing.md }]}
-    >
-      <Pressable 
-        onPress={() => navigation.goBack()} 
-        style={styles.backButton}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    <View>
+      <LinearGradient
+        colors={genreConfig.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.headerBanner, { paddingTop: insets.top + Spacing.md }]}
       >
-        <ChevronLeftIcon size={28} color="#FFFFFF" />
-      </Pressable>
-      <View style={styles.bannerContent}>
-        <ThemedText style={styles.bannerTitle} lightColor="#FFFFFF" darkColor="#FFFFFF">
-          {genreName}
-        </ThemedText>
-        <ThemedText style={styles.bannerSubtitle} lightColor="rgba(255,255,255,0.8)" darkColor="rgba(255,255,255,0.8)">
-          {novels.length} novel tersedia
-        </ThemedText>
-      </View>
-      <View style={styles.bannerGlow} />
-    </LinearGradient>
+        <Pressable 
+          onPress={() => navigation.goBack()} 
+          style={styles.backButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <ChevronLeftIcon size={28} color="#FFFFFF" />
+        </Pressable>
+        <View style={styles.bannerContent}>
+          <ThemedText style={styles.bannerTitle} lightColor="#FFFFFF" darkColor="#FFFFFF">
+            {genreName}
+          </ThemedText>
+          <ThemedText style={styles.bannerSubtitle} lightColor="rgba(255,255,255,0.8)" darkColor="rgba(255,255,255,0.8)">
+            {novels.length} novel tersedia
+          </ThemedText>
+        </View>
+        <View style={styles.bannerGlow} />
+      </LinearGradient>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterContainer}
+      >
+        {FILTER_OPTIONS.map((filter) => {
+          const isActive = activeFilter === filter.key;
+          return (
+            <Pressable
+              key={filter.key}
+              onPress={() => setActiveFilter(filter.key)}
+              style={({ pressed }) => [
+                styles.filterChip,
+                isActive ? styles.filterChipActive : { backgroundColor: theme.backgroundDefault },
+                { opacity: pressed ? 0.8 : 1 },
+              ]}
+            >
+              {renderFilterIcon(filter.icon, isActive)}
+              <ThemedText
+                style={[
+                  styles.filterChipText,
+                  isActive ? styles.filterChipTextActive : { color: theme.textSecondary },
+                ]}
+              >
+                {filter.label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 
   if (isLoading) {
@@ -291,7 +359,7 @@ export default function GenreScreen() {
   return (
     <ThemedView style={styles.container}>
       <FlatList
-        data={novels}
+        data={sortedNovels}
         renderItem={renderNovel}
         keyExtractor={(item) => item.id}
         numColumns={3}
@@ -371,6 +439,29 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: Spacing.xl,
+  },
+  filterContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  filterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+  },
+  filterChipActive: {
+    backgroundColor: "#8B5CF6",
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  filterChipTextActive: {
+    color: "#FFFFFF",
   },
   columnWrapper: {
     paddingHorizontal: Spacing.lg,
