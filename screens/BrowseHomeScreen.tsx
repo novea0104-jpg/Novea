@@ -784,11 +784,11 @@ export default function BrowseHomeScreen() {
       >
         {renderNovelSection("Sedang Trending", trendingNovels, <FlameIcon size={20} color="#EF4444" />, "#EF4444", "large")}
         {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={20} color="#8B5CF6" />, "#8B5CF6")}
+        {renderFeaturedAuthorsSection()}
+        {renderEditorsPickSection()}
         {renderCollectionSection("Yang Paling Disukai", mostLiked, <HeartIcon size={20} color="#EC4899" />, "#EC4899")}
         {renderCollectionSection("Kamu Wajib Baca", mustRead, <MessageSquareIcon size={20} color="#F59E0B" />, "#F59E0B")}
         {renderCollectionSection("Novel Tamat", completedNovels, <CheckIcon size={20} color="#10B981" />, "#10B981")}
-        {renderFeaturedAuthorsSection()}
-        {renderEditorsPickSection()}
         {renderNewsSection()}
 
         <View style={styles.section}>
