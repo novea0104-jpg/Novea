@@ -18,6 +18,7 @@ import { TimelinePost, TimelinePostComment } from "@/utils/supabase";
 interface PostCardProps {
   post: TimelinePost;
   currentUserId?: number;
+  currentUserRole?: string;
   onLikePress: (postId: number) => void;
   onAddComment: (postId: number, content: string, parentId?: number) => Promise<boolean>;
   onDeletePress: (postId: number) => void;
@@ -152,6 +153,7 @@ function CommentItem({
 export function PostCard({
   post,
   currentUserId,
+  currentUserRole,
   onLikePress,
   onAddComment,
   onDeletePress,
@@ -171,7 +173,9 @@ export function PostCard({
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   const isOwner = currentUserId === post.userId;
-  const canDelete = isOwner;
+  const adminRoles = ['admin', 'co_admin', 'editor'];
+  const isAdminOrEditor = currentUserRole && adminRoles.includes(currentUserRole);
+  const canDelete = isOwner || isAdminOrEditor;
 
   const handleLike = async () => {
     if (isLiking || isGuest) return;

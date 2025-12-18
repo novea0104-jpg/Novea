@@ -192,7 +192,7 @@ export default function UserProfileScreen() {
 
   const handlePostDeletePress = async (postId: number) => {
     if (!currentUser?.id) return;
-    const result = await deleteTimelinePost(postId, parseInt(currentUser.id));
+    const result = await deleteTimelinePost(postId, parseInt(currentUser.id), currentUser.role);
     if (result.success) {
       setUserPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
     }
@@ -445,6 +445,7 @@ export default function UserProfileScreen() {
                 key={post.id}
                 post={post}
                 currentUserId={currentUser?.id ? parseInt(currentUser.id) : undefined}
+                currentUserRole={currentUser?.role}
                 onLikePress={handlePostLikePress}
                 onDeletePress={handlePostDeletePress}
                 onFetchComments={handlePostFetchComments}

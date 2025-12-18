@@ -111,7 +111,7 @@ export default function TimelineScreen() {
   const handleDeletePost = async (postId: number) => {
     if (!user?.id) return;
     
-    const result = await deleteTimelinePost(postId, parseInt(user.id));
+    const result = await deleteTimelinePost(postId, parseInt(user.id), user.role);
     if (result.success) {
       setPosts(prevPosts => prevPosts.filter(post => post.id !== postId));
     }
@@ -173,6 +173,7 @@ export default function TimelineScreen() {
     <PostCard
       post={item}
       currentUserId={user?.id ? parseInt(user.id) : undefined}
+      currentUserRole={user?.role}
       onLikePress={handleLikePress}
       onDeletePress={handleDeletePost}
       onFetchComments={handleFetchComments}

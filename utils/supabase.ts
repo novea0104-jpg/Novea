@@ -1112,7 +1112,7 @@ export interface TimelinePostComment {
 // Get timeline feed - PUBLIC: all users can see all posts
 export async function getTimelineFeed(
   currentUserId: number | null,
-  limit: number = 100,
+  limit: number = 500,
   offset: number = 0
 ): Promise<TimelinePost[]> {
   try {
@@ -1286,7 +1286,8 @@ export async function createTimelinePost(
 // Delete a timeline post
 export async function deleteTimelinePost(
   postId: number,
-  userId: number
+  userId: number,
+  userRole?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Check if user owns this post
@@ -1300,7 +1301,11 @@ export async function deleteTimelinePost(
       return { success: false, error: 'Postingan tidak ditemukan' };
     }
 
-    if (post.user_id !== userId) {
+    // Admin roles can delete any post
+    const adminRoles = ['admin', 'co_admin', 'editor'];
+    const isAdmin = userRole && adminRoles.includes(userRole);
+    
+    if (post.user_id !== userId && !isAdmin) {
       return { success: false, error: 'Kamu tidak bisa menghapus postingan orang lain' };
     }
 
