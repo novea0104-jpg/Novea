@@ -70,6 +70,9 @@ import {
   createAdminNews,
   deleteAdminNews,
   NewsItem,
+  getManualPlatformStats,
+  upsertManualPlatformStats,
+  ManualPlatformStats,
 } from "@/utils/supabase";
 import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/useGoldWithdrawal";
 import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
@@ -80,7 +83,7 @@ import { CameraIcon } from "@/components/icons/CameraIcon";
 
 const noveaLogo = require("@/assets/images/novea-logo.png");
 
-type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd' | 'news';
+type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd' | 'news' | 'manual_stats';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -179,6 +182,13 @@ export default function AdminDashboardScreen() {
   const [creatingNews, setCreatingNews] = useState(false);
   const [uploadingNewsImage, setUploadingNewsImage] = useState(false);
   
+  // Manual Platform Stats states (owner only)
+  const [manualStats, setManualStats] = useState<ManualPlatformStats | null>(null);
+  const [manualStatsLoading, setManualStatsLoading] = useState(false);
+  const [inputCoinsSold, setInputCoinsSold] = useState('');
+  const [inputRevenue, setInputRevenue] = useState('');
+  const [savingManualStats, setSavingManualStats] = useState(false);
+  
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
       return;
@@ -247,6 +257,42 @@ export default function AdminDashboardScreen() {
     setNewsLoading(false);
   }, [canManageNews]);
 
+  const loadManualStats = useCallback(async () => {
+    if (!canManageWithdrawals) return;
+    setManualStatsLoading(true);
+    const data = await getManualPlatformStats();
+    setManualStats(data);
+    if (data) {
+      setInputCoinsSold(data.totalCoinsSold.toString());
+      setInputRevenue(data.platformRevenue.toString());
+    }
+    setManualStatsLoading(false);
+  }, [canManageWithdrawals]);
+
+  const handleSaveManualStats = async () => {
+    if (!user?.id) return;
+    
+    const coinsSold = parseInt(inputCoinsSold) || 0;
+    const revenue = parseInt(inputRevenue) || 0;
+    
+    if (coinsSold < 0 || revenue < 0) {
+      Alert.alert('Error', 'Nilai tidak boleh negatif');
+      return;
+    }
+    
+    setSavingManualStats(true);
+    const result = await upsertManualPlatformStats(coinsSold, revenue, user.id);
+    setSavingManualStats(false);
+    
+    if (result.success) {
+      Alert.alert('Berhasil', 'Platform stats berhasil disimpan');
+      await loadStats();
+      await loadManualStats();
+    } else {
+      Alert.alert('Error', result.error || 'Gagal menyimpan stats');
+    }
+  };
+
   const handleUpdateGoldWdStatus = async (wdId: number, status: string, note?: string) => {
     const result = await updateGoldWithdrawalStatus(wdId, status, note);
     if (result.success) {
@@ -268,6 +314,7 @@ export default function AdminDashboardScreen() {
         loadFeaturedAuthors(),
         loadGoldWithdrawals(),
         canManageNews ? loadNews() : Promise.resolve(),
+        canManageWithdrawals ? loadManualStats() : Promise.resolve(),
       ]);
       setLoading(false);
     };
@@ -290,6 +337,8 @@ export default function AdminDashboardScreen() {
       await loadGoldWithdrawals(goldWdFilter);
     } else if (activeTab === 'news' && canManageNews) {
       await loadNews();
+    } else if (activeTab === 'manual_stats' && canManageWithdrawals) {
+      await loadManualStats();
     }
     setRefreshing(false);
   };
@@ -1321,6 +1370,7 @@ export default function AdminDashboardScreen() {
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
           {canManageWithdrawals ? renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon) : null}
+          {canManageWithdrawals ? renderTabButton('manual_stats', 'Input Stats', BarChartIcon) : null}
           {canManageNews ? renderTabButton('news', 'N-News', BookIcon) : null}
         </ScrollView>
       </View>
@@ -1875,6 +1925,86 @@ export default function AdminDashboardScreen() {
                   Buat news untuk promo, info event, atau pengumuman
                 </ThemedText>
               </View>
+            )}
+          </View>
+        </ScreenScrollView>
+      ) : null}
+
+      {activeTab === 'manual_stats' && canManageWithdrawals ? (
+        <ScreenScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+          }
+          contentContainerStyle={{ paddingTop: 0 }}
+        >
+          <View style={styles.content}>
+            <ThemedText style={[Typography.h2, styles.sectionHeader]}>
+              Input Manual Stats
+            </ThemedText>
+            <ThemedText style={[styles.roleInfo, { color: theme.textSecondary }]}>
+              Data ini akan ditampilkan di halaman Statistik
+            </ThemedText>
+
+            {manualStatsLoading ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color={theme.primary} />
+              </View>
+            ) : (
+              <Card elevation={1} style={{ marginTop: Spacing.lg, padding: Spacing.lg }}>
+                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                  Total Koin Terjual (Novoin)
+                </ThemedText>
+                <TextInput
+                  style={[styles.textInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.backgroundSecondary, 
+                    borderColor: theme.backgroundTertiary,
+                    marginBottom: Spacing.lg 
+                  }]}
+                  value={inputCoinsSold}
+                  onChangeText={setInputCoinsSold}
+                  placeholder="Contoh: 10000"
+                  placeholderTextColor={theme.textMuted}
+                  keyboardType="numeric"
+                />
+
+                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                  Pendapatan Platform (Rupiah)
+                </ThemedText>
+                <TextInput
+                  style={[styles.textInput, { 
+                    color: theme.text, 
+                    backgroundColor: theme.backgroundSecondary, 
+                    borderColor: theme.backgroundTertiary,
+                    marginBottom: Spacing.lg 
+                  }]}
+                  value={inputRevenue}
+                  onChangeText={setInputRevenue}
+                  placeholder="Contoh: 10000000"
+                  placeholderTextColor={theme.textMuted}
+                  keyboardType="numeric"
+                />
+
+                {manualStats ? (
+                  <ThemedText style={[styles.roleInfo, { color: theme.textMuted, marginBottom: Spacing.md }]}>
+                    Terakhir diupdate: {new Date(manualStats.updatedAt).toLocaleDateString('id-ID', { 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </ThemedText>
+                ) : null}
+
+                <Button
+                  onPress={handleSaveManualStats}
+                  disabled={savingManualStats}
+                  style={{ marginTop: Spacing.sm }}
+                >
+                  {savingManualStats ? 'Menyimpan...' : 'Simpan Stats'}
+                </Button>
+              </Card>
             )}
           </View>
         </ScreenScrollView>

@@ -2348,6 +2348,7 @@ export async function getAdminStats(): Promise<AdminStats> {
       { count: newNovelsToday },
       coinPurchaseData,
       chapterSalesData,
+      manualStats,
     ] = await Promise.all([
       supabase.from('users').select('*', { count: 'exact', head: true }),
       supabase.from('novels').select('*', { count: 'exact', head: true }),
@@ -2357,16 +2358,23 @@ export async function getAdminStats(): Promise<AdminStats> {
       supabase.from('novels').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
       supabase.from('coin_transactions').select('amount').eq('type', 'purchase'),
       supabase.from('coin_transactions').select('amount').eq('type', 'unlock_chapter'),
+      supabase.from('platform_stats').select('*').eq('id', 1).single(),
     ]);
 
     // Calculate total coins purchased (positive amounts from purchases)
-    const totalCoinsPurchased = (coinPurchaseData.data || []).reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
+    let totalCoinsPurchased = (coinPurchaseData.data || []).reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
     
     // Calculate total chapter sales (negative amounts spent on chapters, convert to positive)
     const totalChapterSales = (chapterSalesData.data || []).reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0);
     
     // Platform revenue: total coins purchased (1 Novoin = Rp 1,000)
-    const platformRevenue = Math.floor(totalCoinsPurchased * 1000);
+    let platformRevenue = Math.floor(totalCoinsPurchased * 1000);
+
+    // Override with manual stats if available
+    if (manualStats.data) {
+      totalCoinsPurchased = manualStats.data.total_coins_sold || totalCoinsPurchased;
+      platformRevenue = manualStats.data.platform_revenue || platformRevenue;
+    }
 
     return {
       totalUsers: totalUsers || 0,
@@ -3867,5 +3875,72 @@ export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20
   } catch (error) {
     console.error('Error in getNovelsByGenres:', error);
     return [];
+  }
+}
+
+// ============================================
+// MANUAL PLATFORM STATS (Owner Only)
+// ============================================
+
+export interface ManualPlatformStats {
+  id: number;
+  totalCoinsSold: number;
+  platformRevenue: number;
+  updatedAt: string;
+  updatedBy: string | null;
+}
+
+// Get manual platform stats (for owner override)
+export async function getManualPlatformStats(): Promise<ManualPlatformStats | null> {
+  try {
+    const { data, error } = await supabase
+      .from('platform_stats')
+      .select('*')
+      .eq('id', 1)
+      .single();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      id: data.id,
+      totalCoinsSold: data.total_coins_sold || 0,
+      platformRevenue: data.platform_revenue || 0,
+      updatedAt: data.updated_at,
+      updatedBy: data.updated_by,
+    };
+  } catch (error) {
+    console.error('Error in getManualPlatformStats:', error);
+    return null;
+  }
+}
+
+// Upsert manual platform stats (owner only)
+export async function upsertManualPlatformStats(
+  totalCoinsSold: number,
+  platformRevenue: number,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('platform_stats')
+      .upsert({
+        id: 1,
+        total_coins_sold: totalCoinsSold,
+        platform_revenue: platformRevenue,
+        updated_at: new Date().toISOString(),
+        updated_by: userId,
+      }, { onConflict: 'id' });
+
+    if (error) {
+      console.error('Error upserting platform stats:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error in upsertManualPlatformStats:', error);
+    return { success: false, error: error.message };
   }
 }
