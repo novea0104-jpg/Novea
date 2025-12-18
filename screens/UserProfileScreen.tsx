@@ -29,11 +29,15 @@ import {
   getTimelinePostComments,
   addTimelinePostComment,
   deleteTimelinePostComment,
+  getAdminNews,
+  deleteAdminNews,
   PublicUserProfile,
   UserNovel,
   FollowStats,
   TimelinePost,
+  NewsItem,
 } from "@/utils/supabase";
+import { NewsCard } from "@/components/NewsCard";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 
 function toUserRole(role?: string): UserRole {
@@ -63,10 +67,17 @@ export default function UserProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [isMessageLoading, setIsMessageLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'novels' | 'posts'>('novels');
+  const [activeTab, setActiveTab] = useState<'novels' | 'posts' | 'news'>('novels');
   const [userPosts, setUserPosts] = useState<TimelinePost[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
+  const [userNews, setUserNews] = useState<NewsItem[]>([]);
+  const [newsLoading, setNewsLoading] = useState(false);
   const { isGuest } = useAuth();
+  
+  const isAdminRole = (role?: string): boolean => {
+    const adminRoles = ['super_admin', 'co_admin', 'editor'];
+    return adminRoles.includes((role || '').toLowerCase());
+  };
 
   const isOwnProfile = currentUser && parseInt(currentUser.id) === parseInt(userId);
 
@@ -112,11 +123,24 @@ export default function UserProfileScreen() {
     setPostsLoading(false);
   }, [userId, currentUser?.id]);
 
+  const loadUserNews = useCallback(async () => {
+    setNewsLoading(true);
+    try {
+      const news = await getAdminNews(parseInt(userId));
+      setUserNews(news);
+    } catch (err) {
+      console.error('Error fetching news:', err);
+      setUserNews([]);
+    }
+    setNewsLoading(false);
+  }, [userId]);
+
   useFocusEffect(
     useCallback(() => {
       loadUserProfile();
       loadUserPosts();
-    }, [loadUserProfile, loadUserPosts])
+      loadUserNews();
+    }, [loadUserProfile, loadUserPosts, loadUserNews])
   );
 
   const handleFollowToggle = async () => {
@@ -236,6 +260,26 @@ export default function UserProfileScreen() {
   const handlePostUserPress = (postUserId: number) => {
     navigation.push("UserProfile", { userId: postUserId.toString() });
   };
+
+  const handleNewsDelete = async (newsId: number) => {
+    if (!currentUser?.id) return;
+    const result = await deleteAdminNews(newsId, parseInt(currentUser.id));
+    if (result.success) {
+      setUserNews(prevNews => prevNews.filter(news => news.id !== newsId));
+    }
+  };
+
+  const profileIsAdmin = isAdminRole(userProfile?.role);
+
+  React.useEffect(() => {
+    if (userProfile) {
+      if (isAdminRole(userProfile.role)) {
+        setActiveTab('news');
+      } else {
+        setActiveTab('novels');
+      }
+    }
+  }, [userProfile?.role]);
 
   if (isLoading) {
     return (
@@ -360,14 +404,31 @@ export default function UserProfileScreen() {
       </Card>
 
       <View style={[styles.tabsContainer, { borderBottomColor: theme.backgroundSecondary }]}>
-        <Pressable 
-          onPress={() => setActiveTab("novels")} 
-          style={[styles.tab, activeTab === "novels" ? { borderBottomColor: theme.primary, borderBottomWidth: 2 } : null]}
-        >
-          <ThemedText style={[styles.tabText, { color: activeTab === "novels" ? theme.primary : theme.textSecondary }]}>
-            Novel ({userNovels.length})
-          </ThemedText>
-        </Pressable>
+        {profileIsAdmin ? (
+          <Pressable 
+            onPress={() => setActiveTab("news")} 
+            style={[styles.tab, activeTab === "news" ? { borderBottomColor: theme.primary, borderBottomWidth: 2 } : null]}
+          >
+            <View style={styles.newsTabLabel}>
+              <Image 
+                source={require('@/attached_assets/generated_images/novea_app_icon.png')} 
+                style={styles.newsTabIcon} 
+              />
+              <ThemedText style={[styles.tabText, { color: activeTab === "news" ? theme.primary : theme.textSecondary }]}>
+                -News ({userNews.length})
+              </ThemedText>
+            </View>
+          </Pressable>
+        ) : (
+          <Pressable 
+            onPress={() => setActiveTab("novels")} 
+            style={[styles.tab, activeTab === "novels" ? { borderBottomColor: theme.primary, borderBottomWidth: 2 } : null]}
+          >
+            <ThemedText style={[styles.tabText, { color: activeTab === "novels" ? theme.primary : theme.textSecondary }]}>
+              Novel ({userNovels.length})
+            </ThemedText>
+          </Pressable>
+        )}
         <Pressable 
           onPress={() => setActiveTab("posts")} 
           style={[styles.tab, activeTab === "posts" ? { borderBottomColor: theme.primary, borderBottomWidth: 2 } : null]}
@@ -378,7 +439,34 @@ export default function UserProfileScreen() {
         </Pressable>
       </View>
 
-      {activeTab === 'novels' ? (
+      {activeTab === 'news' && profileIsAdmin ? (
+        <View style={styles.section}>
+          {newsLoading ? (
+            <ActivityIndicator size="small" color={theme.primary} style={{ marginTop: Spacing.lg }} />
+          ) : userNews.length > 0 ? (
+            userNews.map((news) => (
+              <NewsCard
+                key={news.id}
+                id={news.id}
+                title={news.title}
+                content={news.content}
+                imageUrl={news.imageUrl}
+                createdAt={news.createdAt}
+                isOwner={isOwnProfile || false}
+                onDelete={handleNewsDelete}
+              />
+            ))
+          ) : (
+            <View style={styles.emptySection}>
+              <ThemedText style={{ color: theme.textSecondary }}>
+                Belum ada N-News
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      ) : null}
+
+      {activeTab === 'novels' && !profileIsAdmin ? (
         userNovels.length > 0 ? (
           <View style={styles.section}>
             {userNovels.map((novel) => (
@@ -591,6 +679,15 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  newsTabLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  newsTabIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
   },
   section: {
     marginTop: Spacing.lg,

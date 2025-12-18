@@ -3389,3 +3389,144 @@ export async function saveNovelTags(
     return { success: false, error: error.message };
   }
 }
+
+// ==================== N-NEWS (Admin News) ====================
+
+export interface NewsItem {
+  id: number;
+  authorId: number;
+  authorName: string;
+  authorAvatar: string | null;
+  authorRole: string;
+  title: string;
+  content: string;
+  imageUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getAdminNews(authorId: number): Promise<NewsItem[]> {
+  try {
+    const { data, error } = await supabase
+      .from('admin_news')
+      .select(`
+        id,
+        title,
+        content,
+        image_url,
+        created_at,
+        updated_at,
+        author:users!admin_news_author_id_fkey (
+          id,
+          name,
+          avatar_url,
+          role
+        )
+      `)
+      .eq('author_id', authorId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching admin news:', error);
+      return [];
+    }
+
+    return (data || []).map((item: any) => ({
+      id: item.id,
+      authorId: item.author?.id || authorId,
+      authorName: item.author?.name || 'Unknown',
+      authorAvatar: item.author?.avatar_url || null,
+      authorRole: item.author?.role || 'editor',
+      title: item.title,
+      content: item.content,
+      imageUrl: item.image_url,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    }));
+  } catch (error) {
+    console.error('Error in getAdminNews:', error);
+    return [];
+  }
+}
+
+export async function createAdminNews(
+  authorId: number,
+  title: string,
+  content: string,
+  imageUrl?: string
+): Promise<{ success: boolean; newsId?: number; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('admin_news')
+      .insert({
+        author_id: authorId,
+        title,
+        content,
+        image_url: imageUrl || null,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error creating admin news:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, newsId: data.id };
+  } catch (error: any) {
+    console.error('Error in createAdminNews:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateAdminNews(
+  newsId: number,
+  authorId: number,
+  updates: { title?: string; content?: string; imageUrl?: string | null }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (updates.title !== undefined) updateData.title = updates.title;
+    if (updates.content !== undefined) updateData.content = updates.content;
+    if (updates.imageUrl !== undefined) updateData.image_url = updates.imageUrl;
+
+    const { error } = await supabase
+      .from('admin_news')
+      .update(updateData)
+      .eq('id', newsId)
+      .eq('author_id', authorId);
+
+    if (error) {
+      console.error('Error updating admin news:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error in updateAdminNews:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteAdminNews(
+  newsId: number,
+  authorId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('admin_news')
+      .delete()
+      .eq('id', newsId)
+      .eq('author_id', authorId);
+
+    if (error) {
+      console.error('Error deleting admin news:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error in deleteAdminNews:', error);
+    return { success: false, error: error.message };
+  }
+}
