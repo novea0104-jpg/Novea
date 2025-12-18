@@ -75,6 +75,7 @@ import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/use
 import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
+import { uploadNewsImageAsync } from "@/utils/newsImageStorage";
 import { CameraIcon } from "@/components/icons/CameraIcon";
 
 const noveaLogo = require("@/assets/images/novea-logo.png");
@@ -109,6 +110,7 @@ export default function AdminDashboardScreen() {
   const isCoAdmin = adminRole === 'co_admin';
   const isSuperAdmin = adminRole === 'super_admin';
   const canManageUsers = isSuperAdmin || isCoAdmin;
+  const canManageNews = isSuperAdmin || isCoAdmin || isEditor;
   
   const [activeTab, setActiveTab] = useState<TabType>('stats');
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -171,9 +173,13 @@ export default function AdminDashboardScreen() {
   const [newNewsContent, setNewNewsContent] = useState('');
   const [newNewsImageUri, setNewNewsImageUri] = useState<string | null>(null);
   const [creatingNews, setCreatingNews] = useState(false);
+  const [uploadingNewsImage, setUploadingNewsImage] = useState(false);
   
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
+      return;
+    }
+    if (tab === 'news' && !canManageNews) {
       return;
     }
     setSearchQuery('');
@@ -230,11 +236,12 @@ export default function AdminDashboardScreen() {
   }, []);
 
   const loadNews = useCallback(async () => {
+    if (!canManageNews) return;
     setNewsLoading(true);
     const data = await getAllAdminNews();
     setNewsList(data);
     setNewsLoading(false);
-  }, []);
+  }, [canManageNews]);
 
   const handleUpdateGoldWdStatus = async (wdId: number, status: string, note?: string) => {
     const result = await updateGoldWithdrawalStatus(wdId, status, note);
@@ -256,7 +263,7 @@ export default function AdminDashboardScreen() {
         loadEditorsChoice(),
         loadFeaturedAuthors(),
         loadGoldWithdrawals(),
-        loadNews(),
+        canManageNews ? loadNews() : Promise.resolve(),
       ]);
       setLoading(false);
     };
@@ -277,7 +284,7 @@ export default function AdminDashboardScreen() {
       await loadFeaturedAuthors();
     } else if (activeTab === 'gold_wd') {
       await loadGoldWithdrawals(goldWdFilter);
-    } else if (activeTab === 'news') {
+    } else if (activeTab === 'news' && canManageNews) {
       await loadNews();
     }
     setRefreshing(false);
@@ -696,6 +703,7 @@ export default function AdminDashboardScreen() {
 
   const renderTabButton = (tab: TabType, label: string, IconComponent: React.ComponentType<{ size: number; color: string }>) => {
     if (tab === 'users' && !canManageUsers) return null;
+    if (tab === 'news' && !canManageNews) return null;
     const isActive = activeTab === tab;
     const iconColor = isActive ? '#FFFFFF' : theme.text;
     const bgColor = isActive ? theme.primary : theme.backgroundSecondary;
@@ -1773,7 +1781,7 @@ export default function AdminDashboardScreen() {
         </View>
       ) : null}
 
-      {activeTab === 'news' ? (
+      {activeTab === 'news' && canManageNews ? (
         <ScreenScrollView
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
@@ -1893,6 +1901,53 @@ export default function AdminDashboardScreen() {
                 placeholder="Judul news atau pengumuman"
                 placeholderTextColor={theme.textMuted}
               />
+
+              <ThemedText style={[styles.inputLabel, { color: theme.textSecondary, marginTop: Spacing.md }]}>Gambar (Opsional)</ThemedText>
+              <Pressable
+                onPress={async () => {
+                  try {
+                    const result = await ImagePicker.launchImageLibraryAsync({
+                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                      allowsEditing: true,
+                      aspect: [16, 9],
+                      quality: 0.8,
+                    });
+                    if (!result.canceled && result.assets[0]) {
+                      setUploadingNewsImage(true);
+                      try {
+                        const uploadedUrl = await uploadNewsImageAsync(result.assets[0].uri, user?.id || '0');
+                        setNewNewsImageUri(uploadedUrl);
+                      } catch (err) {
+                        Alert.alert('Error', 'Gagal upload gambar');
+                        console.error(err);
+                      }
+                      setUploadingNewsImage(false);
+                    }
+                  } catch (err) {
+                    console.error('Image picker error:', err);
+                  }
+                }}
+                style={[styles.newsImagePicker, { backgroundColor: theme.backgroundSecondary, borderColor: theme.backgroundTertiary }]}
+              >
+                {uploadingNewsImage ? (
+                  <ActivityIndicator size="small" color={theme.primary} />
+                ) : newNewsImageUri ? (
+                  <Image source={{ uri: newNewsImageUri }} style={styles.newsImagePreview} contentFit="cover" />
+                ) : (
+                  <View style={styles.newsImagePlaceholder}>
+                    <CameraIcon size={32} color={theme.textMuted} />
+                    <ThemedText style={[styles.newsImagePlaceholderText, { color: theme.textMuted }]}>Tap untuk pilih gambar</ThemedText>
+                  </View>
+                )}
+              </Pressable>
+              {newNewsImageUri ? (
+                <Pressable
+                  onPress={() => setNewNewsImageUri(null)}
+                  style={{ alignSelf: 'flex-start', marginTop: Spacing.xs }}
+                >
+                  <ThemedText style={{ color: theme.error, fontSize: 13 }}>Hapus Gambar</ThemedText>
+                </Pressable>
+              ) : null}
 
               <ThemedText style={[styles.inputLabel, { color: theme.textSecondary, marginTop: Spacing.md }]}>Konten</ThemedText>
               <TextInput
@@ -2783,9 +2838,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  emptySubtext: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: Spacing.xs,
+  newsImagePicker: {
+    width: '100%',
+    height: 140,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newsImagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  newsImagePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  newsImagePlaceholderText: {
+    fontSize: 13,
+  },
+  cancelButton: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
   },
 });
