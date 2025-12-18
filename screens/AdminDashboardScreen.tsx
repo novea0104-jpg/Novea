@@ -188,6 +188,7 @@ export default function AdminDashboardScreen() {
   const [inputCoinsSold, setInputCoinsSold] = useState('');
   const [inputRevenue, setInputRevenue] = useState('');
   const [savingManualStats, setSavingManualStats] = useState(false);
+  const [showManualStatsModal, setShowManualStatsModal] = useState(false);
   
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
@@ -337,8 +338,6 @@ export default function AdminDashboardScreen() {
       await loadGoldWithdrawals(goldWdFilter);
     } else if (activeTab === 'news' && canManageNews) {
       await loadNews();
-    } else if (activeTab === 'manual_stats' && canManageWithdrawals) {
-      await loadManualStats();
     }
     setRefreshing(false);
   };
@@ -1370,7 +1369,6 @@ export default function AdminDashboardScreen() {
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
           {canManageWithdrawals ? renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon) : null}
-          {canManageWithdrawals ? renderTabButton('manual_stats', 'Input Stats', BarChartIcon) : null}
           {canManageNews ? renderTabButton('news', 'N-News', BookIcon) : null}
         </ScrollView>
       </View>
@@ -1383,9 +1381,22 @@ export default function AdminDashboardScreen() {
           contentContainerStyle={{ paddingTop: 0 }}
         >
           <View style={styles.content}>
-            <ThemedText style={[Typography.h2, styles.sectionHeader]}>
-              Statistik Novea
-            </ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <ThemedText style={[Typography.h2, styles.sectionHeader]}>
+                Statistik Novea
+              </ThemedText>
+              {canManageWithdrawals ? (
+                <Pressable
+                  onPress={() => {
+                    loadManualStats();
+                    setShowManualStatsModal(true);
+                  }}
+                  style={[styles.addFab, { backgroundColor: theme.primary }]}
+                >
+                  <PlusIcon size={20} color="#FFFFFF" />
+                </Pressable>
+              ) : null}
+            </View>
             <ThemedText style={[styles.roleInfo, { color: theme.textSecondary }]}>
               Login sebagai {adminRole === 'super_admin' ? 'Super Admin' : adminRole === 'co_admin' ? 'Co Admin' : 'Editor'}
             </ThemedText>
@@ -1930,85 +1941,94 @@ export default function AdminDashboardScreen() {
         </ScreenScrollView>
       ) : null}
 
-      {activeTab === 'manual_stats' && canManageWithdrawals ? (
-        <ScreenScrollView
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
-          }
-          contentContainerStyle={{ paddingTop: 0 }}
-        >
-          <View style={styles.content}>
-            <ThemedText style={[Typography.h2, styles.sectionHeader]}>
-              Input Manual Stats
-            </ThemedText>
-            <ThemedText style={[styles.roleInfo, { color: theme.textSecondary }]}>
-              Data ini akan ditampilkan di halaman Statistik
-            </ThemedText>
+      {/* Manual Stats Modal */}
+      <Modal
+        visible={showManualStatsModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowManualStatsModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.modalHeader}>
+              <ThemedText style={Typography.h3}>Input Manual Stats</ThemedText>
+              <Pressable onPress={() => setShowManualStatsModal(false)}>
+                <XIcon size={24} color={theme.text} />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              <ThemedText style={[styles.roleInfo, { color: theme.textSecondary, marginBottom: Spacing.lg }]}>
+                Data ini akan ditampilkan di halaman Statistik
+              </ThemedText>
 
-            {manualStatsLoading ? (
-              <View style={styles.emptyState}>
-                <ActivityIndicator size="large" color={theme.primary} />
-              </View>
-            ) : (
-              <Card elevation={1} style={{ marginTop: Spacing.lg, padding: Spacing.lg }}>
-                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                  Total Koin Terjual (Novoin)
-                </ThemedText>
-                <TextInput
-                  style={[styles.textInput, { 
-                    color: theme.text, 
-                    backgroundColor: theme.backgroundSecondary, 
-                    borderColor: theme.backgroundTertiary,
-                    marginBottom: Spacing.lg 
-                  }]}
-                  value={inputCoinsSold}
-                  onChangeText={setInputCoinsSold}
-                  placeholder="Contoh: 10000"
-                  placeholderTextColor={theme.textMuted}
-                  keyboardType="numeric"
-                />
-
-                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>
-                  Pendapatan Platform (Rupiah)
-                </ThemedText>
-                <TextInput
-                  style={[styles.textInput, { 
-                    color: theme.text, 
-                    backgroundColor: theme.backgroundSecondary, 
-                    borderColor: theme.backgroundTertiary,
-                    marginBottom: Spacing.lg 
-                  }]}
-                  value={inputRevenue}
-                  onChangeText={setInputRevenue}
-                  placeholder="Contoh: 10000000"
-                  placeholderTextColor={theme.textMuted}
-                  keyboardType="numeric"
-                />
-
-                {manualStats ? (
-                  <ThemedText style={[styles.roleInfo, { color: theme.textMuted, marginBottom: Spacing.md }]}>
-                    Terakhir diupdate: {new Date(manualStats.updatedAt).toLocaleDateString('id-ID', { 
-                      day: 'numeric', 
-                      month: 'long', 
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+              {manualStatsLoading ? (
+                <View style={{ padding: Spacing.xl, alignItems: 'center' }}>
+                  <ActivityIndicator size="large" color={theme.primary} />
+                </View>
+              ) : (
+                <>
+                  <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                    Total Koin Terjual (Novoin)
                   </ThemedText>
-                ) : null}
+                  <TextInput
+                    style={[styles.textInput, { 
+                      color: theme.text, 
+                      backgroundColor: theme.backgroundSecondary, 
+                      borderColor: theme.backgroundTertiary,
+                      marginBottom: Spacing.lg 
+                    }]}
+                    value={inputCoinsSold}
+                    onChangeText={setInputCoinsSold}
+                    placeholder="Contoh: 10000"
+                    placeholderTextColor={theme.textMuted}
+                    keyboardType="numeric"
+                  />
 
-                <Button
-                  onPress={handleSaveManualStats}
-                  disabled={savingManualStats}
-                  style={{ marginTop: Spacing.sm }}
-                >
-                  {savingManualStats ? 'Menyimpan...' : 'Simpan Stats'}
-                </Button>
-              </Card>
-            )}
+                  <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>
+                    Pendapatan Platform (Rupiah)
+                  </ThemedText>
+                  <TextInput
+                    style={[styles.textInput, { 
+                      color: theme.text, 
+                      backgroundColor: theme.backgroundSecondary, 
+                      borderColor: theme.backgroundTertiary,
+                      marginBottom: Spacing.lg 
+                    }]}
+                    value={inputRevenue}
+                    onChangeText={setInputRevenue}
+                    placeholder="Contoh: 10000000"
+                    placeholderTextColor={theme.textMuted}
+                    keyboardType="numeric"
+                  />
+
+                  {manualStats ? (
+                    <ThemedText style={[styles.roleInfo, { color: theme.textMuted, marginBottom: Spacing.md }]}>
+                      Terakhir diupdate: {new Date(manualStats.updatedAt).toLocaleDateString('id-ID', { 
+                        day: 'numeric', 
+                        month: 'long', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </ThemedText>
+                  ) : null}
+
+                  <Button
+                    onPress={async () => {
+                      await handleSaveManualStats();
+                      setShowManualStatsModal(false);
+                    }}
+                    disabled={savingManualStats}
+                    style={{ marginTop: Spacing.sm }}
+                  >
+                    {savingManualStats ? 'Menyimpan...' : 'Simpan Stats'}
+                  </Button>
+                </>
+              )}
+            </ScrollView>
           </View>
-        </ScreenScrollView>
-      ) : null}
+        </View>
+      </Modal>
 
       {/* Create News Modal */}
       <Modal
@@ -2779,6 +2799,13 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
     gap: Spacing.xs,
+  },
+  addFab: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   addButtonText: {
     color: '#FFFFFF',
