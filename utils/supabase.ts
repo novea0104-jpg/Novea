@@ -1302,7 +1302,7 @@ export async function deleteTimelinePost(
     }
 
     // Admin roles can delete any post
-    const adminRoles = ['admin', 'co_admin', 'editor'];
+    const adminRoles = ['admin', 'co_admin', 'editor', 'super_admin'];
     const isAdmin = userRole && adminRoles.includes(userRole);
     
     if (post.user_id !== userId && !isAdmin) {

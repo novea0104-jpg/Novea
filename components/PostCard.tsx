@@ -173,7 +173,7 @@ export function PostCard({
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   const isOwner = currentUserId === post.userId;
-  const adminRoles = ['admin', 'co_admin', 'editor'];
+  const adminRoles = ['admin', 'co_admin', 'editor', 'super_admin'];
   const isAdminOrEditor = currentUserRole && adminRoles.includes(currentUserRole);
   const canDelete = isOwner || isAdminOrEditor;
 
