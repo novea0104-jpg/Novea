@@ -3001,6 +3001,17 @@ export async function getEditorsChoiceForHome(): Promise<{
       chapterCounts[c.novel_id] = (chapterCounts[c.novel_id] || 0) + 1;
     });
 
+    // Fetch view counts from novel_views table
+    const { data: viewsData } = await supabase
+      .from('novel_views')
+      .select('novel_id')
+      .in('novel_id', novelIds);
+
+    const viewCounts: Record<number, number> = {};
+    (viewsData || []).forEach((v: any) => {
+      viewCounts[v.novel_id] = (viewCounts[v.novel_id] || 0) + 1;
+    });
+
     // Maintain the order from editors_choice
     const novelsMap = new Map(novelsData.map(n => [n.id, n]));
     
@@ -3016,7 +3027,7 @@ export async function getEditorsChoiceForHome(): Promise<{
         genre: novel.genre || '',
         description: novel.description || '',
         rating: novel.rating || 0,
-        totalReads: novel.total_reads || 0,
+        totalReads: viewCounts[novel.id] || novel.total_reads || 0,
         totalChapters: chapterCounts[novel.id] || 0,
         freeChapters: 0,
         chapterPrice: 0,
