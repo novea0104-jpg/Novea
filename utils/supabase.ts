@@ -2372,8 +2372,12 @@ export async function getAdminStats(): Promise<AdminStats> {
 
     // Override with manual stats if available
     if (manualStats.data) {
-      totalCoinsPurchased = manualStats.data.total_coins_sold || totalCoinsPurchased;
-      platformRevenue = manualStats.data.platform_revenue || platformRevenue;
+      if (manualStats.data.total_coins_sold !== null && manualStats.data.total_coins_sold !== undefined) {
+        totalCoinsPurchased = manualStats.data.total_coins_sold;
+      }
+      if (manualStats.data.platform_revenue !== null && manualStats.data.platform_revenue !== undefined) {
+        platformRevenue = manualStats.data.platform_revenue;
+      }
     }
 
     return {
