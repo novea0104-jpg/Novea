@@ -591,7 +591,11 @@ export default function BrowseHomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.genreCarousel}
             >
-              {genres.map(renderGenreCard)}
+              {Array.from({ length: Math.ceil(genres.length / 2) }).map((_, colIndex) => (
+                <View key={colIndex} style={styles.genreColumn}>
+                  {genres.slice(colIndex * 2, colIndex * 2 + 2).map(renderGenreCard)}
+                </View>
+              ))}
             </ScrollView>
           )}
         </View>
@@ -698,6 +702,9 @@ const styles = StyleSheet.create({
   },
   genreCarousel: {
     paddingRight: Spacing.lg,
+    gap: Spacing.md,
+  },
+  genreColumn: {
     gap: Spacing.md,
   },
   genreCardWrapper: {
