@@ -2970,10 +2970,10 @@ export async function getEditorsChoiceForHome(): Promise<{
 
     const novelIds = choicesData.map(c => c.novel_id);
 
-    // Fetch novels data with all needed fields
+    // Fetch novels data - only use columns that exist in Supabase
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select('id, title, cover_url, genre, description, rating, total_reads, author_id, status, coin_per_chapter, free_chapters, created_at, updated_at')
+      .select('id, title, cover_url, genre, description, rating, total_reads, author_id, status, created_at, updated_at')
       .in('id', novelIds);
 
     if (novelsError || !novelsData) {
@@ -3018,8 +3018,8 @@ export async function getEditorsChoiceForHome(): Promise<{
         rating: novel.rating || 0,
         totalReads: novel.total_reads || 0,
         totalChapters: chapterCounts[novel.id] || 0,
-        freeChapters: novel.free_chapters || 0,
-        chapterPrice: novel.coin_per_chapter || 0,
+        freeChapters: 0,
+        chapterPrice: 0,
         status: novel.status || 'ongoing',
         createdAt: novel.created_at,
         updatedAt: novel.updated_at,
