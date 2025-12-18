@@ -12,7 +12,9 @@ import { SendIcon } from "@/components/icons/SendIcon";
 import { TrashIcon } from "@/components/icons/TrashIcon";
 import { ChevronDownIcon } from "@/components/icons/ChevronDownIcon";
 import { ChevronUpIcon } from "@/components/icons/ChevronUpIcon";
+import { ChevronRightIcon } from "@/components/icons/ChevronRightIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
+import { BookIcon } from "@/components/icons/BookIcon";
 import { TimelinePost, TimelinePostComment } from "@/utils/supabase";
 
 interface PostCardProps {
@@ -323,16 +325,30 @@ export function PostCard({
           onPress={() => onNovelPress?.(post.novelId!)}
           style={[styles.novelCard, { backgroundColor: theme.backgroundSecondary }]}
         >
-          {post.novelCover && (
-            <Image
-              source={{ uri: post.novelCover }}
-              style={styles.novelCover}
-              contentFit="cover"
-            />
-          )}
-          <ThemedText style={[styles.novelTitle, { color: theme.text }]} numberOfLines={2}>
-            {post.novelTitle}
-          </ThemedText>
+          <View style={[styles.novelCoverContainer, { backgroundColor: theme.backgroundTertiary }]}>
+            {post.novelCover ? (
+              <Image
+                source={{ uri: post.novelCover }}
+                style={styles.novelCover}
+                contentFit="cover"
+              />
+            ) : (
+              <View style={styles.novelCoverPlaceholder}>
+                <BookIcon size={24} color={theme.textMuted} />
+              </View>
+            )}
+          </View>
+          <View style={styles.novelInfoContainer}>
+            <ThemedText style={[styles.novelTitle, { color: theme.text }]} numberOfLines={2}>
+              {post.novelTitle}
+            </ThemedText>
+            <ThemedText style={[styles.novelSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+              Ketuk untuk membaca
+            </ThemedText>
+          </View>
+          <View style={[styles.novelArrow, { backgroundColor: theme.backgroundTertiary }]}>
+            <ChevronRightIcon size={16} color={theme.textMuted} />
+          </View>
         </Pressable>
       )}
 
@@ -491,19 +507,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: Spacing.md,
     marginBottom: Spacing.md,
-    padding: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+  },
+  novelCoverContainer: {
+    width: 80,
+    height: 112,
     borderRadius: BorderRadius.sm,
+    overflow: "hidden",
   },
   novelCover: {
-    width: 40,
-    height: 56,
-    borderRadius: BorderRadius.xs,
-    marginRight: Spacing.sm,
+    width: "100%",
+    height: "100%",
+  },
+  novelCoverPlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  novelInfoContainer: {
+    flex: 1,
+    marginLeft: Spacing.md,
+    justifyContent: "center",
+    gap: Spacing.xs,
   },
   novelTitle: {
-    flex: 1,
-    fontSize: Typography.caption.fontSize,
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "700",
+    lineHeight: 22,
+  },
+  novelSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  novelArrow: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: Spacing.sm,
   },
   actions: {
     flexDirection: "row",
