@@ -411,7 +411,7 @@ export default function UserProfileScreen() {
           >
             <View style={styles.newsTabLabel}>
               <Image 
-                source={require('@/attached_assets/generated_images/novea_app_icon.png')} 
+                source={require('@/assets/images/novea-logo.png')} 
                 style={styles.newsTabIcon} 
               />
               <ThemedText style={[styles.tabText, { color: activeTab === "news" ? theme.primary : theme.textSecondary }]}>

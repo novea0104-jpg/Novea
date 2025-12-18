@@ -57,7 +57,7 @@ export function NewsCard({
         <View style={styles.header}>
           <View style={styles.titleContainer}>
             <Image 
-              source={require('@/attached_assets/generated_images/novea_app_icon.png')} 
+              source={require('@/assets/images/novea-logo.png')} 
               style={styles.nIcon} 
             />
             <ThemedText style={styles.newsLabel}>News</ThemedText>
