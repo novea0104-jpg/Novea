@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Pressable, StyleSheet, Image } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { ThemedText } from "@/components/ThemedText";
 import { BookOpenIcon } from "@/components/icons/BookOpenIcon";
 import { EyeIcon } from "@/components/icons/EyeIcon";
@@ -36,10 +37,10 @@ export function NovelCard({ novel, onPress, variant = "medium", showMetadata = t
     >
       <View style={[styles.coverContainer, { height: coverHeight, backgroundColor: theme.backgroundSecondary }]}>
         {hasCover ? (
-          <Image source={{ uri: novel.coverImage }} style={styles.cover} resizeMode="cover" />
+          <Image source={{ uri: novel.coverImage }} style={styles.cover} contentFit="cover" />
         ) : (
           <View style={styles.placeholderContainer}>
-            <Image source={noveaLogo} style={styles.placeholderLogo} resizeMode="contain" />
+            <Image source={noveaLogo} style={styles.placeholderLogo} contentFit="contain" />
           </View>
         )}
       </View>

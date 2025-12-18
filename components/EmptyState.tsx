@@ -1,5 +1,6 @@
 import React from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing } from "@/constants/theme";
@@ -21,7 +22,7 @@ export function EmptyState({ type, title, message }: EmptyStateProps) {
 
   return (
     <View style={styles.container}>
-      <Image source={imageSource[type]} style={styles.image} resizeMode="contain" />
+      <Image source={imageSource[type]} style={styles.image} contentFit="contain" />
       <ThemedText style={styles.title}>{title}</ThemedText>
       <ThemedText style={[styles.message, { color: theme.textSecondary }]}>
         {message}

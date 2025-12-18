@@ -1,5 +1,6 @@
 import React from "react";
-import { View, StyleSheet, Image, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Image } from "expo-image";
 import { ThemedText } from "@/components/ThemedText";
 import { Card } from "@/components/Card";
 import { useTheme } from "@/hooks/useTheme";
@@ -50,7 +51,7 @@ export function NewsCard({
   return (
     <Card elevation={1} style={styles.card}>
       {imageUrl ? (
-        <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+        <Image source={{ uri: imageUrl }} style={styles.image} contentFit="cover" />
       ) : null}
       
       <View style={styles.content}>

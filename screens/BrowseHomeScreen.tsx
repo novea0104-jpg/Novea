@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, ScrollView, StyleSheet, Image, TouchableOpacity, Pressable } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Pressable } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -620,12 +621,12 @@ export default function BrowseHomeScreen() {
     
     return (
       <View style={styles.section}>
-        <View style={styles.sectionTitleContainer}>
-          <View style={[styles.iconContainer, { backgroundColor: "#8B5CF620" }]}>
+        <View style={styles.sectionTitleRow}>
+          <View style={[styles.sectionIconContainer, { backgroundColor: "#8B5CF620" }]}>
             <Image
               source={noveaLogo}
               style={{ width: 18, height: 18 }}
-              resizeMode="contain"
+              contentFit="contain"
             />
           </View>
           <ThemedText style={styles.sectionTitle}>N-News</ThemedText>
@@ -650,7 +651,7 @@ export default function BrowseHomeScreen() {
                 <Image
                   source={{ uri: item.imageUrl }}
                   style={styles.newsCardImage}
-                  resizeMode="cover"
+                  contentFit="cover"
                 />
               ) : (
                 <LinearGradient
@@ -662,7 +663,7 @@ export default function BrowseHomeScreen() {
                   <Image
                     source={noveaLogo}
                     style={{ width: 40, height: 40 }}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 </LinearGradient>
               )}
@@ -731,7 +732,7 @@ export default function BrowseHomeScreen() {
             <Image
               source={require("@/assets/images/novea-logo.png")}
               style={styles.logoImage}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <ThemedText style={styles.appName}>ovea</ThemedText>
           </View>
