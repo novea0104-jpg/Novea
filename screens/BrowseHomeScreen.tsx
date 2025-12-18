@@ -95,7 +95,7 @@ export default function BrowseHomeScreen() {
         id: item.id.toString(),
         title: item.title,
         author: item.authorName,
-        authorId: item.authorId,
+        authorId: String(item.authorId),
         genre: item.genre as any,
         synopsis: item.description || "",
         coverImage: item.coverUrl || "",

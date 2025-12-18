@@ -2943,13 +2943,19 @@ export async function searchNovelsForEditorsChoice(
 export async function getEditorsChoiceForHome(): Promise<{
   id: string;
   title: string;
-  author: string;
+  authorName: string;
+  authorId: number;
   coverUrl: string | null;
   genre: string;
   description: string;
   rating: number;
-  followers: number;
-  chapters: number;
+  totalReads: number;
+  totalChapters: number;
+  freeChapters: number;
+  chapterPrice: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }[]> {
   try {
     // First get the editors choice novel IDs
@@ -2970,10 +2976,10 @@ export async function getEditorsChoiceForHome(): Promise<{
 
     const novelIds = choicesData.map(c => c.novel_id);
 
-    // Fetch novels data
+    // Fetch novels data with all needed fields
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select('id, title, cover_url, genre, description, rating, total_reads, author_id')
+      .select('id, title, cover_url, genre, description, rating, total_reads, author_id, status, coin_per_chapter, free_chapters, created_at, updated_at')
       .in('id', novelIds);
 
     if (novelsError || !novelsData) {
@@ -3010,13 +3016,19 @@ export async function getEditorsChoiceForHome(): Promise<{
       .map((novel: any) => ({
         id: String(novel.id),
         title: novel.title,
-        author: authorMap.get(novel.author_id) || 'Unknown',
+        authorName: authorMap.get(novel.author_id) || 'Unknown',
+        authorId: novel.author_id,
         coverUrl: novel.cover_url,
         genre: novel.genre || '',
         description: novel.description || '',
         rating: novel.rating || 0,
-        followers: novel.total_reads || 0,
-        chapters: chapterCounts[novel.id] || 0,
+        totalReads: novel.total_reads || 0,
+        totalChapters: chapterCounts[novel.id] || 0,
+        freeChapters: novel.free_chapters || 0,
+        chapterPrice: novel.coin_per_chapter || 0,
+        status: novel.status || 'ongoing',
+        createdAt: novel.created_at,
+        updatedAt: novel.updated_at,
       }));
   } catch (error) {
     console.error('Error in getEditorsChoiceForHome:', error);
