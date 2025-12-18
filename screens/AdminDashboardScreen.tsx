@@ -1304,7 +1304,7 @@ export default function AdminDashboardScreen() {
   }
 
   return (
-    <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.md }]}>
+    <ThemedView style={[styles.container, { paddingTop: headerHeight + Spacing.xs }]}>
       <View style={styles.tabsWrapper}>
         <ScrollView 
           horizontal 
@@ -1326,6 +1326,7 @@ export default function AdminDashboardScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
           }
+          contentContainerStyle={{ paddingTop: 0 }}
         >
           <View style={styles.content}>
             <ThemedText style={[Typography.h2, styles.sectionHeader]}>
@@ -1786,6 +1787,7 @@ export default function AdminDashboardScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
           }
+          contentContainerStyle={{ paddingTop: 0 }}
         >
           <View style={styles.content}>
             <View style={styles.newsHeader}>
