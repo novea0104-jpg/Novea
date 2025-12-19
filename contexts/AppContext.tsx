@@ -57,11 +57,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const viewCountsMap = new Map<number, number>();
 
       if (novelIds.length > 0) {
-        // Fetch view counts from novel_views table
-        const { data: viewsData } = await supabase
+        // Fetch view counts from novel_views table - use limit to get all views
+        const { data: viewsData, error: viewsError } = await supabase
           .from('novel_views')
           .select('novel_id')
-          .in('novel_id', novelIds);
+          .in('novel_id', novelIds)
+          .limit(10000);
 
         if (viewsData) {
           viewsData.forEach((view: any) => {
@@ -69,6 +70,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             viewCountsMap.set(view.novel_id, currentCount + 1);
           });
         }
+        
+        // Also store in globalThis for consistency with collection functions
+        (globalThis as any).__viewCountsMap = viewCountsMap;
 
         // Fetch rating counts from novel_reviews
         const { data: reviewsData, error: reviewsError } = await supabase
