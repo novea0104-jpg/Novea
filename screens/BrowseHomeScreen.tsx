@@ -821,7 +821,7 @@ export default function BrowseHomeScreen() {
 
         {renderCollectionSection("Pilihan Terbaik Wanita", womenPicks, <HeartIcon size={20} color="#F472B6" />, "#F472B6")}
         {renderCollectionSection("Pilihan Terbaik Pria", menPicks, <ZapIcon size={20} color="#3B82F6" />, "#3B82F6")}
-        {renderCollectionSection("Yang Mudah Punya Cerita", easyStories, <BookOpenIcon size={20} color="#34D399" />, "#34D399")}
+        {renderCollectionSection("Yang Muda Punya Cerita", easyStories, <BookOpenIcon size={20} color="#34D399" />, "#34D399")}
         {renderCollectionSection("Anti Takut", horrorMystery, <FlameIcon size={20} color="#EF4444" />, "#EF4444")}
         {renderCollectionSection("Fantasi Dunia", fantasyWorld, <StarIcon size={20} color="#06B6D4" />, "#06B6D4")}
         {renderCollectionSection("Penggemar Sejati", fanfictionPicks, <SparklesIcon size={20} color="#C084FC" />, "#C084FC")}
