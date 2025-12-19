@@ -116,7 +116,7 @@ export default function BrowseStackNavigator() {
       <Stack.Screen
         name="NewsDetail"
         component={NewsDetailScreen}
-        options={{ title: "News" }}
+        options={{ title: "", headerTitle: "" }}
       />
     </Stack.Navigator>
   );
