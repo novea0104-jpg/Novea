@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { View, ScrollView, StyleSheet, TouchableOpacity, Pressable } from "react-native";
+import { View, ScrollView, StyleSheet, TouchableOpacity, Pressable, Modal } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -21,6 +21,7 @@ import { CompassIcon } from "@/components/icons/CompassIcon";
 import { AwardIcon } from "@/components/icons/AwardIcon";
 import { GiftIcon } from "@/components/icons/GiftIcon";
 import { CheckIcon } from "@/components/icons/CheckIcon";
+import { XIcon } from "@/components/icons/XIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -71,6 +72,8 @@ export default function BrowseHomeScreen() {
   const [editorsPick, setEditorsPick] = useState<Novel[]>([]);
   const [featuredAuthors, setFeaturedAuthors] = useState<FeaturedAuthor[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+  const [showNewsModal, setShowNewsModal] = useState(false);
   const [mostLiked, setMostLiked] = useState<CollectionNovel[]>([]);
   const [mustRead, setMustRead] = useState<CollectionNovel[]>([]);
   const [completedNovels, setCompletedNovels] = useState<CollectionNovel[]>([]);
@@ -656,6 +659,10 @@ export default function BrowseHomeScreen() {
           {news.map((item) => (
             <Pressable
               key={item.id}
+              onPress={() => {
+                setSelectedNews(item);
+                setShowNewsModal(true);
+              }}
               style={({ pressed }) => [
                 styles.newsCard,
                 { 
@@ -841,6 +848,65 @@ export default function BrowseHomeScreen() {
         {renderCollectionSection("Kisah Memukau", amazingStories, <AwardIcon size={20} color="#FBBF24" />, "#FBBF24")}
         {renderFreeNovelsSection()}
       </ScrollView>
+
+      <Modal
+        visible={showNewsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowNewsModal(false)}
+      >
+        <View style={styles.newsModalOverlay}>
+          <View style={[styles.newsModalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.newsModalHeader}>
+              <View style={styles.newsModalTitleRow}>
+                <Image
+                  source={require("@/assets/images/novea-logo.png")}
+                  style={{ width: 24, height: 24 }}
+                  contentFit="contain"
+                />
+                <ThemedText style={styles.newsModalLabel}>N-News</ThemedText>
+              </View>
+              <Pressable
+                onPress={() => setShowNewsModal(false)}
+                style={({ pressed }) => [
+                  styles.newsModalCloseBtn,
+                  { backgroundColor: theme.backgroundSecondary, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <XIcon size={20} color={theme.text} />
+              </Pressable>
+            </View>
+            
+            {selectedNews ? (
+              <ScrollView 
+                style={styles.newsModalScrollView}
+                showsVerticalScrollIndicator={false}
+              >
+                {selectedNews.imageUrl ? (
+                  <Image
+                    source={{ uri: selectedNews.imageUrl }}
+                    style={styles.newsModalImage}
+                    contentFit="cover"
+                  />
+                ) : null}
+                <ThemedText style={styles.newsModalTitle}>
+                  {selectedNews.title}
+                </ThemedText>
+                <ThemedText style={[styles.newsModalMeta, { color: theme.textSecondary }]}>
+                  {selectedNews.authorName} • {new Date(selectedNews.createdAt).toLocaleDateString('id-ID', { 
+                    day: 'numeric', 
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </ThemedText>
+                <ThemedText style={styles.newsModalBody}>
+                  {selectedNews.content}
+                </ThemedText>
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -1048,5 +1114,67 @@ const styles = StyleSheet.create({
   },
   newsCardMeta: {
     fontSize: 11,
+  },
+  newsModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  newsModalContent: {
+    maxHeight: "85%",
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xl,
+  },
+  newsModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(128,128,128,0.2)",
+  },
+  newsModalTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  newsModalLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  newsModalCloseBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  newsModalScrollView: {
+    paddingHorizontal: Spacing.lg,
+  },
+  newsModalImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: BorderRadius.md,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  newsModalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    lineHeight: 28,
+    marginBottom: Spacing.sm,
+  },
+  newsModalMeta: {
+    fontSize: 13,
+    marginBottom: Spacing.lg,
+  },
+  newsModalBody: {
+    fontSize: 15,
+    lineHeight: 24,
+    paddingBottom: Spacing.xl,
   },
 });
