@@ -57,37 +57,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const viewCountsMap = new Map<number, number>();
 
       if (novelIds.length > 0) {
-        // Fetch view counts from novel_views table with pagination to get ALL views
-        let allViewsData: any[] = [];
-        let page = 0;
-        const pageSize = 1000;
-        let hasMore = true;
-        
-        while (hasMore) {
-          const { data: viewsPage, error: viewsError } = await supabase
-            .from('novel_views')
-            .select('novel_id')
-            .in('novel_id', novelIds)
-            .range(page * pageSize, (page + 1) * pageSize - 1);
-          
-          if (viewsError) {
-            console.error('[View Count] Error fetching views:', viewsError);
-            break;
-          }
-          
-          if (viewsPage && viewsPage.length > 0) {
-            allViewsData = [...allViewsData, ...viewsPage];
-            page++;
-            hasMore = viewsPage.length === pageSize;
-          } else {
-            hasMore = false;
-          }
-        }
+        // Fetch view counts from novel_view_stats table (aggregated, scalable)
+        // Falls back to counting novel_views if stats table doesn't exist yet
+        const { data: viewStatsData, error: viewStatsError } = await supabase
+          .from('novel_view_stats')
+          .select('novel_id, view_count')
+          .in('novel_id', novelIds);
 
-        allViewsData.forEach((view: any) => {
-          const currentCount = viewCountsMap.get(view.novel_id) || 0;
-          viewCountsMap.set(view.novel_id, currentCount + 1);
-        });
+        if (!viewStatsError && viewStatsData) {
+          // Use aggregated stats table (fast, scalable)
+          viewStatsData.forEach((stat: any) => {
+            viewCountsMap.set(stat.novel_id, stat.view_count || 0);
+          });
+        } else {
+          // Fallback: paginate through novel_views if stats table not available
+          let allViewsData: any[] = [];
+          let page = 0;
+          const pageSize = 1000;
+          let hasMore = true;
+          
+          while (hasMore) {
+            const { data: viewsPage } = await supabase
+              .from('novel_views')
+              .select('novel_id')
+              .in('novel_id', novelIds)
+              .range(page * pageSize, (page + 1) * pageSize - 1);
+            
+            if (viewsPage && viewsPage.length > 0) {
+              allViewsData = [...allViewsData, ...viewsPage];
+              page++;
+              hasMore = viewsPage.length === pageSize;
+            } else {
+              hasMore = false;
+            }
+          }
+
+          allViewsData.forEach((view: any) => {
+            const currentCount = viewCountsMap.get(view.novel_id) || 0;
+            viewCountsMap.set(view.novel_id, currentCount + 1);
+          });
+        }
         
         // Store in globalThis for consistency with collection functions
         (globalThis as any).__viewCountsMap = viewCountsMap;
