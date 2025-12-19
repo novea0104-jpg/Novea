@@ -100,8 +100,8 @@ export default function BrowseHomeScreen() {
   const fetchPrimaryCollections = async () => {
     try {
       const [likedData, reviewedData] = await Promise.all([
-        getMostLikedNovels(10),
-        getMostReviewedNovels(10),
+        getMostLikedNovels(20),
+        getMostReviewedNovels(20),
       ]);
       setMostLiked(likedData);
       setMustRead(reviewedData);
@@ -133,15 +133,15 @@ export default function BrowseHomeScreen() {
         sliceData,
         amazingData,
       ] = await Promise.all([
-        getCompletedNovelsByViews(10),
-        getNovelsByGenres(['drama', 'romance', 'pernikahan'], 10),
-        getNovelsByGenres(['action', 'adventure', 'fantasy', 'urban'], 10),
-        getNovelsByGenres(['teenlit', 'chicklit'], 10),
-        getNovelsByGenres(['horror', 'mystery'], 10),
-        getNovelsByGenres(['sci-fi', 'thriller', 'apocalypse', 'sistem'], 10),
-        getNovelsByGenres(['fanfiction'], 10),
-        getNovelsByGenres(['sosial', 'psikologis'], 10),
-        getNovelsByGenres(['fantim', 'fanbar', 'kolosal'], 10),
+        getCompletedNovelsByViews(20),
+        getNovelsByGenres(['drama', 'romance', 'pernikahan'], 20),
+        getNovelsByGenres(['action', 'adventure', 'fantasy', 'urban'], 20),
+        getNovelsByGenres(['teenlit', 'chicklit'], 20),
+        getNovelsByGenres(['horror', 'mystery'], 20),
+        getNovelsByGenres(['sci-fi', 'thriller', 'apocalypse', 'sistem'], 20),
+        getNovelsByGenres(['fanfiction'], 20),
+        getNovelsByGenres(['sosial', 'psikologis'], 20),
+        getNovelsByGenres(['fantim', 'fanbar', 'kolosal'], 20),
       ]);
 
       setCompletedNovels(completedData);
@@ -334,17 +334,17 @@ export default function BrowseHomeScreen() {
 
   // Memoized computed values for performance
   const trendingNovels = useMemo(() => 
-    [...novels].sort((a, b) => b.followers - a.followers).slice(0, 10),
+    [...novels].sort((a, b) => b.followers - a.followers).slice(0, 20),
     [novels]
   );
   
   const newReleases = useMemo(() => 
-    [...novels].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 10),
+    [...novels].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 20),
     [novels]
   );
   
   const freeNovels = useMemo(() => 
-    [...novels].filter((n) => n.freeChapters >= n.totalChapters || n.coinPerChapter === 0).slice(0, 10),
+    [...novels].filter((n) => n.freeChapters >= n.totalChapters || n.coinPerChapter === 0).slice(0, 20),
     [novels]
   );
 
