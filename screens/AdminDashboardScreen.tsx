@@ -304,23 +304,54 @@ export default function AdminDashboardScreen() {
     }
   };
 
+  // Track which tabs have been loaded
+  const [loadedTabs, setLoadedTabs] = useState<Set<TabType>>(new Set());
+
+  // Initial load - only load stats (always needed)
   useEffect(() => {
-    const loadData = async () => {
+    const loadInitial = async () => {
       setLoading(true);
-      await Promise.all([
-        loadStats(),
-        canManageUsers ? loadUsers(1) : Promise.resolve(),
-        loadNovels(1),
-        loadEditorsChoice(),
-        loadFeaturedAuthors(),
-        loadGoldWithdrawals(),
-        canManageNews ? loadNews() : Promise.resolve(),
-        canManageWithdrawals ? loadManualStats() : Promise.resolve(),
-      ]);
+      await loadStats();
       setLoading(false);
+      setLoadedTabs(new Set(['stats']));
     };
-    loadData();
+    loadInitial();
   }, []);
+
+  // Lazy load data when tab changes
+  useEffect(() => {
+    if (loadedTabs.has(activeTab)) return;
+    
+    const loadTabData = async () => {
+      setLoading(true);
+      switch (activeTab) {
+        case 'users':
+          if (canManageUsers) await loadUsers(1);
+          break;
+        case 'novels':
+          await loadNovels(1);
+          break;
+        case 'featured':
+          await loadEditorsChoice();
+          break;
+        case 'authors':
+          await loadFeaturedAuthors();
+          break;
+        case 'gold_wd':
+          await loadGoldWithdrawals();
+          break;
+        case 'news':
+          if (canManageNews) await loadNews();
+          break;
+        case 'manual_stats':
+          if (canManageWithdrawals) await loadManualStats();
+          break;
+      }
+      setLoading(false);
+      setLoadedTabs(prev => new Set([...prev, activeTab]));
+    };
+    loadTabData();
+  }, [activeTab]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -1881,7 +1912,14 @@ export default function AdminDashboardScreen() {
                 {newsList.map((news) => (
                   <Card key={news.id} elevation={1} style={styles.newsCard}>
                     {news.imageUrl ? (
-                      <Image source={{ uri: news.imageUrl }} style={styles.newsCardImage} contentFit="cover" />
+                      <Image 
+                        source={{ uri: news.imageUrl }} 
+                        style={styles.newsCardImage} 
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        recyclingKey={`news-${news.id}`}
+                        transition={200}
+                      />
                     ) : null}
                     <View style={styles.newsCardContent}>
                       <View style={styles.newsCardHeader}>
@@ -2088,7 +2126,13 @@ export default function AdminDashboardScreen() {
                 {uploadingNewsImage ? (
                   <ActivityIndicator size="small" color={theme.primary} />
                 ) : newNewsImageUri ? (
-                  <Image source={{ uri: newNewsImageUri }} style={styles.newsImagePreview} contentFit="cover" />
+                  <Image 
+                    source={{ uri: newNewsImageUri }} 
+                    style={styles.newsImagePreview} 
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={200}
+                  />
                 ) : (
                   <View style={styles.newsImagePlaceholder}>
                     <CameraIcon size={32} color={theme.textMuted} />

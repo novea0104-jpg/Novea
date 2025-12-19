@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
-import { View, StyleSheet, Pressable, Image, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -67,24 +68,21 @@ export default function WriterCenterScreen() {
       // Get novel IDs for view count query
       const novelIds = (novelsData || []).map((n: any) => n.id);
       
-      // Fetch view counts from novel_views table
+      // Fetch view counts from novel_view_stats table (optimized)
       let totalReads = 0;
       const viewCountsMap = new Map<number, number>();
       
       if (novelIds.length > 0) {
-        const { data: viewsData, error: viewsError } = await supabase
-          .from('novel_views')
-          .select('novel_id')
+        const { data: viewStatsData, error: viewStatsError } = await supabase
+          .from('novel_view_stats')
+          .select('novel_id, view_count')
           .in('novel_id', novelIds);
 
-        if (!viewsError && viewsData) {
-          // Count views per novel
-          viewsData.forEach((view: any) => {
-            const currentCount = viewCountsMap.get(view.novel_id) || 0;
-            viewCountsMap.set(view.novel_id, currentCount + 1);
+        if (!viewStatsError && viewStatsData) {
+          viewStatsData.forEach((stat: any) => {
+            viewCountsMap.set(stat.novel_id, stat.view_count || 0);
+            totalReads += stat.view_count || 0;
           });
-          // Sum all views for total
-          totalReads = viewsData.length;
         }
       }
 
@@ -103,6 +101,7 @@ export default function WriterCenterScreen() {
         totalChapters: n.total_chapters,
         freeChapters: n.free_chapters || 0,
         followers: viewCountsMap.get(n.id) || 0,
+        totalLikes: 0,
         lastUpdated: new Date(n.updated_at),
         createdAt: new Date(n.created_at),
       }));
@@ -258,6 +257,11 @@ function NovelCard({ novel, onPress, theme }: { novel: Novel; onPress: () => voi
         <Image
           source={{ uri: novel.coverImage || 'https://via.placeholder.com/120x180' }}
           style={styles.novelCover}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          recyclingKey={novel.id}
+          transition={200}
+          placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
         />
         <View style={styles.novelInfo}>
           <ThemedText style={Typography.h3} numberOfLines={2}>
