@@ -46,7 +46,15 @@ export function EditorPickCard({ novel, onPress }: EditorPickCardProps) {
     >
       <View style={[styles.coverContainer, { backgroundColor: theme.backgroundTertiary }]}>
         {hasCover ? (
-          <Image source={{ uri: novel.coverImage }} style={styles.cover} contentFit="cover" />
+          <Image 
+            source={{ uri: novel.coverImage }} 
+            style={styles.cover} 
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={novel.id}
+            transition={200}
+            placeholder={{ blurhash: 'L6PZfSi_.AyE_3t7t7R**0o#DgR4' }}
+          />
         ) : (
           <View style={styles.placeholderContainer}>
             <Image source={noveaLogo} style={styles.placeholderLogo} contentFit="contain" />
