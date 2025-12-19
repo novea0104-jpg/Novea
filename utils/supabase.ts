@@ -2140,7 +2140,7 @@ export async function changeUserRole(
   }
 }
 
-// Get all novels for admin
+// Get all novels for admin (optimized - batch queries instead of N+1)
 export async function getAllNovelsAdmin(
   page: number = 1,
   limit: number = 20,
@@ -2164,53 +2164,58 @@ export async function getAllNovelsAdmin(
       return { novels: [], total: 0 };
     }
 
-    // Get author names and stats for each novel
-    const novels: AdminNovel[] = await Promise.all(
-      (data || []).map(async (n: any) => {
-        // Fetch author name
-        let authorName = 'Unknown';
-        if (n.author_id) {
-          const { data: authorData } = await supabase
-            .from('users')
-            .select('name')
-            .eq('id', n.author_id)
-            .single();
-          if (authorData) {
-            authorName = authorData.name || 'Unknown';
-          }
-        }
+    if (!data || data.length === 0) {
+      return { novels: [], total: count || 0 };
+    }
 
-        const { count: chaptersCount } = await supabase
-          .from('chapters')
-          .select('*', { count: 'exact', head: true })
-          .eq('novel_id', n.id);
+    const novelIds = data.map((n: any) => n.id);
+    const authorIds = [...new Set(data.map((n: any) => n.author_id).filter(Boolean))];
 
-        const { count: viewCount } = await supabase
-          .from('novel_views')
-          .select('*', { count: 'exact', head: true })
-          .eq('novel_id', n.id);
+    // Batch fetch all related data in parallel
+    const [authorsResult, chaptersResult, viewsResult, likesResult] = await Promise.all([
+      // Fetch all authors at once
+      supabase.from('users').select('id, name').in('id', authorIds),
+      // Fetch chapter counts per novel
+      supabase.from('chapters').select('novel_id').in('novel_id', novelIds),
+      // Fetch view counts per novel  
+      supabase.from('novel_views').select('novel_id').in('novel_id', novelIds),
+      // Fetch like counts per novel
+      supabase.from('novel_likes').select('novel_id').in('novel_id', novelIds),
+    ]);
 
-        const { count: likesCount } = await supabase
-          .from('novel_likes')
-          .select('*', { count: 'exact', head: true })
-          .eq('novel_id', n.id);
+    // Build lookup maps
+    const authorMap = new Map((authorsResult.data || []).map((a: any) => [a.id, a.name]));
+    
+    const chapterCounts: Record<number, number> = {};
+    (chaptersResult.data || []).forEach((c: any) => {
+      chapterCounts[c.novel_id] = (chapterCounts[c.novel_id] || 0) + 1;
+    });
+    
+    const viewCounts: Record<number, number> = {};
+    (viewsResult.data || []).forEach((v: any) => {
+      viewCounts[v.novel_id] = (viewCounts[v.novel_id] || 0) + 1;
+    });
+    
+    const likeCounts: Record<number, number> = {};
+    (likesResult.data || []).forEach((l: any) => {
+      likeCounts[l.novel_id] = (likeCounts[l.novel_id] || 0) + 1;
+    });
 
-        return {
-          id: n.id,
-          title: n.title,
-          authorId: n.author_id,
-          authorName,
-          genre: n.genre || '',
-          status: n.status || 'ongoing',
-          isPublished: n.is_published !== false,
-          viewCount: viewCount || 0,
-          likesCount: likesCount || 0,
-          chaptersCount: chaptersCount || 0,
-          createdAt: n.created_at,
-          coverUrl: n.cover_url || null,
-        };
-      })
-    );
+    // Map novels with pre-fetched data
+    const novels: AdminNovel[] = data.map((n: any) => ({
+      id: n.id,
+      title: n.title,
+      authorId: n.author_id,
+      authorName: authorMap.get(n.author_id) || 'Unknown',
+      genre: n.genre || '',
+      status: n.status || 'ongoing',
+      isPublished: n.is_published !== false,
+      viewCount: viewCounts[n.id] || n.total_reads || 0,
+      likesCount: likeCounts[n.id] || 0,
+      chaptersCount: chapterCounts[n.id] || 0,
+      createdAt: n.created_at,
+      coverUrl: n.cover_url || null,
+    }));
 
     return { novels, total: count || 0 };
   } catch (error) {
@@ -3119,79 +3124,34 @@ export async function getFeaturedAuthors(): Promise<FeaturedAuthor[]> {
 
     const authorIds = featuredData.map(f => f.author_id);
 
-    // Fetch author details
-    const { data: authorsData } = await supabase
-      .from('users')
-      .select('id, name, avatar_url')
-      .in('id', authorIds);
+    // Batch fetch all related data in parallel
+    const [authorsResult, followersResult, followingResult, novelsResult] = await Promise.all([
+      supabase.from('users').select('id, name, avatar_url').in('id', authorIds),
+      supabase.from('user_follows').select('following_id').in('following_id', authorIds),
+      supabase.from('user_follows').select('follower_id').in('follower_id', authorIds),
+      supabase.from('novels').select('author_id').in('author_id', authorIds),
+    ]);
 
-    // Fetch followers count for each author
-    const { data: followersData } = await supabase
-      .from('user_follows')
-      .select('following_id')
-      .in('following_id', authorIds);
-
+    const authorsData = authorsResult.data || [];
+    
     const followersCounts: Record<number, number> = {};
-    (followersData || []).forEach((f: any) => {
+    (followersResult.data || []).forEach((f: any) => {
       followersCounts[f.following_id] = (followersCounts[f.following_id] || 0) + 1;
     });
 
-    // Fetch following count for each author
-    const { data: followingData } = await supabase
-      .from('user_follows')
-      .select('follower_id')
-      .in('follower_id', authorIds);
-
     const followingCounts: Record<number, number> = {};
-    (followingData || []).forEach((f: any) => {
+    (followingResult.data || []).forEach((f: any) => {
       followingCounts[f.follower_id] = (followingCounts[f.follower_id] || 0) + 1;
     });
 
-    // Get author names for matching novels by name as well
-    const authorNames = (authorsData || []).map(a => a.name).filter(Boolean);
-    
-    // Fetch novel counts - try both by author_id AND by author name
-    const { data: novelsById } = await supabase
-      .from('novels')
-      .select('author_id')
-      .in('author_id', authorIds);
-
-    const { data: novelsByName } = await supabase
-      .from('novels')
-      .select('author')
-      .in('author', authorNames);
-
-    console.log('[getFeaturedAuthors] authorIds:', authorIds);
-    console.log('[getFeaturedAuthors] authorNames:', authorNames);
-    console.log('[getFeaturedAuthors] novelsById:', novelsById);
-    console.log('[getFeaturedAuthors] novelsByName:', novelsByName);
-
-    // Create name to id mapping
-    const nameToId: Record<string, number> = {};
-    (authorsData || []).forEach((a: any) => {
-      if (a.name) nameToId[a.name] = a.id;
-    });
-
     const novelCounts: Record<number, number> = {};
-    
-    // Count by author_id
-    (novelsById || []).forEach((n: any) => {
+    (novelsResult.data || []).forEach((n: any) => {
       if (n.author_id) {
         novelCounts[n.author_id] = (novelCounts[n.author_id] || 0) + 1;
       }
     });
-    
-    // Also count by author name (for novels without author_id)
-    (novelsByName || []).forEach((n: any) => {
-      const authorId = nameToId[n.author];
-      if (authorId) {
-        novelCounts[authorId] = (novelCounts[authorId] || 0) + 1;
-      }
-    });
-    
-    console.log('[getFeaturedAuthors] novelCounts:', novelCounts);
 
-    const authorsMap = new Map((authorsData || []).map(a => [a.id, a]));
+    const authorsMap = new Map(authorsData.map((a: any) => [a.id, a]));
 
     return featuredData.map((item: any) => {
       const author = authorsMap.get(item.author_id);
