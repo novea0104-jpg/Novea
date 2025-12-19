@@ -3810,6 +3810,78 @@ export async function getCompletedNovelsByViews(limit: number = 20): Promise<Col
   }
 }
 
+export async function getRecentlyUpdatedNovels(limit: number = 20): Promise<CollectionNovel[]> {
+  try {
+    const { data: chaptersData, error: chaptersError } = await supabase
+      .from('chapters')
+      .select('novel_id, updated_at')
+      .order('updated_at', { ascending: false });
+
+    if (chaptersError) {
+      console.error('Error fetching chapters:', chaptersError);
+      return [];
+    }
+
+    const novelLatestUpdate: Record<number, string> = {};
+    (chaptersData || []).forEach((ch: any) => {
+      if (!novelLatestUpdate[ch.novel_id]) {
+        novelLatestUpdate[ch.novel_id] = ch.updated_at;
+      }
+    });
+
+    const sortedNovelIds = Object.entries(novelLatestUpdate)
+      .sort(([, a], [, b]) => new Date(b).getTime() - new Date(a).getTime())
+      .slice(0, limit)
+      .map(([id]) => parseInt(id));
+
+    if (sortedNovelIds.length === 0) return [];
+
+    const { data: novelsData, error: novelsError } = await supabase
+      .from('novels')
+      .select('id, title, cover_url, author_id, genre, status, rating, created_at')
+      .in('id', sortedNovelIds);
+
+    if (novelsError) {
+      console.error('Error fetching novels:', novelsError);
+      return [];
+    }
+
+    const authorIds = [...new Set((novelsData || []).map((n: any) => n.author_id).filter(Boolean))];
+    const novelIds = (novelsData || []).map((n: any) => n.id);
+    
+    const [{ data: authors }, viewCountsMap] = await Promise.all([
+      supabase.from('users').select('id, name').in('id', authorIds),
+      getBulkNovelViewCounts(novelIds)
+    ]);
+    
+    const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
+    const novelMap = new Map((novelsData || []).map((n: any) => [n.id, n]));
+
+    return sortedNovelIds
+      .filter(id => novelMap.has(id))
+      .map(id => {
+        const novel = novelMap.get(id)!;
+        return {
+          id: novel.id,
+          title: novel.title,
+          coverUrl: novel.cover_url,
+          authorId: novel.author_id,
+          authorName: authorMap.get(novel.author_id) || 'Unknown',
+          genre: novel.genre || '',
+          status: novel.status || 'ongoing',
+          rating: novel.rating || 0,
+          totalReads: viewCountsMap.get(novel.id) || 0,
+          totalLikes: 0,
+          totalReviews: 0,
+          createdAt: novel.created_at,
+        };
+      });
+  } catch (error) {
+    console.error('Error in getRecentlyUpdatedNovels:', error);
+    return [];
+  }
+}
+
 export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20): Promise<CollectionNovel[]> {
   try {
     const { data: genresData, error: genresError } = await supabase

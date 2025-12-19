@@ -25,7 +25,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useApp } from "@/contexts/AppContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useResponsive } from "@/hooks/useResponsive";
-import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome, getFeaturedAuthors, FeaturedAuthor, getAllAdminNews, NewsItem, getMostLikedNovels, getMostReviewedNovels, getCompletedNovelsByViews, getNovelsByGenres, CollectionNovel } from "@/utils/supabase";
+import { supabase, getTotalUnreadCount, getUnreadNotificationCount, getEditorsChoiceForHome, getFeaturedAuthors, FeaturedAuthor, getAllAdminNews, NewsItem, getMostLikedNovels, getMostReviewedNovels, getCompletedNovelsByViews, getNovelsByGenres, CollectionNovel, getRecentlyUpdatedNovels } from "@/utils/supabase";
 import { Avatar } from "@/components/Avatar";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { BrowseStackParamList } from "@/navigation/BrowseStackNavigator";
@@ -82,6 +82,7 @@ export default function BrowseHomeScreen() {
   const [fanfictionPicks, setFanfictionPicks] = useState<CollectionNovel[]>([]);
   const [sliceOfLife, setSliceOfLife] = useState<CollectionNovel[]>([]);
   const [amazingStories, setAmazingStories] = useState<CollectionNovel[]>([]);
+  const [recentlyUpdated, setRecentlyUpdated] = useState<CollectionNovel[]>([]);
 
   const maxContentWidth = 1200;
   const shouldCenterContent = isDesktop && width > maxContentWidth;
@@ -93,6 +94,7 @@ export default function BrowseHomeScreen() {
     fetchFeaturedAuthors();
     fetchNews();
     fetchPrimaryCollections();
+    fetchRecentlyUpdated();
   }, []);
 
   const fetchPrimaryCollections = async () => {
@@ -106,6 +108,15 @@ export default function BrowseHomeScreen() {
       fetchSecondaryCollections();
     } catch (error) {
       console.error('Error fetching primary collections:', error);
+    }
+  };
+
+  const fetchRecentlyUpdated = async () => {
+    try {
+      const data = await getRecentlyUpdatedNovels(20);
+      setRecentlyUpdated(data);
+    } catch (error) {
+      console.error('Error fetching recently updated:', error);
     }
   };
 
@@ -791,6 +802,7 @@ export default function BrowseHomeScreen() {
       >
         {renderNovelSection("Sedang Trending", trendingNovels, <FlameIcon size={20} color="#EF4444" />, "#EF4444", "large")}
         {renderNovelSection("Novel Terbaru", newReleases, <SparklesIcon size={20} color="#8B5CF6" />, "#8B5CF6")}
+        {renderCollectionSection("Novel Terupdate", recentlyUpdated, <ZapIcon size={20} color="#10B981" />, "#10B981")}
         {renderFeaturedAuthorsSection()}
         {renderEditorsPickSection()}
         {renderCollectionSection("Yang Paling Disukai", mostLiked, <HeartIcon size={20} color="#EC4899" />, "#EC4899")}
