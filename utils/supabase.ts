@@ -2563,7 +2563,8 @@ export async function deleteChapterAdmin(
   try {
     console.log('[deleteChapterAdmin] Called with:', { chapterId });
     
-    // Delete related data first
+    // Delete related data first (order matters for foreign key constraints)
+    await supabase.from('reading_progress').delete().eq('chapter_id', chapterId);
     await supabase.from('unlocked_chapters').delete().eq('chapter_id', chapterId);
     await supabase.from('chapter_comments').delete().eq('chapter_id', chapterId);
     await supabase.from('chapter_likes').delete().eq('chapter_id', chapterId);
