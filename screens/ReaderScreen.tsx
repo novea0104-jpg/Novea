@@ -9,6 +9,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
 import { ThemedText } from "@/components/ThemedText";
 import { MarkdownText } from "@/components/MarkdownText";
+import { InlineChapterContent } from "@/components/InlineChapterContent";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { XIcon } from "@/components/icons/XIcon";
@@ -564,9 +565,13 @@ export default function ReaderScreen() {
         <ThemedText style={[styles.chapterTitle, Typography.h3]}>
           {currentChapter.title}
         </ThemedText>
-        <MarkdownText style={[styles.chapterContent, { fontSize, lineHeight: fontSize * 1.8, fontFamily }]}>
-          {currentChapter.content}
-        </MarkdownText>
+        <InlineChapterContent
+          content={currentChapter.content}
+          style={styles.chapterContent}
+          fontSize={fontSize}
+          lineHeight={fontSize * 1.8}
+          fontFamily={fontFamily}
+        />
 
         <View style={styles.chapterEndDivider}>
           <View style={[styles.dividerLine, { backgroundColor: theme.textMuted }]} />
