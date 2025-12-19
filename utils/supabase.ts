@@ -3386,7 +3386,7 @@ export async function saveNovelTags(
   }
 }
 
-// ==================== N-NEWS (Admin News) ====================
+// ==================== NEWS (Admin News) ====================
 
 export interface NewsItem {
   id: number;

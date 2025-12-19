@@ -646,7 +646,7 @@ export default function BrowseHomeScreen() {
               contentFit="contain"
             />
           </View>
-          <ThemedText style={styles.sectionTitle}>N-News</ThemedText>
+          <ThemedText style={styles.sectionTitle}>News</ThemedText>
         </View>
         <ScrollView
           horizontal

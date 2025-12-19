@@ -1740,7 +1740,7 @@ export default function AdminDashboardScreen() {
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
           {canManageWithdrawals ? renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon) : null}
           {canManageWithdrawals ? renderTabButton('admin_wd', 'WD Admin', WalletIcon) : null}
-          {canManageNews ? renderTabButton('news', 'N-News', BookIcon) : null}
+          {canManageNews ? renderTabButton('news', 'News', BookIcon) : null}
         </ScrollView>
       </View>
 
@@ -2425,7 +2425,7 @@ export default function AdminDashboardScreen() {
             <View style={styles.newsHeader}>
               <View style={styles.newsTitleRow}>
                 <Image source={noveaLogo} style={styles.newsLogoIcon} />
-                <ThemedText style={[Typography.h2, { marginLeft: Spacing.sm }]}>N-News</ThemedText>
+                <ThemedText style={[Typography.h2, { marginLeft: Spacing.sm }]}>News</ThemedText>
               </View>
               <Pressable
                 onPress={() => setShowCreateNewsModal(true)}
@@ -2518,7 +2518,7 @@ export default function AdminDashboardScreen() {
               <View style={styles.emptyState}>
                 <BookIcon size={48} color={theme.textMuted} />
                 <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
-                  Belum ada N-News
+                  Belum ada News
                 </ThemedText>
                 <ThemedText style={[styles.emptySubtext, { color: theme.textMuted }]}>
                   Buat news untuk promo, info event, atau pengumuman
@@ -2630,7 +2630,7 @@ export default function AdminDashboardScreen() {
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Image source={noveaLogo} style={{ width: 24, height: 24, marginRight: Spacing.sm }} />
-                <ThemedText style={Typography.h3}>{editingNewsId ? 'Edit N-News' : 'Buat N-News'}</ThemedText>
+                <ThemedText style={Typography.h3}>{editingNewsId ? 'Edit News' : 'Buat News'}</ThemedText>
               </View>
               <Pressable onPress={() => { setShowCreateNewsModal(false); setEditingNewsId(null); }}>
                 <XIcon size={24} color={theme.text} />
@@ -2744,7 +2744,7 @@ export default function AdminDashboardScreen() {
                       );
                       setCreatingNews(false);
                       if (result.success) {
-                        Alert.alert('Berhasil', 'N-News berhasil diupdate');
+                        Alert.alert('Berhasil', 'News berhasil diupdate');
                         setShowCreateNewsModal(false);
                         setNewNewsTitle('');
                         setNewNewsContent('');
@@ -2763,7 +2763,7 @@ export default function AdminDashboardScreen() {
                       );
                       setCreatingNews(false);
                       if (result.success) {
-                        Alert.alert('Berhasil', 'N-News berhasil dibuat');
+                        Alert.alert('Berhasil', 'News berhasil dibuat');
                         setShowCreateNewsModal(false);
                         setNewNewsTitle('');
                         setNewNewsContent('');

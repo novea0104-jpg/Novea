@@ -30,7 +30,7 @@ export default function NewsDetailScreen() {
             style={styles.logoImage}
             contentFit="contain"
           />
-          <ThemedText style={styles.brandLabel}>N-News</ThemedText>
+          <ThemedText style={styles.brandLabel}>News</ThemedText>
         </View>
       </View>
 

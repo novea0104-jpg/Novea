@@ -459,7 +459,7 @@ export default function UserProfileScreen() {
           ) : (
             <View style={styles.emptySection}>
               <ThemedText style={{ color: theme.textSecondary }}>
-                Belum ada N-News
+                Belum ada News
               </ThemedText>
             </View>
           )}
