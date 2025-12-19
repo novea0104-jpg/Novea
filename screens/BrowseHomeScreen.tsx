@@ -657,6 +657,7 @@ export default function BrowseHomeScreen() {
             <Pressable
               key={item.id}
               onPress={() => navigation.navigate("NewsDetail", {
+                newsId: item.id,
                 title: item.title,
                 content: item.content,
                 imageUrl: item.imageUrl,

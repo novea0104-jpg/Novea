@@ -3570,6 +3570,167 @@ export async function deleteAdminNews(
   }
 }
 
+// ==================== NEWS COMMENTS ====================
+
+export interface NewsComment {
+  id: number;
+  newsId: number;
+  userId: number;
+  userName: string;
+  userAvatar: string | null;
+  userRole: string;
+  parentId: number | null;
+  content: string;
+  createdAt: string;
+  replies?: NewsComment[];
+}
+
+export async function getNewsComments(newsId: number): Promise<NewsComment[]> {
+  try {
+    const { data, error } = await supabase
+      .from('news_comments')
+      .select(`
+        id,
+        news_id,
+        user_id,
+        parent_id,
+        content,
+        created_at,
+        user:users!news_comments_user_id_fkey (
+          id,
+          name,
+          avatar_url,
+          role
+        )
+      `)
+      .eq('news_id', newsId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching news comments:', error);
+      return [];
+    }
+
+    const comments: NewsComment[] = (data || []).map((item: any) => ({
+      id: item.id,
+      newsId: item.news_id,
+      userId: item.user?.id || item.user_id,
+      userName: item.user?.name || 'Unknown',
+      userAvatar: item.user?.avatar_url || null,
+      userRole: item.user?.role || 'Pembaca',
+      parentId: item.parent_id,
+      content: item.content,
+      createdAt: item.created_at,
+      replies: [],
+    }));
+
+    const rootComments: NewsComment[] = [];
+    const commentMap = new Map<number, NewsComment>();
+
+    comments.forEach(comment => {
+      commentMap.set(comment.id, comment);
+    });
+
+    comments.forEach(comment => {
+      if (comment.parentId === null) {
+        rootComments.push(comment);
+      } else {
+        const parent = commentMap.get(comment.parentId);
+        if (parent) {
+          if (!parent.replies) parent.replies = [];
+          parent.replies.push(comment);
+        }
+      }
+    });
+
+    return rootComments;
+  } catch (error) {
+    console.error('Error in getNewsComments:', error);
+    return [];
+  }
+}
+
+export async function submitNewsComment(
+  newsId: number,
+  userId: number,
+  content: string,
+  parentId?: number
+): Promise<{ success: boolean; comment?: NewsComment; error?: string }> {
+  try {
+    const { data, error } = await supabase
+      .from('news_comments')
+      .insert({
+        news_id: newsId,
+        user_id: userId,
+        content: content,
+        parent_id: parentId || null,
+      })
+      .select(`
+        id,
+        news_id,
+        user_id,
+        parent_id,
+        content,
+        created_at
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error submitting news comment:', error);
+      return { success: false, error: error.message };
+    }
+
+    const { data: userData } = await supabase
+      .from('users')
+      .select('name, avatar_url, role')
+      .eq('id', userId)
+      .single();
+
+    const comment: NewsComment = {
+      id: data.id,
+      newsId: data.news_id,
+      userId: data.user_id,
+      userName: userData?.name || 'Unknown',
+      userAvatar: userData?.avatar_url || null,
+      userRole: userData?.role || 'Pembaca',
+      parentId: data.parent_id,
+      content: data.content,
+      createdAt: data.created_at,
+      replies: [],
+    };
+
+    return { success: true, comment };
+  } catch (error: any) {
+    console.error('Error in submitNewsComment:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteNewsComment(
+  commentId: number,
+  userId: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { error } = await supabase
+      .from('news_comments')
+      .delete()
+      .eq('id', commentId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error deleting news comment:', error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error in deleteNewsComment:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ==================== COLLECTION NOVELS ====================
+
 export interface CollectionNovel {
   id: number;
   title: string;

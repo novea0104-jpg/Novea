@@ -33,7 +33,7 @@ export type BrowseStackParamList = {
   Messages: undefined;
   MessageThread: { conversationId: string; recipientName: string; recipientAvatar?: string; recipientRole: string };
   NewMessage: undefined;
-  NewsDetail: { title: string; content: string; imageUrl: string | null; authorName: string; createdAt: string };
+  NewsDetail: { newsId: number; title: string; content: string; imageUrl: string | null; authorName: string; createdAt: string };
 };
 
 const Stack = createNativeStackNavigator<BrowseStackParamList>();
