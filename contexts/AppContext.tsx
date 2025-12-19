@@ -59,7 +59,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (novelIds.length > 0) {
         // Fetch view counts from novel_views table
         const { data: viewsData } = await supabase
-          .from('novel_view')
+          .from('novel_views')
           .select('novel_id')
           .in('novel_id', novelIds);
 
