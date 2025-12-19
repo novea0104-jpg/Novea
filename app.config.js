@@ -6,7 +6,7 @@ const config = {
   expo: {
     name: "Novea",
     slug: "novea",
-    version: "1.0.0",
+    version: "4.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "novea",
@@ -26,6 +26,7 @@ const config = {
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: "com.novea.app",
+      versionCode: 5,
       permissions: ["com.android.vending.BILLING"]
     },
     web: {
