@@ -69,6 +69,7 @@ import {
   getAllAdminNews,
   createAdminNews,
   deleteAdminNews,
+  updateAdminNews,
   NewsItem,
   getManualPlatformStats,
   upsertManualPlatformStats,
@@ -188,6 +189,7 @@ export default function AdminDashboardScreen() {
   const [newNewsImageUri, setNewNewsImageUri] = useState<string | null>(null);
   const [creatingNews, setCreatingNews] = useState(false);
   const [uploadingNewsImage, setUploadingNewsImage] = useState(false);
+  const [editingNewsId, setEditingNewsId] = useState<number | null>(null);
   
   // Manual Platform Stats states (owner only)
   const [manualStats, setManualStats] = useState<ManualPlatformStats | null>(null);
@@ -2463,33 +2465,47 @@ export default function AdminDashboardScreen() {
                             {news.authorName} • {new Date(news.createdAt).toLocaleDateString('id-ID')}
                           </ThemedText>
                         </View>
-                        <Pressable
-                          onPress={() => {
-                            Alert.alert(
-                              'Hapus News',
-                              `Yakin ingin menghapus "${news.title}"?`,
-                              [
-                                { text: 'Batal', style: 'cancel' },
-                                { 
-                                  text: 'Hapus', 
-                                  style: 'destructive',
-                                  onPress: async () => {
-                                    const result = await deleteAdminNews(news.id, parseInt(user?.id || '0'));
-                                    if (result.success) {
-                                      setNewsList(prev => prev.filter(n => n.id !== news.id));
-                                      Alert.alert('Berhasil', 'News berhasil dihapus');
-                                    } else {
-                                      Alert.alert('Error', result.error || 'Gagal menghapus news');
+                        <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+                          <Pressable
+                            onPress={() => {
+                              setEditingNewsId(news.id);
+                              setNewNewsTitle(news.title);
+                              setNewNewsContent(news.content);
+                              setNewNewsImageUri(news.imageUrl);
+                              setShowCreateNewsModal(true);
+                            }}
+                            style={[styles.newsDeleteBtn, { backgroundColor: theme.primary + '20' }]}
+                          >
+                            <EditIcon size={18} color={theme.primary} />
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              Alert.alert(
+                                'Hapus News',
+                                `Yakin ingin menghapus "${news.title}"?`,
+                                [
+                                  { text: 'Batal', style: 'cancel' },
+                                  { 
+                                    text: 'Hapus', 
+                                    style: 'destructive',
+                                    onPress: async () => {
+                                      const result = await deleteAdminNews(news.id, parseInt(user?.id || '0'));
+                                      if (result.success) {
+                                        setNewsList(prev => prev.filter(n => n.id !== news.id));
+                                        Alert.alert('Berhasil', 'News berhasil dihapus');
+                                      } else {
+                                        Alert.alert('Error', result.error || 'Gagal menghapus news');
+                                      }
                                     }
                                   }
-                                }
-                              ]
-                            );
-                          }}
-                          style={[styles.newsDeleteBtn, { backgroundColor: '#EF444420' }]}
-                        >
-                          <TrashIcon size={18} color="#EF4444" />
-                        </Pressable>
+                                ]
+                              );
+                            }}
+                            style={[styles.newsDeleteBtn, { backgroundColor: '#EF444420' }]}
+                          >
+                            <TrashIcon size={18} color="#EF4444" />
+                          </Pressable>
+                        </View>
                       </View>
                       <ThemedText style={[styles.newsCardDesc, { color: theme.textSecondary }]} numberOfLines={3}>
                         {news.content}
@@ -2614,9 +2630,9 @@ export default function AdminDashboardScreen() {
             <View style={styles.modalHeader}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Image source={noveaLogo} style={{ width: 24, height: 24, marginRight: Spacing.sm }} />
-                <ThemedText style={Typography.h3}>Buat N-News</ThemedText>
+                <ThemedText style={Typography.h3}>{editingNewsId ? 'Edit N-News' : 'Buat N-News'}</ThemedText>
               </View>
-              <Pressable onPress={() => setShowCreateNewsModal(false)}>
+              <Pressable onPress={() => { setShowCreateNewsModal(false); setEditingNewsId(null); }}>
                 <XIcon size={24} color={theme.text} />
               </Pressable>
             </View>
@@ -2701,6 +2717,8 @@ export default function AdminDashboardScreen() {
                     setShowCreateNewsModal(false);
                     setNewNewsTitle('');
                     setNewNewsContent('');
+                    setNewNewsImageUri(null);
+                    setEditingNewsId(null);
                   }}
                   style={[styles.cancelButton, { backgroundColor: theme.backgroundSecondary, flex: 1 }]}
                 >
@@ -2713,28 +2731,53 @@ export default function AdminDashboardScreen() {
                       return;
                     }
                     setCreatingNews(true);
-                    const result = await createAdminNews(
-                      parseInt(user?.id || '0'),
-                      newNewsTitle.trim(),
-                      newNewsContent.trim(),
-                      newNewsImageUri || undefined
-                    );
-                    setCreatingNews(false);
-                    if (result.success) {
-                      Alert.alert('Berhasil', 'N-News berhasil dibuat');
-                      setShowCreateNewsModal(false);
-                      setNewNewsTitle('');
-                      setNewNewsContent('');
-                      setNewNewsImageUri(null);
-                      loadNews();
+                    
+                    if (editingNewsId) {
+                      const result = await updateAdminNews(
+                        editingNewsId,
+                        parseInt(user?.id || '0'),
+                        {
+                          title: newNewsTitle.trim(),
+                          content: newNewsContent.trim(),
+                          imageUrl: newNewsImageUri,
+                        }
+                      );
+                      setCreatingNews(false);
+                      if (result.success) {
+                        Alert.alert('Berhasil', 'N-News berhasil diupdate');
+                        setShowCreateNewsModal(false);
+                        setNewNewsTitle('');
+                        setNewNewsContent('');
+                        setNewNewsImageUri(null);
+                        setEditingNewsId(null);
+                        loadNews();
+                      } else {
+                        Alert.alert('Error', result.error || 'Gagal mengupdate news');
+                      }
                     } else {
-                      Alert.alert('Error', result.error || 'Gagal membuat news');
+                      const result = await createAdminNews(
+                        parseInt(user?.id || '0'),
+                        newNewsTitle.trim(),
+                        newNewsContent.trim(),
+                        newNewsImageUri || undefined
+                      );
+                      setCreatingNews(false);
+                      if (result.success) {
+                        Alert.alert('Berhasil', 'N-News berhasil dibuat');
+                        setShowCreateNewsModal(false);
+                        setNewNewsTitle('');
+                        setNewNewsContent('');
+                        setNewNewsImageUri(null);
+                        loadNews();
+                      } else {
+                        Alert.alert('Error', result.error || 'Gagal membuat news');
+                      }
                     }
                   }}
                   disabled={creatingNews}
                   style={{ flex: 1 }}
                 >
-                  {creatingNews ? 'Menyimpan...' : 'Simpan'}
+                  {creatingNews ? 'Menyimpan...' : (editingNewsId ? 'Update' : 'Simpan')}
                 </Button>
               </View>
             </ScrollView>
