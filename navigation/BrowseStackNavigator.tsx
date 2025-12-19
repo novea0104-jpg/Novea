@@ -14,6 +14,7 @@ import CreateChapterScreen from "@/screens/CreateChapterScreen";
 import MessagesHomeScreen from "@/screens/MessagesHomeScreen";
 import MessageThreadScreen from "@/screens/MessageThreadScreen";
 import NewMessageScreen from "@/screens/NewMessageScreen";
+import NewsDetailScreen from "@/screens/NewsDetailScreen";
 import { getCommonScreenOptions } from "@/navigation/screenOptions";
 import { useTheme } from "@/hooks/useTheme";
 
@@ -32,6 +33,7 @@ export type BrowseStackParamList = {
   Messages: undefined;
   MessageThread: { conversationId: string; recipientName: string; recipientAvatar?: string; recipientRole: string };
   NewMessage: undefined;
+  NewsDetail: { title: string; content: string; imageUrl: string | null; authorName: string; createdAt: string };
 };
 
 const Stack = createNativeStackNavigator<BrowseStackParamList>();
@@ -110,6 +112,11 @@ export default function BrowseStackNavigator() {
         name="NewMessage"
         component={NewMessageScreen}
         options={{ title: "Pesan Baru" }}
+      />
+      <Stack.Screen
+        name="NewsDetail"
+        component={NewsDetailScreen}
+        options={{ title: "N-News" }}
       />
     </Stack.Navigator>
   );
