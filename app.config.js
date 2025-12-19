@@ -54,7 +54,9 @@ const config = {
       reactCompiler: true
     },
     extra: {
-      eas: {},
+      eas: {
+        projectId: "519dbc22-beb2-443b-8192-4fccf3226146"
+      },
       admobAppId: process.env.ADMOB_APP_ID || null,
       admobBannerId: process.env.ADMOB_BANNER_ID || null,
       admobInterstitialId: process.env.ADMOB_INTERSTITIAL_ID || null,
