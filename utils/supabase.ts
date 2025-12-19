@@ -55,7 +55,7 @@ export async function trackNovelView(userId: number, novelId: number): Promise<b
   try {
     // Try to insert a view record (will fail silently if already exists due to UNIQUE constraint)
     const { error } = await supabase
-      .from('novel_views')
+      .from('novel_view')
       .insert({ user_id: userId, novel_id: novelId });
 
     // If there's a unique constraint error, it means user already viewed this novel
@@ -131,7 +131,7 @@ export async function saveReadingProgress(
 export async function getNovelViewCount(novelId: number): Promise<number> {
   try {
     const { count, error } = await supabase
-      .from('novel_views')
+      .from('novel_view')
       .select('*', { count: 'exact', head: true })
       .eq('novel_id', novelId);
 
@@ -154,7 +154,7 @@ export async function getBulkNovelViewCounts(novelIds: number[]): Promise<Map<nu
   
   try {
     const { data: viewsData, error } = await supabase
-      .from('novel_views')
+      .from('novel_view')
       .select('novel_id')
       .in('novel_id', novelIds);
 
@@ -2186,7 +2186,7 @@ export async function getAllNovelsAdmin(
           .eq('novel_id', n.id);
 
         const { count: viewCount } = await supabase
-          .from('novel_views')
+          .from('novel_view')
           .select('*', { count: 'exact', head: true })
           .eq('novel_id', n.id);
 
@@ -2263,7 +2263,7 @@ export async function deleteNovelAdmin(
     if (e5) console.error('[deleteNovelAdmin] Error deleting novel_genres:', e5);
 
     // Delete novel views
-    const { error: e6 } = await supabase.from('novel_views').delete().eq('novel_id', novelId);
+    const { error: e6 } = await supabase.from('novel_view').delete().eq('novel_id', novelId);
     if (e6) console.error('[deleteNovelAdmin] Error deleting novel_views:', e6);
 
     // Delete novel likes
@@ -2381,7 +2381,7 @@ export async function getAdminStats(): Promise<AdminStats> {
       supabase.from('users').select('*', { count: 'exact', head: true }),
       supabase.from('novels').select('*', { count: 'exact', head: true }),
       supabase.from('chapters').select('*', { count: 'exact', head: true }),
-      supabase.from('novel_views').select('*', { count: 'exact', head: true }),
+      supabase.from('novel_view').select('*', { count: 'exact', head: true }),
       supabase.from('users').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
       supabase.from('novels').select('*', { count: 'exact', head: true }).gte('created_at', todayStr),
       supabase.from('coin_transactions').select('amount').eq('type', 'purchase'),
@@ -3047,7 +3047,7 @@ export async function getEditorsChoiceForHome(): Promise<{
 
     // Fetch view counts from novel_views table
     const { data: viewsData } = await supabase
-      .from('novel_views')
+      .from('novel_view')
       .select('novel_id')
       .in('novel_id', novelIds);
 
