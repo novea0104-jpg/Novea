@@ -696,7 +696,7 @@ export default function BrowseHomeScreen() {
                   {item.title}
                 </ThemedText>
                 <ThemedText style={[styles.newsCardMeta, { color: theme.textSecondary }]} numberOfLines={1}>
-                  {item.authorName} • {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                  {new Date(item.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                 </ThemedText>
               </View>
             </Pressable>

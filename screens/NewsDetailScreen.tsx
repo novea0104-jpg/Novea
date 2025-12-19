@@ -46,10 +46,6 @@ export default function NewsDetailScreen() {
         <ThemedText style={styles.title}>{title}</ThemedText>
         
         <View style={styles.metaRow}>
-          <ThemedText style={[styles.author, { color: theme.primary }]}>
-            {authorName}
-          </ThemedText>
-          <View style={[styles.dot, { backgroundColor: theme.textSecondary }]} />
           <ThemedText style={[styles.date, { color: theme.textSecondary }]}>
             {formattedDate}
           </ThemedText>
@@ -102,17 +98,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
     marginBottom: Spacing.md,
-  },
-  author: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
   },
   date: {
     fontSize: 14,
