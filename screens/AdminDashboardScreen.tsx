@@ -75,7 +75,9 @@ import {
   ManualPlatformStats,
 } from "@/utils/supabase";
 import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/useGoldWithdrawal";
+import { useAdminWithdrawal, ADMIN_WITHDRAWAL_LIMITS, getWithdrawalLimit } from "@/hooks/useAdminWithdrawal";
 import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
+import { WalletIcon } from "@/components/icons/WalletIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
 import { uploadNewsImageAsync } from "@/utils/newsImageStorage";
@@ -83,7 +85,7 @@ import { CameraIcon } from "@/components/icons/CameraIcon";
 
 const noveaLogo = require("@/assets/images/novea-logo.png");
 
-type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd' | 'news' | 'manual_stats';
+type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd' | 'admin_wd' | 'news' | 'manual_stats';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -190,11 +192,33 @@ export default function AdminDashboardScreen() {
   const [savingManualStats, setSavingManualStats] = useState(false);
   const [showManualStatsModal, setShowManualStatsModal] = useState(false);
   
+  // Admin Withdrawal states
+  const [adminWdBankName, setAdminWdBankName] = useState('');
+  const [adminWdBankCode, setAdminWdBankCode] = useState('');
+  const [adminWdAccountNumber, setAdminWdAccountNumber] = useState('');
+  const [adminWdAccountHolderName, setAdminWdAccountHolderName] = useState('');
+  const [adminWdAmount, setAdminWdAmount] = useState('');
+  const [adminWdSaving, setAdminWdSaving] = useState(false);
+  
+  // Use admin withdrawal hook
+  const {
+    bankAccount: adminBankAccount,
+    withdrawalHistory: adminWithdrawalHistory,
+    pendingWithdrawal: adminPendingWithdrawal,
+    loading: adminWdLoading,
+    refresh: refreshAdminWd,
+    upsertBankAccount: upsertAdminBankAccount,
+    requestWithdrawal: requestAdminWithdrawal,
+  } = useAdminWithdrawal(user?.id, adminRole);
+  
   const handleTabChange = (tab: TabType) => {
     if (tab === 'users' && !canManageUsers) {
       return;
     }
     if (tab === 'news' && !canManageNews) {
+      return;
+    }
+    if (tab === 'admin_wd' && !(isSuperAdmin || isCoAdmin)) {
       return;
     }
     setSearchQuery('');
@@ -787,6 +811,7 @@ export default function AdminDashboardScreen() {
   const renderTabButton = (tab: TabType, label: string, IconComponent: React.ComponentType<{ size: number; color: string }>) => {
     if (tab === 'users' && !canManageUsers) return null;
     if (tab === 'news' && !canManageNews) return null;
+    if (tab === 'admin_wd' && !(isSuperAdmin || isCoAdmin)) return null;
     const isActive = activeTab === tab;
     const iconColor = isActive ? '#FFFFFF' : theme.text;
     const bgColor = isActive ? theme.primary : theme.backgroundSecondary;
@@ -1400,6 +1425,7 @@ export default function AdminDashboardScreen() {
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
           {canManageWithdrawals ? renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon) : null}
+          {(isSuperAdmin || isCoAdmin) ? renderTabButton('admin_wd', 'WD Admin', WalletIcon) : null}
           {canManageNews ? renderTabButton('news', 'N-News', BookIcon) : null}
         </ScrollView>
       </View>
@@ -1876,6 +1902,259 @@ export default function AdminDashboardScreen() {
             />
           )}
         </View>
+      ) : activeTab === 'admin_wd' && (isSuperAdmin || isCoAdmin) ? (
+        <ScreenScrollView
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refreshAdminWd} tintColor={theme.primary} />
+          }
+          contentContainerStyle={{ paddingTop: 0 }}
+        >
+          <View style={styles.content}>
+            <ThemedText style={[Typography.h2, styles.sectionHeader]}>
+              WD Admin
+            </ThemedText>
+            <ThemedText style={[styles.roleInfo, { color: theme.textSecondary }]}>
+              {isSuperAdmin ? 'Super Admin' : 'Co Admin'} - Limit Penarikan: {ADMIN_WITHDRAWAL_LIMITS[adminRole]}%
+            </ThemedText>
+
+            <Card elevation={1} style={[styles.revenueCard, { marginTop: Spacing.lg }]}>
+              <View style={[styles.revenueTotalRow, { borderTopWidth: 0 }]}>
+                <ThemedText style={[styles.revenueTotalLabel, { color: theme.textSecondary }]}>
+                  Pendapatan Platform
+                </ThemedText>
+                <ThemedText style={[Typography.h2, { color: theme.success }]}>
+                  {formatCurrency(stats?.platformRevenue || 0)}
+                </ThemedText>
+              </View>
+              <View style={[styles.revenueTotalRow, { borderTopColor: theme.backgroundSecondary }]}>
+                <ThemedText style={[styles.revenueTotalLabel, { color: theme.textSecondary }]}>
+                  Limit Penarikan ({ADMIN_WITHDRAWAL_LIMITS[adminRole]}%)
+                </ThemedText>
+                <ThemedText style={[Typography.h3, { color: theme.warning }]}>
+                  {formatCurrency(getWithdrawalLimit(adminRole, stats?.platformRevenue || 0))}
+                </ThemedText>
+              </View>
+              <View style={[styles.revenueTotalRow, { borderTopColor: theme.backgroundSecondary }]}>
+                <ThemedText style={[styles.revenueTotalLabel, { color: theme.textSecondary }]}>
+                  Sudah Ditarik/Pending
+                </ThemedText>
+                <ThemedText style={[Typography.h3, { color: theme.error }]}>
+                  {formatCurrency(adminPendingWithdrawal)}
+                </ThemedText>
+              </View>
+              <View style={[styles.revenueTotalRow, { borderTopColor: theme.backgroundSecondary }]}>
+                <ThemedText style={[styles.revenueTotalLabel, { color: theme.textSecondary }]}>
+                  Tersedia untuk Ditarik
+                </ThemedText>
+                <ThemedText style={[Typography.h2, { color: theme.primary }]}>
+                  {formatCurrency(getWithdrawalLimit(adminRole, stats?.platformRevenue || 0) - adminPendingWithdrawal)}
+                </ThemedText>
+              </View>
+            </Card>
+
+            <ThemedText style={[Typography.h3, styles.revenueHeader]}>
+              Rekening Bank
+            </ThemedText>
+            <Card elevation={1} style={styles.revenueCard}>
+              <View style={styles.inputRow}>
+                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Nama Bank</ThemedText>
+                <TextInput
+                  style={[styles.inputField, { color: theme.text, backgroundColor: theme.backgroundSecondary }]}
+                  placeholder="Contoh: BCA, BNI, Mandiri"
+                  placeholderTextColor={theme.textMuted}
+                  value={adminWdBankName || adminBankAccount?.bankName || ''}
+                  onChangeText={setAdminWdBankName}
+                />
+              </View>
+              <View style={styles.inputRow}>
+                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Kode Bank (Opsional)</ThemedText>
+                <TextInput
+                  style={[styles.inputField, { color: theme.text, backgroundColor: theme.backgroundSecondary }]}
+                  placeholder="Contoh: 014 (BCA)"
+                  placeholderTextColor={theme.textMuted}
+                  value={adminWdBankCode || adminBankAccount?.bankCode || ''}
+                  onChangeText={setAdminWdBankCode}
+                />
+              </View>
+              <View style={styles.inputRow}>
+                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Nomor Rekening</ThemedText>
+                <TextInput
+                  style={[styles.inputField, { color: theme.text, backgroundColor: theme.backgroundSecondary }]}
+                  placeholder="Masukkan nomor rekening"
+                  placeholderTextColor={theme.textMuted}
+                  keyboardType="numeric"
+                  value={adminWdAccountNumber || adminBankAccount?.accountNumber || ''}
+                  onChangeText={setAdminWdAccountNumber}
+                />
+              </View>
+              <View style={styles.inputRow}>
+                <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Nama Pemilik Rekening</ThemedText>
+                <TextInput
+                  style={[styles.inputField, { color: theme.text, backgroundColor: theme.backgroundSecondary }]}
+                  placeholder="Sesuai buku tabungan"
+                  placeholderTextColor={theme.textMuted}
+                  value={adminWdAccountHolderName || adminBankAccount?.accountHolderName || ''}
+                  onChangeText={setAdminWdAccountHolderName}
+                />
+              </View>
+              <Button
+                onPress={async () => {
+                  const bankName = adminWdBankName || adminBankAccount?.bankName || '';
+                  const accountNumber = adminWdAccountNumber || adminBankAccount?.accountNumber || '';
+                  const accountHolderName = adminWdAccountHolderName || adminBankAccount?.accountHolderName || '';
+                  
+                  if (!bankName || !accountNumber || !accountHolderName) {
+                    Alert.alert('Error', 'Nama bank, nomor rekening, dan nama pemilik rekening wajib diisi');
+                    return;
+                  }
+                  
+                  setAdminWdSaving(true);
+                  const result = await upsertAdminBankAccount({
+                    bankName,
+                    bankCode: adminWdBankCode || adminBankAccount?.bankCode || '',
+                    accountNumber,
+                    accountHolderName,
+                  });
+                  setAdminWdSaving(false);
+                  
+                  if (result.success) {
+                    Alert.alert('Berhasil', 'Rekening bank berhasil disimpan');
+                    setAdminWdBankName('');
+                    setAdminWdBankCode('');
+                    setAdminWdAccountNumber('');
+                    setAdminWdAccountHolderName('');
+                  } else {
+                    Alert.alert('Gagal', result.error || 'Gagal menyimpan rekening');
+                  }
+                }}
+                disabled={adminWdSaving}
+                style={{ marginTop: Spacing.md }}
+              >
+                {adminWdSaving ? 'Menyimpan...' : 'Simpan Rekening'}
+              </Button>
+            </Card>
+
+            <ThemedText style={[Typography.h3, styles.revenueHeader]}>
+              Ajukan Penarikan
+            </ThemedText>
+            <Card elevation={1} style={styles.revenueCard}>
+              {adminBankAccount ? (
+                <>
+                  <View style={styles.inputRow}>
+                    <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Rekening Tujuan</ThemedText>
+                    <ThemedText style={{ color: theme.text }}>
+                      {adminBankAccount.bankName} - {adminBankAccount.accountNumber}
+                    </ThemedText>
+                    <ThemedText style={{ color: theme.textSecondary, fontSize: 12 }}>
+                      a.n. {adminBankAccount.accountHolderName}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.inputRow}>
+                    <ThemedText style={[styles.inputLabel, { color: theme.textSecondary }]}>Jumlah Penarikan (Rp)</ThemedText>
+                    <TextInput
+                      style={[styles.inputField, { color: theme.text, backgroundColor: theme.backgroundSecondary }]}
+                      placeholder="Masukkan jumlah"
+                      placeholderTextColor={theme.textMuted}
+                      keyboardType="numeric"
+                      value={adminWdAmount}
+                      onChangeText={setAdminWdAmount}
+                    />
+                    <ThemedText style={{ color: theme.textSecondary, fontSize: 12, marginTop: Spacing.xs }}>
+                      Maksimal: {formatCurrency(getWithdrawalLimit(adminRole, stats?.platformRevenue || 0) - adminPendingWithdrawal)}
+                    </ThemedText>
+                  </View>
+                  <Button
+                    onPress={async () => {
+                      const amount = parseInt(adminWdAmount.replace(/\D/g, ''), 10);
+                      if (!amount || amount <= 0) {
+                        Alert.alert('Error', 'Masukkan jumlah yang valid');
+                        return;
+                      }
+                      
+                      setAdminWdSaving(true);
+                      const result = await requestAdminWithdrawal(amount, stats?.platformRevenue || 0);
+                      setAdminWdSaving(false);
+                      
+                      if (result.success) {
+                        Alert.alert('Berhasil', 'Permintaan penarikan berhasil diajukan');
+                        setAdminWdAmount('');
+                      } else {
+                        Alert.alert('Gagal', result.error || 'Gagal mengajukan penarikan');
+                      }
+                    }}
+                    disabled={adminWdSaving}
+                    style={{ marginTop: Spacing.md }}
+                  >
+                    {adminWdSaving ? 'Memproses...' : 'Ajukan Penarikan'}
+                  </Button>
+                </>
+              ) : (
+                <ThemedText style={{ color: theme.textSecondary, textAlign: 'center' }}>
+                  Silakan isi rekening bank terlebih dahulu di atas
+                </ThemedText>
+              )}
+            </Card>
+
+            <ThemedText style={[Typography.h3, styles.revenueHeader]}>
+              Riwayat Penarikan
+            </ThemedText>
+            {adminWdLoading ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color={theme.primary} />
+              </View>
+            ) : adminWithdrawalHistory.length > 0 ? (
+              adminWithdrawalHistory.map((wd) => {
+                const statusColors: Record<string, string> = {
+                  pending: theme.warning,
+                  processing: theme.link,
+                  approved: theme.success,
+                  paid: theme.success,
+                  rejected: theme.error,
+                  cancelled: theme.textMuted,
+                };
+                const statusLabels: Record<string, string> = {
+                  pending: 'Menunggu',
+                  processing: 'Diproses',
+                  approved: 'Disetujui',
+                  paid: 'Dibayar',
+                  rejected: 'Ditolak',
+                  cancelled: 'Dibatalkan',
+                };
+                return (
+                  <Card key={wd.id} elevation={1} style={[styles.listItem, { marginBottom: Spacing.sm }]}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <ThemedText style={Typography.h3}>
+                          {formatCurrency(wd.amount)}
+                        </ThemedText>
+                        <View style={[styles.statusBadge, { backgroundColor: statusColors[wd.status] + '20' }]}>
+                          <ThemedText style={[styles.statusBadgeText, { color: statusColors[wd.status] }]}>
+                            {statusLabels[wd.status] || wd.status}
+                          </ThemedText>
+                        </View>
+                      </View>
+                      <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]}>
+                        {new Date(wd.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </ThemedText>
+                      {wd.adminNote ? (
+                        <ThemedText style={{ color: theme.textSecondary, fontSize: 12, marginTop: Spacing.xs }}>
+                          Catatan: {wd.adminNote}
+                        </ThemedText>
+                      ) : null}
+                    </View>
+                  </Card>
+                );
+              })
+            ) : (
+              <View style={styles.emptyState}>
+                <WalletIcon size={48} color={theme.textMuted} />
+                <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
+                  Belum ada riwayat penarikan
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </ScreenScrollView>
       ) : null}
 
       {activeTab === 'news' && canManageNews ? (
@@ -3076,5 +3355,14 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  inputRow: {
+    marginBottom: Spacing.md,
+  },
+  inputField: {
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: 15,
   },
 });

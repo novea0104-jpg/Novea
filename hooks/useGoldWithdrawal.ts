@@ -239,7 +239,7 @@ export async function getAdminGoldWithdrawals(status?: string) {
       .from("gold_withdrawals")
       .select(`
         *,
-        users (id, name, email, username),
+        users (id, name, email),
         writer_bank_accounts (bank_name, account_number, account_holder_name)
       `)
       .order("created_at", { ascending: false });
@@ -255,7 +255,7 @@ export async function getAdminGoldWithdrawals(status?: string) {
     return (data || []).map((req) => ({
       id: req.id,
       userId: req.user_id,
-      userName: req.users?.name || req.users?.username || "Unknown",
+      userName: req.users?.name || "Unknown",
       userEmail: req.users?.email,
       goldAmount: req.gold_amount,
       rupiahAmount: req.rupiah_amount,
