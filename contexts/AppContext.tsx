@@ -57,21 +57,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const viewCountsMap = new Map<number, number>();
 
       if (novelIds.length > 0) {
-        // Fetch view counts from novel_views table - use limit to get all views
-        const { data: viewsData, error: viewsError } = await supabase
-          .from('novel_views')
-          .select('novel_id')
-          .in('novel_id', novelIds)
-          .limit(10000);
-
-        if (viewsData) {
-          viewsData.forEach((view: any) => {
-            const currentCount = viewCountsMap.get(view.novel_id) || 0;
-            viewCountsMap.set(view.novel_id, currentCount + 1);
-          });
-        }
+        // Fetch view counts from novel_views table with pagination to get ALL views
+        let allViewsData: any[] = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
         
-        // Also store in globalThis for consistency with collection functions
+        while (hasMore) {
+          const { data: viewsPage, error: viewsError } = await supabase
+            .from('novel_views')
+            .select('novel_id')
+            .in('novel_id', novelIds)
+            .range(page * pageSize, (page + 1) * pageSize - 1);
+          
+          if (viewsError) {
+            console.error('[View Count] Error fetching views:', viewsError);
+            break;
+          }
+          
+          if (viewsPage && viewsPage.length > 0) {
+            allViewsData = [...allViewsData, ...viewsPage];
+            page++;
+            hasMore = viewsPage.length === pageSize;
+          } else {
+            hasMore = false;
+          }
+        }
+
+        allViewsData.forEach((view: any) => {
+          const currentCount = viewCountsMap.get(view.novel_id) || 0;
+          viewCountsMap.set(view.novel_id, currentCount + 1);
+        });
+        
+        // Store in globalThis for consistency with collection functions
         (globalThis as any).__viewCountsMap = viewCountsMap;
 
         // Fetch rating counts from novel_reviews
