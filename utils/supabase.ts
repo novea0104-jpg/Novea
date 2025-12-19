@@ -1585,7 +1585,7 @@ export interface PMMessage {
   isOwn: boolean;
 }
 
-// Get all conversations for a user
+// Get all conversations for a user (optimized - batch queries)
 export async function getConversations(userId: number): Promise<PMConversation[]> {
   try {
     // Get all conversation IDs where user is participant
@@ -1601,55 +1601,52 @@ export async function getConversations(userId: number): Promise<PMConversation[]
     const conversationIds = participantData.map(p => p.conversation_id);
     const lastReadMap = new Map(participantData.map(p => [p.conversation_id, p.last_read_at]));
 
-    // Get conversations with participants
-    const { data: convData, error: convError } = await supabase
-      .from('pm_conversations')
-      .select('*')
-      .in('id', conversationIds)
-      .order('last_message_at', { ascending: false });
+    // Batch fetch all data in parallel
+    const [convResult, participantsResult, messagesResult] = await Promise.all([
+      // Get conversations
+      supabase
+        .from('pm_conversations')
+        .select('*')
+        .in('id', conversationIds)
+        .order('last_message_at', { ascending: false }),
+      // Get all participants for these conversations
+      supabase
+        .from('pm_participants')
+        .select(`
+          *,
+          user:user_id (id, name, avatar_url, role)
+        `)
+        .in('conversation_id', conversationIds),
+      // Get all messages for unread counting (only sender_id and created_at needed)
+      supabase
+        .from('pm_messages')
+        .select('conversation_id, sender_id, created_at')
+        .in('conversation_id', conversationIds)
+        .neq('sender_id', userId),
+    ]);
 
-    if (convError || !convData) {
-      console.error('Error fetching conversations:', convError);
+    if (convResult.error || !convResult.data) {
+      console.error('Error fetching conversations:', convResult.error);
       return [];
     }
 
-    // Get all participants for these conversations
-    const { data: allParticipants } = await supabase
-      .from('pm_participants')
-      .select(`
-        *,
-        user:user_id (id, name, avatar_url, role)
-      `)
-      .in('conversation_id', conversationIds);
+    const convData = convResult.data;
+    const allParticipants = participantsResult.data || [];
+    const allMessages = messagesResult.data || [];
 
-    // Get unread counts (messages after last_read_at)
-    const conversations: PMConversation[] = [];
-
-    for (const conv of convData) {
-      const lastRead = lastReadMap.get(conv.id);
-      
-      // Count unread messages
-      let unreadCount = 0;
-      if (lastRead) {
-        const { count } = await supabase
-          .from('pm_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', conv.id)
-          .neq('sender_id', userId)
-          .gt('created_at', lastRead);
-        unreadCount = count || 0;
-      } else {
-        // Never read - count all messages not from self
-        const { count } = await supabase
-          .from('pm_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', conv.id)
-          .neq('sender_id', userId);
-        unreadCount = count || 0;
+    // Calculate unread counts per conversation in memory
+    const unreadCounts: Record<string, number> = {};
+    for (const msg of allMessages) {
+      const lastRead = lastReadMap.get(msg.conversation_id);
+      const isUnread = !lastRead || new Date(msg.created_at) > new Date(lastRead);
+      if (isUnread) {
+        unreadCounts[msg.conversation_id] = (unreadCounts[msg.conversation_id] || 0) + 1;
       }
+    }
 
-      // Get participants for this conversation (exclude self)
-      const participants = (allParticipants || [])
+    // Map conversations with pre-fetched data
+    return convData.map((conv: any) => {
+      const participants = allParticipants
         .filter((p: any) => p.conversation_id === conv.id)
         .map((p: any) => ({
           id: p.id,
@@ -1662,18 +1659,16 @@ export async function getConversations(userId: number): Promise<PMConversation[]
           joinedAt: p.joined_at,
         }));
 
-      conversations.push({
+      return {
         id: conv.id,
         createdAt: conv.created_at,
         updatedAt: conv.updated_at,
         lastMessageAt: conv.last_message_at,
         lastMessagePreview: conv.last_message_preview,
         participants,
-        unreadCount,
-      });
-    }
-
-    return conversations;
+        unreadCount: unreadCounts[conv.id] || 0,
+      };
+    });
   } catch (error) {
     console.error('Error in getConversations:', error);
     return [];
