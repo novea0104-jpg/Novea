@@ -52,11 +52,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (novelsError) throw novelsError;
 
-      // Use total_reads directly from novels table (no need for separate query)
       const novelIds = (novelsData || []).map(n => n.id);
       const ratingCountsMap = new Map<number, number>();
+      const viewCountsMap = new Map<number, number>();
 
       if (novelIds.length > 0) {
+        // Fetch view counts from novel_views table
+        const { data: viewsData } = await supabase
+          .from('novel_views')
+          .select('novel_id')
+          .in('novel_id', novelIds);
+
+        if (viewsData) {
+          viewsData.forEach((view: any) => {
+            const currentCount = viewCountsMap.get(view.novel_id) || 0;
+            viewCountsMap.set(view.novel_id, currentCount + 1);
+          });
+        }
+
         // Fetch rating counts from novel_reviews
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('novel_reviews')
@@ -64,7 +77,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .in('novel_id', novelIds);
 
         if (!reviewsError && reviewsData) {
-          // Count reviews per novel
           reviewsData.forEach(review => {
             const currentCount = ratingCountsMap.get(review.novel_id) || 0;
             ratingCountsMap.set(review.novel_id, currentCount + 1);
@@ -102,6 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // Store maps for later use in novel mapping
         (globalThis as any).__novelLikesMap = novelLikesMap;
         (globalThis as any).__chapterLikesMap = chapterLikesMap;
+        (globalThis as any).__viewCountsMap = viewCountsMap;
       }
 
       // Fetch user-specific data if logged in
@@ -175,9 +188,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUnlockedChapters(new Set());
       }
 
-      // Get likes maps from global storage
+      // Get maps from global storage
       const novelLikesMap = (globalThis as any).__novelLikesMap || new Map<number, number>();
       const chapterLikesMap = (globalThis as any).__chapterLikesMap || new Map<number, number>();
+      const globalViewCountsMap = (globalThis as any).__viewCountsMap || new Map<number, number>();
 
       // Convert API novels to app Novel type
       const convertedNovels: Novel[] = (novelsData || []).map(apiNovel => ({
@@ -194,7 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         coinPerChapter: apiNovel.chapter_price,
         freeChapters: apiNovel.free_chapters,
         totalChapters: apiNovel.total_chapters,
-        followers: apiNovel.total_reads || 0,
+        followers: globalViewCountsMap.get(apiNovel.id) || viewCountsMap.get(apiNovel.id) || 0,
         totalLikes: (novelLikesMap.get(apiNovel.id) || 0) + (chapterLikesMap.get(apiNovel.id) || 0),
         isFollowing: followingSet.has(apiNovel.id.toString()),
         createdAt: new Date(apiNovel.created_at),

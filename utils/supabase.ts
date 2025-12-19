@@ -147,6 +147,34 @@ export async function getNovelViewCount(novelId: number): Promise<number> {
   }
 }
 
+// Helper function to get view counts for multiple novels at once
+export async function getBulkNovelViewCounts(novelIds: number[]): Promise<Map<number, number>> {
+  const viewCountsMap = new Map<number, number>();
+  if (novelIds.length === 0) return viewCountsMap;
+  
+  try {
+    const { data: viewsData, error } = await supabase
+      .from('novel_views')
+      .select('novel_id')
+      .in('novel_id', novelIds);
+
+    if (error) {
+      console.error('Error fetching bulk view counts:', error);
+      return viewCountsMap;
+    }
+
+    (viewsData || []).forEach((view: any) => {
+      const currentCount = viewCountsMap.get(view.novel_id) || 0;
+      viewCountsMap.set(view.novel_id, currentCount + 1);
+    });
+
+    return viewCountsMap;
+  } catch (error) {
+    console.error('Error in getBulkNovelViewCounts:', error);
+    return viewCountsMap;
+  }
+}
+
 // Helper function to toggle like for a novel
 export async function toggleNovelLike(userId: number, novelId: number): Promise<{ isLiked: boolean; error?: string }> {
   try {
@@ -3626,7 +3654,7 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
 
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
+      .select('id, title, cover_url, author_id, genre, status, rating, created_at')
       .in('id', sortedNovelIds);
 
     if (novelsError) {
@@ -3635,10 +3663,10 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
     }
 
     const authorIds = [...new Set((novelsData || []).map((n: any) => n.author_id).filter(Boolean))];
-    const { data: authors } = await supabase
-      .from('users')
-      .select('id, name')
-      .in('id', authorIds);
+    const [{ data: authors }, viewCountsMap] = await Promise.all([
+      supabase.from('users').select('id, name').in('id', authorIds),
+      getBulkNovelViewCounts(sortedNovelIds)
+    ]);
     
     const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
     const novelMap = new Map((novelsData || []).map((n: any) => [n.id, n]));
@@ -3656,7 +3684,7 @@ export async function getMostLikedNovels(limit: number = 20): Promise<Collection
           genre: novel.genre || '',
           status: novel.status || 'ongoing',
           rating: novel.rating || 0,
-          totalReads: novel.total_reads || 0,
+          totalReads: viewCountsMap.get(novel.id) || 0,
           totalLikes: likeCounts[id] || 0,
           totalReviews: 0,
           createdAt: novel.created_at,
@@ -3693,7 +3721,7 @@ export async function getMostReviewedNovels(limit: number = 20): Promise<Collect
 
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
+      .select('id, title, cover_url, author_id, genre, status, rating, created_at')
       .in('id', sortedNovelIds);
 
     if (novelsError) {
@@ -3702,10 +3730,10 @@ export async function getMostReviewedNovels(limit: number = 20): Promise<Collect
     }
 
     const authorIds = [...new Set((novelsData || []).map((n: any) => n.author_id).filter(Boolean))];
-    const { data: authors } = await supabase
-      .from('users')
-      .select('id, name')
-      .in('id', authorIds);
+    const [{ data: authors }, viewCountsMap] = await Promise.all([
+      supabase.from('users').select('id, name').in('id', authorIds),
+      getBulkNovelViewCounts(sortedNovelIds)
+    ]);
     
     const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
     const novelMap = new Map((novelsData || []).map((n: any) => [n.id, n]));
@@ -3723,7 +3751,7 @@ export async function getMostReviewedNovels(limit: number = 20): Promise<Collect
           genre: novel.genre || '',
           status: novel.status || 'ongoing',
           rating: novel.rating || 0,
-          totalReads: novel.total_reads || 0,
+          totalReads: viewCountsMap.get(novel.id) || 0,
           totalLikes: 0,
           totalReviews: reviewCounts[id] || 0,
           createdAt: novel.created_at,
@@ -3739,38 +3767,42 @@ export async function getCompletedNovelsByViews(limit: number = 20): Promise<Col
   try {
     const { data, error } = await supabase
       .from('novels')
-      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
+      .select('id, title, cover_url, author_id, genre, status, rating, created_at')
       .eq('status', 'completed')
-      .order('total_reads', { ascending: false })
-      .limit(limit);
+      .limit(limit * 2);
 
     if (error) {
       console.error('Error fetching completed novels:', error);
       return [];
     }
 
+    const novelIds = (data || []).map((n: any) => n.id);
     const authorIds = [...new Set((data || []).map((n: any) => n.author_id).filter(Boolean))];
-    const { data: authors } = await supabase
-      .from('users')
-      .select('id, name')
-      .in('id', authorIds);
+    
+    const [{ data: authors }, viewCountsMap] = await Promise.all([
+      supabase.from('users').select('id, name').in('id', authorIds),
+      getBulkNovelViewCounts(novelIds)
+    ]);
     
     const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
 
-    return (data || []).map((novel: any) => ({
-      id: novel.id,
-      title: novel.title,
-      coverUrl: novel.cover_url,
-      authorId: novel.author_id,
-      authorName: authorMap.get(novel.author_id) || 'Unknown',
-      genre: novel.genre || '',
-      status: novel.status || 'completed',
-      rating: novel.rating || 0,
-      totalReads: novel.total_reads || 0,
-      totalLikes: 0,
-      totalReviews: 0,
-      createdAt: novel.created_at,
-    }));
+    return (data || [])
+      .map((novel: any) => ({
+        id: novel.id,
+        title: novel.title,
+        coverUrl: novel.cover_url,
+        authorId: novel.author_id,
+        authorName: authorMap.get(novel.author_id) || 'Unknown',
+        genre: novel.genre || '',
+        status: novel.status || 'completed',
+        rating: novel.rating || 0,
+        totalReads: viewCountsMap.get(novel.id) || 0,
+        totalLikes: 0,
+        totalReviews: 0,
+        createdAt: novel.created_at,
+      }))
+      .sort((a, b) => b.totalReads - a.totalReads)
+      .slice(0, limit);
   } catch (error) {
     console.error('Error in getCompletedNovelsByViews:', error);
     return [];
@@ -3794,38 +3826,41 @@ export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20
     if (genreIds.length === 0) {
       const { data: fallbackData, error: fallbackError } = await supabase
         .from('novels')
-        .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
+        .select('id, title, cover_url, author_id, genre, status, rating, created_at')
         .or(genreSlugs.map(slug => `genre.ilike.%${slug}%`).join(','))
-        .order('total_reads', { ascending: false })
-        .limit(limit);
+        .limit(limit * 2);
 
       if (fallbackError) {
         console.error('Error fetching novels by genre name:', fallbackError);
         return [];
       }
 
+      const novelIds = (fallbackData || []).map((n: any) => n.id);
       const authorIds = [...new Set((fallbackData || []).map((n: any) => n.author_id).filter(Boolean))];
-      const { data: authors } = await supabase
-        .from('users')
-        .select('id, name')
-        .in('id', authorIds);
+      const [{ data: authors }, viewCountsMap] = await Promise.all([
+        supabase.from('users').select('id, name').in('id', authorIds),
+        getBulkNovelViewCounts(novelIds)
+      ]);
       
       const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
 
-      return (fallbackData || []).map((novel: any) => ({
-        id: novel.id,
-        title: novel.title,
-        coverUrl: novel.cover_url,
-        authorId: novel.author_id,
-        authorName: authorMap.get(novel.author_id) || 'Unknown',
-        genre: novel.genre || '',
-        status: novel.status || 'ongoing',
-        rating: novel.rating || 0,
-        totalReads: novel.total_reads || 0,
-        totalLikes: 0,
-        totalReviews: 0,
-        createdAt: novel.created_at,
-      }));
+      return (fallbackData || [])
+        .map((novel: any) => ({
+          id: novel.id,
+          title: novel.title,
+          coverUrl: novel.cover_url,
+          authorId: novel.author_id,
+          authorName: authorMap.get(novel.author_id) || 'Unknown',
+          genre: novel.genre || '',
+          status: novel.status || 'ongoing',
+          rating: novel.rating || 0,
+          totalReads: viewCountsMap.get(novel.id) || 0,
+          totalLikes: 0,
+          totalReviews: 0,
+          createdAt: novel.created_at,
+        }))
+        .sort((a, b) => b.totalReads - a.totalReads)
+        .slice(0, limit);
     }
 
     const { data: novelGenresData, error: novelGenresError } = await supabase
@@ -3844,38 +3879,41 @@ export async function getNovelsByGenres(genreSlugs: string[], limit: number = 20
 
     const { data: novelsData, error: novelsError } = await supabase
       .from('novels')
-      .select('id, title, cover_url, author_id, genre, status, rating, total_reads, created_at')
+      .select('id, title, cover_url, author_id, genre, status, rating, created_at')
       .in('id', novelIds)
-      .order('total_reads', { ascending: false })
-      .limit(limit);
+      .limit(limit * 2);
 
     if (novelsError) {
       console.error('Error fetching novels:', novelsError);
       return [];
     }
 
+    const fetchedNovelIds = (novelsData || []).map((n: any) => n.id);
     const authorIds = [...new Set((novelsData || []).map((n: any) => n.author_id).filter(Boolean))];
-    const { data: authors } = await supabase
-      .from('users')
-      .select('id, name')
-      .in('id', authorIds);
+    const [{ data: authors }, viewCountsMap] = await Promise.all([
+      supabase.from('users').select('id, name').in('id', authorIds),
+      getBulkNovelViewCounts(fetchedNovelIds)
+    ]);
     
     const authorMap = new Map((authors || []).map((a: any) => [a.id, a.name]));
 
-    return (novelsData || []).map((novel: any) => ({
-      id: novel.id,
-      title: novel.title,
-      coverUrl: novel.cover_url,
-      authorId: novel.author_id,
-      authorName: authorMap.get(novel.author_id) || 'Unknown',
-      genre: novel.genre || '',
-      status: novel.status || 'ongoing',
-      rating: novel.rating || 0,
-      totalReads: novel.total_reads || 0,
-      totalLikes: 0,
-      totalReviews: 0,
-      createdAt: novel.created_at,
-    }));
+    return (novelsData || [])
+      .map((novel: any) => ({
+        id: novel.id,
+        title: novel.title,
+        coverUrl: novel.cover_url,
+        authorId: novel.author_id,
+        authorName: authorMap.get(novel.author_id) || 'Unknown',
+        genre: novel.genre || '',
+        status: novel.status || 'ongoing',
+        rating: novel.rating || 0,
+        totalReads: viewCountsMap.get(novel.id) || 0,
+        totalLikes: 0,
+        totalReviews: 0,
+        createdAt: novel.created_at,
+      }))
+      .sort((a, b) => b.totalReads - a.totalReads)
+      .slice(0, limit);
   } catch (error) {
     console.error('Error in getNovelsByGenres:', error);
     return [];
