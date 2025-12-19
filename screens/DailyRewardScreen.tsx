@@ -3,6 +3,7 @@ import { View, StyleSheet } from "react-native";
 import { ScreenScrollView } from "@/components/ScreenScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { DailyRewardCard } from "@/components/DailyRewardCard";
+import { RewardedAdCard } from "@/components/RewardedAdCard";
 import { useTheme } from "@/hooks/useTheme";
 import { useResponsive } from "@/hooks/useResponsive";
 import { Spacing } from "@/constants/theme";
@@ -19,6 +20,8 @@ export default function DailyRewardScreen() {
       </ThemedText>
 
       <DailyRewardCard />
+
+      <RewardedAdCard />
 
       <View style={styles.infoSection}>
         <ThemedText style={[styles.infoTitle, { color: theme.text }]}>

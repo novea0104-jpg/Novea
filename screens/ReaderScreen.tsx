@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator, Platform, TextInput, Image, Modal, FlatList, Keyboard } from "react-native";
-import { useRoute, useNavigation } from "@react-navigation/native";
+import { useRoute, useNavigation, useFocusEffect } from "@react-navigation/native";
 import { useResponsive } from "@/hooks/useResponsive";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useInterstitialAd } from "@/hooks/useAds";
 import { useReanimatedKeyboardAnimation } from "react-native-keyboard-controller";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { ThemedView } from "@/components/ThemedView";
@@ -95,10 +96,46 @@ export default function ReaderScreen() {
   const [chapterLikeCount, setChapterLikeCount] = useState(0);
   const [isLiking, setIsLiking] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [chapterReadCount, setChapterReadCount] = useState(0);
+  const chapterReadCountRef = useRef(0);
+  
+  const { show: showInterstitial, reload: reloadInterstitial } = useInterstitialAd();
+  const INTERSTITIAL_FREQUENCY = 3;
 
   useEffect(() => {
     loadReaderSettings();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadChapterReadCount();
+    }, [])
+  );
+
+  const loadChapterReadCount = async () => {
+    try {
+      const count = await AsyncStorage.getItem('reader_chapter_read_count');
+      const parsedCount = count ? parseInt(count) : 0;
+      setChapterReadCount(parsedCount);
+      chapterReadCountRef.current = parsedCount;
+    } catch (e) {
+      console.log('Error loading chapter read count:', e);
+      setChapterReadCount(0);
+      chapterReadCountRef.current = 0;
+    }
+  };
+
+  const incrementChapterReadCount = async (): Promise<number> => {
+    const newCount = chapterReadCountRef.current + 1;
+    chapterReadCountRef.current = newCount;
+    setChapterReadCount(newCount);
+    try {
+      await AsyncStorage.setItem('reader_chapter_read_count', newCount.toString());
+    } catch (e) {
+      console.log('Error saving chapter read count:', e);
+    }
+    return newCount;
+  };
 
   const loadReaderSettings = async () => {
     try {
@@ -450,8 +487,33 @@ export default function ReaderScreen() {
     }
   };
 
-  const goToNextChapter = () => {
+  const resetChapterReadCount = async () => {
+    chapterReadCountRef.current = 0;
+    setChapterReadCount(0);
+    try {
+      await AsyncStorage.setItem('reader_chapter_read_count', '0');
+    } catch (e) {
+      console.log('Error resetting chapter read count:', e);
+    }
+    await loadChapterReadCount();
+  };
+
+  const goToNextChapter = async () => {
     if (hasNext && chapters[currentIndex + 1]) {
+      const newCount = await incrementChapterReadCount();
+      
+      if (newCount >= INTERSTITIAL_FREQUENCY) {
+        try {
+          const shown = await showInterstitial();
+          if (shown) {
+            await resetChapterReadCount();
+          }
+          reloadInterstitial();
+        } catch (e) {
+          console.log('Interstitial ad not shown:', e);
+        }
+      }
+      
       navigation.setParams({ chapterId: chapters[currentIndex + 1].id } as any);
     }
   };

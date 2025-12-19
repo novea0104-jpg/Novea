@@ -1,8 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "@/utils/supabase";
 import { User, SocialLinks } from "@/types/models";
+
+const AD_REWARD_MIN = 5;
+const AD_REWARD_MAX = 10;
+const MAX_ADS_PER_DAY = 5;
+const AD_WATCHES_KEY = 'novea_ad_watches';
 
 interface AuthContextType {
   user: User | null;
@@ -19,6 +25,8 @@ interface AuthContextType {
   updateCoinBalance: (amount: number) => Promise<void>;
   convertSilverToGold: (goldAmount?: number) => Promise<{ success: boolean; error?: string }>;
   claimDailyReward: () => Promise<{ success: boolean; amount?: number; error?: string }>;
+  addSilverFromAd: () => Promise<{ success: boolean; amount?: number; error?: string; remainingAds?: number }>;
+  getAdWatchesRemaining: () => Promise<number>;
   refreshUser: () => Promise<void>;
   updateProfile: (updates: { name?: string; bio?: string; avatarUrl?: string; socialLinks?: SocialLinks }) => Promise<void>;
   requireAuth: (message?: string) => boolean;
@@ -535,6 +543,96 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function getAdWatchesRemaining(): Promise<number> {
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const stored = await AsyncStorage.getItem(AD_WATCHES_KEY);
+      
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.date === todayStr) {
+          return Math.max(0, MAX_ADS_PER_DAY - (data.count || 0));
+        }
+      }
+      return MAX_ADS_PER_DAY;
+    } catch (error) {
+      console.error('Error getting ad watches remaining:', error);
+      return MAX_ADS_PER_DAY;
+    }
+  }
+
+  async function addSilverFromAd(): Promise<{ success: boolean; amount?: number; error?: string; remainingAds?: number }> {
+    if (!user) {
+      return { success: false, error: "Silakan masuk untuk mendapatkan hadiah." };
+    }
+
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const stored = await AsyncStorage.getItem(AD_WATCHES_KEY);
+      let watchCount = 0;
+
+      if (stored) {
+        const data = JSON.parse(stored);
+        if (data.date === todayStr) {
+          watchCount = data.count || 0;
+        }
+      }
+
+      if (watchCount >= MAX_ADS_PER_DAY) {
+        return { 
+          success: false, 
+          error: "Kamu sudah mencapai batas iklan hari ini. Coba lagi besok!", 
+          remainingAds: 0 
+        };
+      }
+
+      const rewardAmount = Math.floor(Math.random() * (AD_REWARD_MAX - AD_REWARD_MIN + 1)) + AD_REWARD_MIN;
+      const newSilverBalance = (user.silverBalance || 0) + rewardAmount;
+
+      const { data, error } = await supabase
+        .from('users')
+        .update({ silver_balance: newSilverBalance })
+        .eq('id', parseInt(user.id))
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error adding silver from ad:', error);
+        return { success: false, error: "Gagal menambah Silver. Silakan coba lagi." };
+      }
+
+      const newWatchCount = watchCount + 1;
+      await AsyncStorage.setItem(AD_WATCHES_KEY, JSON.stringify({
+        date: todayStr,
+        count: newWatchCount,
+      }));
+
+      const updatedUser: User = {
+        id: data.id.toString(),
+        name: data.name,
+        email: data.email,
+        isWriter: data.is_writer,
+        role: (data.role || 'pembaca') as any,
+        coinBalance: data.coin_balance,
+        silverBalance: data.silver_balance || 0,
+        avatarUrl: data.avatar_url || undefined,
+        bio: data.bio || undefined,
+        lastClaimDate: data.last_claim_date || undefined,
+        claimStreak: data.claim_streak || 0,
+      };
+      setUser(updatedUser);
+
+      return { 
+        success: true, 
+        amount: rewardAmount, 
+        remainingAds: MAX_ADS_PER_DAY - newWatchCount 
+      };
+    } catch (error) {
+      console.error('Add silver from ad error:', error);
+      return { success: false, error: "Terjadi kesalahan. Silakan coba lagi." };
+    }
+  }
+
   async function refreshUser() {
     if (!user) return;
     
@@ -641,6 +739,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateCoinBalance,
         convertSilverToGold,
         claimDailyReward,
+        addSilverFromAd,
+        getAdWatchesRemaining,
         refreshUser,
         updateProfile,
         requireAuth,
