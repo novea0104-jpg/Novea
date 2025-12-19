@@ -73,6 +73,7 @@ import {
   getManualPlatformStats,
   upsertManualPlatformStats,
   ManualPlatformStats,
+  getOrCreateConversation,
 } from "@/utils/supabase";
 import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/useGoldWithdrawal";
 import { useAdminWithdrawal, ADMIN_WITHDRAWAL_LIMITS, getWithdrawalLimit, getAllAdminWithdrawals, updateAdminWithdrawalStatus } from "@/hooks/useAdminWithdrawal";
@@ -82,6 +83,9 @@ import { UserIcon } from "@/components/icons/UserIcon";
 import { uploadNovelCoverAsync } from "@/utils/novelCoverStorage";
 import { uploadNewsImageAsync } from "@/utils/newsImageStorage";
 import { CameraIcon } from "@/components/icons/CameraIcon";
+import { MessageSquareIcon } from "@/components/icons/MessageSquareIcon";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 
 const noveaLogo = require("@/assets/images/novea-logo.png");
 
@@ -98,7 +102,7 @@ const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
 export default function AdminDashboardScreen() {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const headerHeight = useHeaderHeight();
   
   useLayoutEffect(() => {
@@ -173,6 +177,7 @@ export default function AdminDashboardScreen() {
   const [goldWithdrawalsLoading, setGoldWithdrawalsLoading] = useState(false);
   const [goldWdFilter, setGoldWdFilter] = useState<string>('');
   const [searchingAuthors, setSearchingAuthors] = useState(false);
+  const [dmLoading, setDmLoading] = useState(false);
   
   // N-News states
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
@@ -529,6 +534,36 @@ export default function AdminDashboardScreen() {
       }
     } else {
       Alert.alert('Gagal', result.error || 'Terjadi kesalahan');
+    }
+  };
+
+  const handleSendDMToAuthor = async () => {
+    if (!user || !selectedNovel || dmLoading) return;
+    
+    setDmLoading(true);
+    try {
+      const result = await getOrCreateConversation(
+        parseInt(user.id),
+        selectedNovel.authorId
+      );
+      
+      if (result.conversationId) {
+        setShowNovelModal(false);
+        setChapters([]);
+        navigation.navigate('MessageThread', {
+          conversationId: result.conversationId,
+          recipientName: selectedNovel.authorName,
+          recipientAvatar: undefined,
+          recipientRole: 'penulis',
+        });
+      } else {
+        Alert.alert('Gagal', result.error || 'Tidak dapat membuat percakapan');
+      }
+    } catch (error) {
+      console.error('Error creating DM:', error);
+      Alert.alert('Error', 'Terjadi kesalahan saat membuat percakapan');
+    } finally {
+      setDmLoading(false);
     }
   };
 
@@ -1460,6 +1495,19 @@ export default function AdminDashboardScreen() {
                 >
                   Hapus Novel
                 </Button>
+                <Pressable
+                  onPress={handleSendDMToAuthor}
+                  disabled={dmLoading}
+                  style={[
+                    styles.dmButton,
+                    { backgroundColor: theme.primary, opacity: dmLoading ? 0.6 : 1 }
+                  ]}
+                >
+                  <MessageSquareIcon size={18} color="#FFFFFF" />
+                  <ThemedText style={styles.dmButtonText}>
+                    {dmLoading ? 'Membuka...' : 'Kirim DM ke Penulis'}
+                  </ThemedText>
+                </Pressable>
               </View>
 
               <View style={styles.chapterSection}>
@@ -3136,6 +3184,21 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     width: '100%',
+  },
+  dmButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    width: '100%',
+  },
+  dmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   noPermission: {
     alignItems: 'center',
