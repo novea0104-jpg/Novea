@@ -3529,15 +3529,20 @@ export async function updateAdminNews(
     if (updates.content !== undefined) updateData.content = updates.content;
     if (updates.imageUrl !== undefined) updateData.image_url = updates.imageUrl;
 
-    const { error } = await supabase
+    const { data, error, count } = await supabase
       .from('admin_news')
       .update(updateData)
       .eq('id', newsId)
-      .eq('author_id', authorId);
+      .select();
 
     if (error) {
       console.error('Error updating admin news:', error);
       return { success: false, error: error.message };
+    }
+
+    if (!data || data.length === 0) {
+      console.error('No rows updated for news id:', newsId);
+      return { success: false, error: 'News tidak ditemukan' };
     }
 
     return { success: true };
