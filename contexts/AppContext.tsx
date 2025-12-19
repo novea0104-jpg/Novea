@@ -208,7 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         coinPerChapter: apiNovel.chapter_price,
         freeChapters: apiNovel.free_chapters,
         totalChapters: apiNovel.total_chapters,
-        followers: globalViewCountsMap.get(apiNovel.id) || viewCountsMap.get(apiNovel.id) || 0,
+        followers: viewCountsMap.get(apiNovel.id) || globalViewCountsMap.get(apiNovel.id) || 0,
         totalLikes: (novelLikesMap.get(apiNovel.id) || 0) + (chapterLikesMap.get(apiNovel.id) || 0),
         isFollowing: followingSet.has(apiNovel.id.toString()),
         createdAt: new Date(apiNovel.created_at),
