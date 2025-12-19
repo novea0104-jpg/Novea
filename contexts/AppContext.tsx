@@ -52,26 +52,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (novelsError) throw novelsError;
 
-      // Fetch view counts for all novels from novel_views table
+      // Use total_reads directly from novels table (no need for separate query)
       const novelIds = (novelsData || []).map(n => n.id);
-      const viewCountsMap = new Map<number, number>();
       const ratingCountsMap = new Map<number, number>();
 
       if (novelIds.length > 0) {
-        // Fetch view counts
-        const { data: viewsData, error: viewsError } = await supabase
-          .from('novel_views')
-          .select('novel_id')
-          .in('novel_id', novelIds);
-
-        if (!viewsError && viewsData) {
-          // Count views per novel
-          viewsData.forEach(view => {
-            const currentCount = viewCountsMap.get(view.novel_id) || 0;
-            viewCountsMap.set(view.novel_id, currentCount + 1);
-          });
-        }
-
         // Fetch rating counts from novel_reviews
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('novel_reviews')
@@ -209,7 +194,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         coinPerChapter: apiNovel.chapter_price,
         freeChapters: apiNovel.free_chapters,
         totalChapters: apiNovel.total_chapters,
-        followers: viewCountsMap.get(apiNovel.id) || 0,
+        followers: apiNovel.total_reads || 0,
         totalLikes: (novelLikesMap.get(apiNovel.id) || 0) + (chapterLikesMap.get(apiNovel.id) || 0),
         isFollowing: followingSet.has(apiNovel.id.toString()),
         createdAt: new Date(apiNovel.created_at),

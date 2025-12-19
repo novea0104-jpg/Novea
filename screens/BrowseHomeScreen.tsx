@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, ScrollView, StyleSheet, TouchableOpacity, Pressable } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -92,14 +92,26 @@ export default function BrowseHomeScreen() {
     fetchEditorsChoice();
     fetchFeaturedAuthors();
     fetchNews();
-    fetchCollections();
+    fetchPrimaryCollections();
   }, []);
 
-  const fetchCollections = async () => {
+  const fetchPrimaryCollections = async () => {
+    try {
+      const [likedData, reviewedData] = await Promise.all([
+        getMostLikedNovels(10),
+        getMostReviewedNovels(10),
+      ]);
+      setMostLiked(likedData);
+      setMustRead(reviewedData);
+      fetchSecondaryCollections();
+    } catch (error) {
+      console.error('Error fetching primary collections:', error);
+    }
+  };
+
+  const fetchSecondaryCollections = async () => {
     try {
       const [
-        likedData,
-        reviewedData,
         completedData,
         womenData,
         menData,
@@ -110,21 +122,17 @@ export default function BrowseHomeScreen() {
         sliceData,
         amazingData,
       ] = await Promise.all([
-        getMostLikedNovels(20),
-        getMostReviewedNovels(20),
-        getCompletedNovelsByViews(20),
-        getNovelsByGenres(['drama', 'romance', 'pernikahan'], 20),
-        getNovelsByGenres(['action', 'adventure', 'fantasy', 'urban'], 20),
-        getNovelsByGenres(['teenlit', 'chicklit'], 20),
-        getNovelsByGenres(['horror', 'mystery'], 20),
-        getNovelsByGenres(['sci-fi', 'thriller', 'apocalypse', 'sistem'], 20),
-        getNovelsByGenres(['fanfiction'], 20),
-        getNovelsByGenres(['sosial', 'psikologis'], 20),
-        getNovelsByGenres(['fantim', 'fanbar', 'kolosal'], 20),
+        getCompletedNovelsByViews(10),
+        getNovelsByGenres(['drama', 'romance', 'pernikahan'], 10),
+        getNovelsByGenres(['action', 'adventure', 'fantasy', 'urban'], 10),
+        getNovelsByGenres(['teenlit', 'chicklit'], 10),
+        getNovelsByGenres(['horror', 'mystery'], 10),
+        getNovelsByGenres(['sci-fi', 'thriller', 'apocalypse', 'sistem'], 10),
+        getNovelsByGenres(['fanfiction'], 10),
+        getNovelsByGenres(['sosial', 'psikologis'], 10),
+        getNovelsByGenres(['fantim', 'fanbar', 'kolosal'], 10),
       ]);
 
-      setMostLiked(likedData);
-      setMustRead(reviewedData);
       setCompletedNovels(completedData);
       setWomenPicks(womenData);
       setMenPicks(menData);
@@ -135,7 +143,7 @@ export default function BrowseHomeScreen() {
       setSliceOfLife(sliceData);
       setAmazingStories(amazingData);
     } catch (error) {
-      console.error('Error fetching collections:', error);
+      console.error('Error fetching secondary collections:', error);
     }
   };
 
@@ -313,23 +321,21 @@ export default function BrowseHomeScreen() {
     navigation.navigate("Search");
   };
 
-  // Sedang Trending: Sort by total_reads (most viewed)
-  const trendingNovels = [...novels]
-    .sort((a, b) => b.followers - a.followers) // followers = total_reads from database
-    .slice(0, 20);
+  // Memoized computed values for performance
+  const trendingNovels = useMemo(() => 
+    [...novels].sort((a, b) => b.followers - a.followers).slice(0, 10),
+    [novels]
+  );
   
-  // Novel Terbaru: Sort by created_at (newest first)
-  const newReleases = [...novels]
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, 20);
+  const newReleases = useMemo(() => 
+    [...novels].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, 10),
+    [novels]
+  );
   
-  // Pilihan Editor: fetched from editors_choice table (fallback to rating sort if empty)
-
-  // Novel Gratis: Filter novels that are completely free (no paid chapters)
-  // A novel is free if: all chapters are free OR no coin price set
-  const freeNovels = [...novels]
-    .filter((n) => n.freeChapters >= n.totalChapters || n.coinPerChapter === 0)
-    .slice(0, 20);
+  const freeNovels = useMemo(() => 
+    [...novels].filter((n) => n.freeChapters >= n.totalChapters || n.coinPerChapter === 0).slice(0, 10),
+    [novels]
+  );
 
   React.useLayoutEffect(() => {
     navigation.setOptions({
