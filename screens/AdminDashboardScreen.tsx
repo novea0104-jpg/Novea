@@ -75,7 +75,7 @@ import {
   ManualPlatformStats,
 } from "@/utils/supabase";
 import { getAdminGoldWithdrawals, updateGoldWithdrawalStatus } from "@/hooks/useGoldWithdrawal";
-import { useAdminWithdrawal, ADMIN_WITHDRAWAL_LIMITS, getWithdrawalLimit } from "@/hooks/useAdminWithdrawal";
+import { useAdminWithdrawal, ADMIN_WITHDRAWAL_LIMITS, getWithdrawalLimit, getAllAdminWithdrawals, updateAdminWithdrawalStatus } from "@/hooks/useAdminWithdrawal";
 import { DollarSignIcon } from "@/components/icons/DollarSignIcon";
 import { WalletIcon } from "@/components/icons/WalletIcon";
 import { UserIcon } from "@/components/icons/UserIcon";
@@ -85,7 +85,7 @@ import { CameraIcon } from "@/components/icons/CameraIcon";
 
 const noveaLogo = require("@/assets/images/novea-logo.png");
 
-type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd' | 'news' | 'manual_stats';
+type TabType = 'stats' | 'users' | 'novels' | 'featured' | 'authors' | 'gold_wd' | 'admin_wd' | 'news' | 'manual_stats';
 type UserRole = 'pembaca' | 'penulis' | 'editor' | 'co_admin' | 'super_admin';
 
 const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
@@ -200,6 +200,11 @@ export default function AdminDashboardScreen() {
   const [adminWdAmount, setAdminWdAmount] = useState('');
   const [adminWdSaving, setAdminWdSaving] = useState(false);
   
+  // Admin Withdrawals Management states (for main super admin only)
+  const [adminWithdrawalsAll, setAdminWithdrawalsAll] = useState<any[]>([]);
+  const [adminWithdrawalsLoading, setAdminWithdrawalsLoading] = useState(false);
+  const [adminWdManageFilter, setAdminWdManageFilter] = useState<string>('');
+  
   // Use admin withdrawal hook
   const {
     bankAccount: adminBankAccount,
@@ -271,6 +276,14 @@ export default function AdminDashboardScreen() {
     setGoldWithdrawalsLoading(false);
   }, []);
 
+  const loadAdminWithdrawalsAll = useCallback(async (status?: string) => {
+    if (!canManageWithdrawals) return;
+    setAdminWithdrawalsLoading(true);
+    const data = await getAllAdminWithdrawals(status);
+    setAdminWithdrawalsAll(data);
+    setAdminWithdrawalsLoading(false);
+  }, [canManageWithdrawals]);
+
   const loadNews = useCallback(async () => {
     if (!canManageNews) return;
     setNewsLoading(true);
@@ -325,6 +338,16 @@ export default function AdminDashboardScreen() {
     }
   };
 
+  const handleUpdateAdminWdStatus = async (wdId: number, status: string, note?: string) => {
+    const result = await updateAdminWithdrawalStatus(wdId, status, note);
+    if (result.success) {
+      Alert.alert('Berhasil', 'Status penarikan admin berhasil diubah');
+      loadAdminWithdrawalsAll(adminWdManageFilter);
+    } else {
+      Alert.alert('Error', result.error || 'Gagal mengubah status');
+    }
+  };
+
   // Track which tabs have been loaded
   const [loadedTabs, setLoadedTabs] = useState<Set<TabType>>(new Set());
 
@@ -361,6 +384,9 @@ export default function AdminDashboardScreen() {
         case 'gold_wd':
           await loadGoldWithdrawals();
           break;
+        case 'admin_wd':
+          if (canManageWithdrawals) await loadAdminWithdrawalsAll();
+          break;
         case 'news':
           if (canManageNews) await loadNews();
           break;
@@ -388,6 +414,8 @@ export default function AdminDashboardScreen() {
       await loadFeaturedAuthors();
     } else if (activeTab === 'gold_wd') {
       await loadGoldWithdrawals(goldWdFilter);
+    } else if (activeTab === 'admin_wd' && canManageWithdrawals) {
+      await loadAdminWithdrawalsAll(adminWdManageFilter);
     } else if (activeTab === 'news' && canManageNews) {
       await loadNews();
     }
@@ -1661,6 +1689,7 @@ export default function AdminDashboardScreen() {
           {renderTabButton('featured', 'Pilihan Editor', AwardIcon)}
           {renderTabButton('authors', 'Author Terfavorit', UserIcon)}
           {canManageWithdrawals ? renderTabButton('gold_wd', 'Penarikan Gold', DollarSignIcon) : null}
+          {canManageWithdrawals ? renderTabButton('admin_wd', 'WD Admin', WalletIcon) : null}
           {canManageNews ? renderTabButton('news', 'N-News', BookIcon) : null}
         </ScrollView>
       </View>
@@ -2131,6 +2160,202 @@ export default function AdminDashboardScreen() {
                   <DollarSignIcon size={48} color={theme.textMuted} />
                   <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
                     Tidak ada permintaan penarikan
+                  </ThemedText>
+                </View>
+              }
+            />
+          )}
+        </View>
+      ) : null}
+
+      {activeTab === 'admin_wd' && canManageWithdrawals ? (
+        <View style={styles.listContainer}>
+          <View style={styles.featuredHeader}>
+            <ThemedText style={Typography.h3}>Kelola Penarikan Admin</ThemedText>
+          </View>
+          <View style={[styles.filterContainer, { marginHorizontal: Spacing.md }]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {[
+                { value: '', label: 'Semua' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'processing', label: 'Diproses' },
+                { value: 'approved', label: 'Disetujui' },
+                { value: 'paid', label: 'Dibayar' },
+                { value: 'rejected', label: 'Ditolak' },
+              ].map((filter) => (
+                <Pressable
+                  key={filter.value}
+                  onPress={() => {
+                    setAdminWdManageFilter(filter.value);
+                    loadAdminWithdrawalsAll(filter.value);
+                  }}
+                  style={[
+                    styles.filterChip,
+                    { 
+                      backgroundColor: adminWdManageFilter === filter.value ? theme.primary : theme.backgroundSecondary,
+                      borderColor: adminWdManageFilter === filter.value ? theme.primary : theme.backgroundTertiary,
+                    },
+                  ]}
+                >
+                  <ThemedText style={[
+                    styles.filterChipText,
+                    { color: adminWdManageFilter === filter.value ? '#FFFFFF' : theme.text },
+                  ]}>
+                    {filter.label}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+          {adminWithdrawalsLoading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={theme.primary} />
+            </View>
+          ) : (
+            <FlatList
+              data={adminWithdrawalsAll}
+              renderItem={({ item }) => {
+                const statusColors: Record<string, string> = {
+                  pending: theme.warning,
+                  processing: theme.link,
+                  approved: theme.success,
+                  paid: theme.success,
+                  rejected: theme.error,
+                  cancelled: theme.textMuted,
+                };
+                const statusLabels: Record<string, string> = {
+                  pending: 'Menunggu',
+                  processing: 'Diproses',
+                  approved: 'Disetujui',
+                  paid: 'Dibayar',
+                  rejected: 'Ditolak',
+                  cancelled: 'Dibatalkan',
+                };
+                const roleLabels: Record<string, string> = {
+                  super_admin: 'Super Admin',
+                  co_admin: 'Co Admin',
+                };
+                return (
+                  <Card elevation={1} style={[styles.listItem, { marginHorizontal: Spacing.md, flexDirection: 'column', alignItems: 'stretch' }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <View style={{ flex: 1 }}>
+                        <ThemedText style={styles.listItemTitle} numberOfLines={1}>
+                          {item.userName}
+                        </ThemedText>
+                        <ThemedText style={[styles.listItemSubtitle, { color: theme.textSecondary }]} numberOfLines={1}>
+                          {item.userEmail}
+                        </ThemedText>
+                        <ThemedText style={[styles.listItemSubtitle, { color: theme.primary }]}>
+                          {roleLabels[item.role] || item.role}
+                        </ThemedText>
+                      </View>
+                      <View style={[styles.statusBadge, { backgroundColor: statusColors[item.status] + '20' }]}>
+                        <ThemedText style={[styles.statusBadgeText, { color: statusColors[item.status] }]}>
+                          {statusLabels[item.status] || item.status}
+                        </ThemedText>
+                      </View>
+                    </View>
+                    <View style={[styles.goldWdDetails, { borderTopColor: theme.backgroundSecondary }]}>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Jumlah</ThemedText>
+                        <ThemedText style={[styles.goldWdValue, { color: theme.success }]}>Rp {item.amount?.toLocaleString('id-ID')}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Persentase</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{item.percentageUsed?.toFixed(2)}%</ThemedText>
+                      </View>
+                      <View style={[styles.goldWdRow, { marginTop: Spacing.xs }]}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Bank</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{item.bankName}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>No. Rekening</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{item.accountNumber}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Nama</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{item.accountHolderName}</ThemedText>
+                      </View>
+                      <View style={styles.goldWdRow}>
+                        <ThemedText style={[styles.goldWdLabel, { color: theme.textSecondary }]}>Tanggal</ThemedText>
+                        <ThemedText style={styles.goldWdValue}>{new Date(item.createdAt).toLocaleDateString('id-ID')}</ThemedText>
+                      </View>
+                    </View>
+                    {item.status === 'pending' || item.status === 'processing' || item.status === 'approved' ? (
+                      <View style={styles.goldWdActions}>
+                        {item.status === 'pending' ? (
+                          <>
+                            <Pressable
+                              onPress={() => handleUpdateAdminWdStatus(item.id, 'processing')}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.link }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Proses</ThemedText>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                Alert.prompt ? Alert.prompt(
+                                  'Tolak Penarikan',
+                                  'Masukkan alasan penolakan:',
+                                  (note) => handleUpdateAdminWdStatus(item.id, 'rejected', note),
+                                  'plain-text'
+                                ) : handleUpdateAdminWdStatus(item.id, 'rejected', 'Ditolak oleh admin');
+                              }}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.error }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Tolak</ThemedText>
+                            </Pressable>
+                          </>
+                        ) : item.status === 'processing' ? (
+                          <>
+                            <Pressable
+                              onPress={() => handleUpdateAdminWdStatus(item.id, 'approved')}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.success }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Setujui</ThemedText>
+                            </Pressable>
+                            <Pressable
+                              onPress={() => {
+                                Alert.prompt ? Alert.prompt(
+                                  'Tolak Penarikan',
+                                  'Masukkan alasan penolakan:',
+                                  (note) => handleUpdateAdminWdStatus(item.id, 'rejected', note),
+                                  'plain-text'
+                                ) : handleUpdateAdminWdStatus(item.id, 'rejected', 'Ditolak oleh admin');
+                              }}
+                              style={[styles.goldWdActionBtn, { backgroundColor: theme.error }]}
+                            >
+                              <ThemedText style={styles.goldWdActionText}>Tolak</ThemedText>
+                            </Pressable>
+                          </>
+                        ) : item.status === 'approved' ? (
+                          <Pressable
+                            onPress={() => handleUpdateAdminWdStatus(item.id, 'paid')}
+                            style={[styles.goldWdActionBtn, { backgroundColor: theme.success, flex: 1 }]}
+                          >
+                            <ThemedText style={styles.goldWdActionText}>Tandai Sudah Dibayar</ThemedText>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    ) : null}
+                    {item.adminNote ? (
+                      <View style={[styles.adminNoteContainer, { backgroundColor: theme.backgroundSecondary }]}>
+                        <ThemedText style={[styles.adminNoteLabel, { color: theme.textSecondary }]}>Catatan Admin:</ThemedText>
+                        <ThemedText style={styles.adminNoteText}>{item.adminNote}</ThemedText>
+                      </View>
+                    ) : null}
+                  </Card>
+                );
+              }}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.listContent}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.primary} />
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <WalletIcon size={48} color={theme.textMuted} />
+                  <ThemedText style={[styles.emptyText, { color: theme.textMuted }]}>
+                    Tidak ada permintaan penarikan admin
                   </ThemedText>
                 </View>
               }

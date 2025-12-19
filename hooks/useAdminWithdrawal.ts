@@ -307,12 +307,18 @@ export async function updateAdminWithdrawalStatus(
   adminNote?: string
 ) {
   try {
+    const { data: current } = await supabase
+      .from("admin_withdrawals")
+      .select("processed_at")
+      .eq("id", withdrawalId)
+      .single();
+
     const updateData: any = {
       status,
       admin_note: adminNote,
     };
 
-    if (status === "processing") {
+    if (status === "processing" && !current?.processed_at) {
       updateData.processed_at = new Date().toISOString();
     } else if (status === "paid") {
       updateData.paid_at = new Date().toISOString();
