@@ -110,25 +110,71 @@ async function checkMetroHealth() {
 async function startMetro() {
   const isRunning = await checkMetroHealth();
   if (isRunning) {
+    console.log("Metro already running");
     return;
   }
 
   console.log("Starting Metro...");
-  metroProcess = spawn("npm", ["run", "dev"], {
-    stdio: ["ignore", "ignore", "ignore"],
+  // Use npx expo start directly instead of npm run dev for better CI compatibility
+  const metroCommand = process.env.CI ? "npx" : "npm";
+  const metroArgs = process.env.CI 
+    ? ["expo", "start", "--no-dev", "--minify", "--port", "8081"]
+    : ["run", "dev"];
+  
+  console.log(`Running: ${metroCommand} ${metroArgs.join(" ")}`);
+  metroProcess = spawn(metroCommand, metroArgs, {
+    stdio: ["ignore", "pipe", "pipe"],
     detached: false,
+    env: {
+      ...process.env,
+      // Disable interactive prompts
+      CI: "true",
+      EXPO_NO_DOTENV: "1",
+    },
   });
 
-  for (let i = 0; i < 30; i++) {
+  // Collect Metro output for debugging
+  let metroOutput = "";
+  metroProcess.stdout?.on("data", (data) => {
+    const output = data.toString();
+    metroOutput += output;
+    // Log important messages
+    if (output.includes("Metro") || output.includes("ready") || output.includes("error")) {
+      console.log(`Metro: ${output.trim()}`);
+    }
+  });
+  metroProcess.stderr?.on("data", (data) => {
+    const output = data.toString();
+    metroOutput += output;
+    // Log errors
+    if (output.includes("error") || output.includes("Error")) {
+      console.error(`Metro error: ${output.trim()}`);
+    }
+  });
+
+  // Increase timeout to 90 seconds for Vercel/CI environments
+  const maxWaitTime = process.env.CI ? 90 : 60;
+  console.log(`Waiting up to ${maxWaitTime} seconds for Metro to start...`);
+
+  for (let i = 0; i < maxWaitTime; i++) {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const healthy = await checkMetroHealth();
     if (healthy) {
-      console.log("Metro ready");
+      console.log(`Metro ready after ${i + 1} seconds`);
       return;
+    }
+    
+    // Log progress every 10 seconds
+    if ((i + 1) % 10 === 0) {
+      console.log(`Still waiting for Metro... (${i + 1}/${maxWaitTime}s)`);
     }
   }
 
-  console.error("Metro timeout");
+  console.error("Metro timeout after", maxWaitTime, "seconds");
+  console.error("Metro output:", metroOutput);
+  if (metroProcess) {
+    metroProcess.kill();
+  }
   process.exit(1);
 }
 
