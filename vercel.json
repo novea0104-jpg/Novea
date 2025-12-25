@@ -1,7 +1,7 @@
 {
-  "buildCommand": "DEPLOYMENT_URL=https://noveaindonesia.com node scripts/build.js",
+  "buildCommand": "echo 'Using pre-built static files'",
   "outputDirectory": "static-build",
-  "installCommand": "npm install",
+  "installCommand": "echo 'Skipping install'",
   "framework": null,
   "rewrites": [
     {
