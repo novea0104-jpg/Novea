@@ -100,9 +100,19 @@ function clearMetroCache() {
 
 async function checkMetroHealth() {
   try {
-    const response = await fetch("http://localhost:8081/status");
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const response = await fetch("http://localhost:8081/status", {
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
     return response.ok;
-  } catch {
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.log("Metro health check timeout");
+    }
     return false;
   }
 }
@@ -178,12 +188,19 @@ async function startMetro() {
   process.exit(1);
 }
 
-async function downloadFile(url, outputPath) {
+async function downloadFile(url, outputPath, timeoutMs = 60000) {
   try {
-    const response = await fetch(url);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    const response = await fetch(url, {
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
     const file = fs.createWriteStream(outputPath);
@@ -198,6 +215,9 @@ async function downloadFile(url, outputPath) {
   } catch (error) {
     if (fs.existsSync(outputPath)) {
       fs.unlinkSync(outputPath);
+    }
+    if (error.name === 'AbortError') {
+      throw new Error(`Download timeout after ${timeoutMs}ms`);
     }
     throw error;
   }
@@ -221,11 +241,33 @@ async function downloadBundle(platform, timestamp) {
     "bundle.js",
   );
 
-  try {
-    await downloadFile(url.toString(), output);
-  } catch (error) {
-    exitWithError(`Failed to download ${platform} bundle: ${error.message}`);
+  // Retry logic for bundle download
+  const maxRetries = 3;
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Downloading ${platform} bundle (attempt ${attempt}/${maxRetries})...`);
+      await downloadFile(url.toString(), output);
+      console.log(`${platform} bundle downloaded successfully`);
+      return;
+    } catch (error) {
+      lastError = error;
+      console.log(`Attempt ${attempt} failed: ${error.message}`);
+      if (attempt < maxRetries) {
+        console.log(`Retrying in 3 seconds...`);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+        // Check Metro health before retry
+        const healthy = await checkMetroHealth();
+        if (!healthy) {
+          console.log("Metro server not responding, waiting 5 more seconds...");
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+      }
+    }
   }
+  
+  exitWithError(`Failed to download ${platform} bundle after ${maxRetries} attempts: ${lastError.message}`);
 }
 
 async function downloadManifest(platform) {
