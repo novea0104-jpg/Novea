@@ -1,30 +1,33 @@
 {
-  "id": "6d20a735-5e64-4c4a-a92e-df0c04aebc26",
-  "createdAt": "2025-12-12T12:21:07.230Z",
+  "id": "3f65122a-d4f5-45a2-aa14-6392d039e764",
+  "createdAt": "2025-12-25T12:36:10.753Z",
   "runtimeVersion": "exposdk:54.0.0",
   "launchAsset": {
-    "key": "bundle-1765542067230-7406",
+    "key": "bundle-1766666170753-12648",
     "contentType": "application/javascript",
-    "url": "https://noveaindonesia.com/1765542067230-7406/_expo/static/js/android/bundle.js"
+    "url": "https://noveaindonesia.com/1766666170753-12648/_expo/static/js/android/bundle.js"
   },
   "assets": [],
   "metadata": {},
   "extra": {
     "eas": {
-      "projectId": "novea"
+      "projectId": "751416dd-a4c9-4b9d-9b28-299e73879b73"
     },
     "expoClient": {
       "name": "Novea",
       "slug": "novea",
-      "version": "1.0.0",
-      "orientation": "portrait",
+      "version": "4.0.3",
+      "orientation": "default",
       "icon": "./assets/images/icon.png",
       "scheme": "novea",
       "userInterfaceStyle": "automatic",
       "newArchEnabled": true,
       "ios": {
         "supportsTablet": true,
-        "bundleIdentifier": "com.novea.app"
+        "bundleIdentifier": "com.novea.app",
+        "associatedDomains": [
+          "applinks:noveaindonesia.com"
+        ]
       },
       "android": {
         "adaptiveIcon": {
@@ -32,21 +35,41 @@
           "foregroundImage": "./assets/images/android-icon-foreground.png",
           "backgroundImage": "./assets/images/android-icon-background.png",
           "monochromeImage": "./assets/images/android-icon-monochrome.png",
-          "foregroundImageUrl": "https://db6a2b97-3ff0-49fb-be79-8908cdc64e1b-00-34hwcjz71zu03.janeway.replit.dev/assets/./assets/images/android-icon-foreground.png",
-          "monochromeImageUrl": "https://db6a2b97-3ff0-49fb-be79-8908cdc64e1b-00-34hwcjz71zu03.janeway.replit.dev/assets/./assets/images/android-icon-monochrome.png",
-          "backgroundImageUrl": "https://db6a2b97-3ff0-49fb-be79-8908cdc64e1b-00-34hwcjz71zu03.janeway.replit.dev/assets/./assets/images/android-icon-background.png"
+          "foregroundImageUrl": "http://127.0.0.1:8083/assets/./assets/images/android-icon-foreground.png",
+          "monochromeImageUrl": "http://127.0.0.1:8083/assets/./assets/images/android-icon-monochrome.png",
+          "backgroundImageUrl": "http://127.0.0.1:8083/assets/./assets/images/android-icon-background.png"
         },
         "edgeToEdgeEnabled": true,
         "predictiveBackGestureEnabled": false,
+        "resizeableActivity": true,
+        "softwareKeyboardLayoutMode": "pan",
         "package": "com.novea.app",
+        "versionCode": 8,
         "permissions": [
           "com.android.vending.BILLING"
+        ],
+        "intentFilters": [
+          {
+            "action": "VIEW",
+            "autoVerify": true,
+            "data": [
+              {
+                "scheme": "https",
+                "host": "noveaindonesia.com",
+                "pathPrefix": "/novel"
+              },
+              {
+                "scheme": "https",
+                "host": "noveaindonesia.com",
+                "pathPrefix": "/user"
+              }
+            ],
+            "category": [
+              "BROWSABLE",
+              "DEFAULT"
+            ]
+          }
         ]
-      },
-      "web": {
-        "output": "single",
-        "favicon": "./assets/images/favicon.png",
-        "bundler": "metro"
       },
       "plugins": [
         [
@@ -62,34 +85,41 @@
           }
         ],
         "expo-web-browser",
-        "react-native-iap"
+        "react-native-iap",
+        [
+          "react-native-google-mobile-ads",
+          {
+            "androidAppId": "ca-app-pub-4233873340910338~9509478256"
+          }
+        ]
       ],
-      "experiments": {
-        "reactCompiler": true
-      },
       "extra": {
         "eas": {
-          "projectId": "novea"
-        }
+          "projectId": "751416dd-a4c9-4b9d-9b28-299e73879b73"
+        },
+        "admobAppId": "ca-app-pub-4233873340910338~9509478256",
+        "admobBannerId": "ca-app-pub-4233873340910338/6726584004",
+        "admobInterstitialId": "ca-app-pub-4233873340910338/8627641424",
+        "admobRewardedId": "ca-app-pub-4233873340910338/4119945424"
       },
       "_internal": {
         "isDebug": false,
-        "projectRoot": "/home/runner/workspace",
-        "dynamicConfigPath": {},
-        "staticConfigPath": "/home/runner/workspace/app.json",
-        "packageJsonPath": "/home/runner/workspace/package.json",
+        "projectRoot": "D:\\Novea",
+        "dynamicConfigPath": "D:\\Novea\\app.config.js",
+        "staticConfigPath": {},
+        "packageJsonPath": "D:\\Novea\\package.json",
         "pluginHistory": {
           "expo-splash-screen": {
             "name": "expo-splash-screen",
-            "version": "31.0.10"
+            "version": "31.0.13"
           },
           "expo-web-browser": {
             "name": "expo-web-browser",
-            "version": "15.0.9"
+            "version": "15.0.10"
           },
           "react-native-iap": {
             "name": "react-native-iap",
-            "version": "14.5.0"
+            "version": "14.6.3"
           }
         }
       },
@@ -102,20 +132,20 @@
       "androidStatusBar": {
         "backgroundColor": "#ffffff"
       },
-      "iconUrl": "https://db6a2b97-3ff0-49fb-be79-8908cdc64e1b-00-34hwcjz71zu03.janeway.replit.dev/assets/./assets/images/icon.png",
+      "iconUrl": "http://127.0.0.1:8083/assets/./assets/images/icon.png",
       "hostUri": "noveaindonesia.com/android"
     },
     "expoGo": {
       "debuggerHost": "noveaindonesia.com/android",
       "developer": {
         "tool": "expo-cli",
-        "projectRoot": "/home/runner/workspace"
+        "projectRoot": "D:\\Novea"
       },
       "packagerOpts": {
         "dev": false
       },
       "mainModuleName": "index"
     },
-    "scopeKey": "@anonymous/novea-bfe4cd94-acac-42bc-a4e5-881b6798ab16"
+    "scopeKey": "@anonymous/novea-aeb002fa-e862-464a-8c64-7a94fb884acd"
   }
 }
