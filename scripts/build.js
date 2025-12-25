@@ -29,6 +29,19 @@ function setupSignalHandlers() {
 }
 
 function getDeploymentUrl() {
+  // Priority order: Custom URL > Vercel > Replit > Default
+  if (process.env.DEPLOYMENT_URL) {
+    const url = process.env.DEPLOYMENT_URL;
+    console.log("Using DEPLOYMENT_URL:", url);
+    return url;
+  }
+
+  if (process.env.VERCEL_URL) {
+    const url = `https://${process.env.VERCEL_URL}`;
+    console.log("Using VERCEL_URL:", url);
+    return url;
+  }
+
   if (process.env.REPLIT_INTERNAL_APP_DOMAIN) {
     const url = `https://${process.env.REPLIT_INTERNAL_APP_DOMAIN}`;
     console.log("Using REPLIT_INTERNAL_APP_DOMAIN:", url);
@@ -41,10 +54,12 @@ function getDeploymentUrl() {
     return url;
   }
 
-  console.error(
-    "ERROR: REPLIT_INTERNAL_APP_DOMAIN and REPLIT_DEV_DOMAIN not set",
-  );
-  process.exit(1);
+  // Fallback: use noveaindonesia.com if no env vars set
+  // This allows manual builds for deployment
+  const fallbackUrl = "https://noveaindonesia.com";
+  console.log("No deployment URL found, using fallback:", fallbackUrl);
+  console.log("To set custom URL, use: DEPLOYMENT_URL=https://yourdomain.com");
+  return fallbackUrl;
 }
 
 function prepareDirectories(timestamp) {
@@ -427,6 +442,37 @@ function createLandingPage(baseUrl) {
   console.log("Complete");
 }
 
+function copyWellKnownFiles() {
+  const wellKnownSource = path.join(".well-known");
+  const wellKnownDest = path.join("static-build", ".well-known");
+
+  if (!fs.existsSync(wellKnownSource)) {
+    console.log("No .well-known folder found, skipping...");
+    return;
+  }
+
+  console.log("Copying .well-known files...");
+  
+  if (fs.existsSync(wellKnownDest)) {
+    fs.rmSync(wellKnownDest, { recursive: true });
+  }
+  
+  fs.mkdirSync(wellKnownDest, { recursive: true });
+
+  const files = fs.readdirSync(wellKnownSource);
+  for (const file of files) {
+    const sourcePath = path.join(wellKnownSource, file);
+    const destPath = path.join(wellKnownDest, file);
+    
+    if (fs.statSync(sourcePath).isFile()) {
+      fs.copyFileSync(sourcePath, destPath);
+      console.log(`  Copied: ${file}`);
+    }
+  }
+  
+  console.log("Well-known files copied");
+}
+
 async function main() {
   console.log("Building static Expo Go deployment...");
 
@@ -462,6 +508,7 @@ async function main() {
   console.log("Updating manifests and creating landing page...");
   updateManifests(manifests, timestamp, baseUrl, assetsByHash);
   createLandingPage(baseUrl);
+  copyWellKnownFiles();
 
   console.log("Build complete! Deploy to:", baseUrl);
 

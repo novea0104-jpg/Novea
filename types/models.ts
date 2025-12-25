@@ -42,6 +42,7 @@ export interface Novel {
   coverImage: string;
   genre: Genre;
   status: NovelStatus;
+  statusPublication?: 'draft' | 'published';
   rating: number;
   ratingCount: number;
   synopsis: string;
@@ -62,6 +63,7 @@ export interface Chapter {
   title: string;
   content: string;
   isFree: boolean;
+  statusPublication?: 'draft' | 'published';
   isUnlocked?: boolean;
   publishedAt: Date;
   wordCount: number;

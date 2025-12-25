@@ -1,0 +1,46 @@
+{
+  "buildCommand": "DEPLOYMENT_URL=https://noveaindonesia.com node scripts/build.js",
+  "outputDirectory": "static-build",
+  "installCommand": "npm install",
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        }
+      ]
+    },
+    {
+      "source": "/*",
+      "headers": [
+        {
+          "key": "expo-protocol-version",
+          "value": "1"
+        },
+        {
+          "key": "expo-sfv-version",
+          "value": "0"
+        }
+      ]
+    }
+  ]
+}
+
