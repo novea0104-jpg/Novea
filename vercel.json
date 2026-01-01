@@ -4,27 +4,21 @@
   "installCommand": "echo 'Skipping install'",
   "framework": null,
   "cleanUrls": false,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!\\.well-known).*)",
-      "destination": "/index.html"
+      "src": "/.well-known/assetlinks.json",
+      "dest": "/.well-known/assetlinks.json",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=3600"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "redirects": [],
-  "headers": [
-    {
-      "source": "/.well-known/(.*)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=3600"
-        }
-      ]
-    }
-  ]
+  "headers": []
 }
 
