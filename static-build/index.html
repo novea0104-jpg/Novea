@@ -102,9 +102,9 @@
     </style>
   </head>
   <body>
-    <div class="loading" id="loading">
+    <div class="loading" id="loading" style="display: none;">
       <div class="spinner"></div>
-      <div>Opening in Expo Go...</div>
+      <div>Loading...</div>
     </div>
 
     <div class="content" id="content">
@@ -118,77 +118,18 @@
 
       <div class="platform-links">
         <a
-          href="exps://noveaindonesia.com/ios/manifest.json"
+          href="https://play.google.com/store/apps/details?id=com.novea.app"
           class="platform-link"
-          >📱 Open on iOS</a
+          target="_blank"
+          >📱 Download Novea App</a
         >
-        <a
-          href="exps://noveaindonesia.com/android/manifest.json"
-          class="platform-link"
-          >🤖 Open on Android</a
-        >
-      </div>
-
-      <div class="download-links">
-        <div class="install-text">Install Expo Go to Run</div>
-        <div>
-          <a
-            href="https://apps.apple.com/app/id982107779"
-            class="install-button"
-            target="_blank"
-            ><img
-              src="https://apps.apple.com/assets/images/favicon/favicon-apps-48-fad34e0d87e86dcf72ded1faff4ba9d0.png"
-              class="store-icon"
-              alt=""
-            />App Store</a
-          >
-          <a
-            href="https://play.google.com/store/apps/details?id=host.exp.exponent"
-            class="install-button"
-            target="_blank"
-            ><img
-              src="https://www.gstatic.com/android/market_images/web/favicon_v3.ico"
-              class="store-icon"
-              alt=""
-            />Google Play</a
-          >
-        </div>
       </div>
     </div>
 
     <script>
-      (function () {
-        const ua = navigator.userAgent;
-        const loadingEl = document.getElementById("loading");
-        const contentEl = document.getElementById("content");
-
-        // Detect Android
-        const isAndroid = /Android/i.test(ua);
-
-        // Detect iOS (including iPad in desktop mode)
-        const isIOS =
-          /iPhone|iPad|iPod/i.test(ua) ||
-          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-
-        if (isAndroid || isIOS) {
-          // Show loading spinner for mobile devices
-          loadingEl.style.display = "block";
-          contentEl.style.display = "none";
-
-          // Attempt deep link
-          const deepLink = isAndroid
-            ? "exps://noveaindonesia.com/android/manifest.json"
-            : "exps://noveaindonesia.com/ios/manifest.json";
-          window.location.href = deepLink;
-
-          // After 500ms, hide spinner and show content
-          setTimeout(function () {
-            loadingEl.style.display = "none";
-            contentEl.style.display = "block";
-          }, 500);
-        }
-        // Desktop users see content immediately (default state)
-      })();
+      // Production: App Links akan bekerja secara native
+      // Tidak perlu redirect ke Expo Go karena aplikasi sudah di-build untuk production
+      // App Links akan otomatis membuka aplikasi untuk URL yang sesuai dengan intentFilters
     </script>
   </body>
 </html>

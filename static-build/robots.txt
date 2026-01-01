@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+User-agent: Google-adstxt
+Allow: /app-ads.txt
+Allow: /.well-known/assetlinks.json
+
+

@@ -35,6 +35,10 @@ module.exports = {
           data: [
             {
               scheme: "https",
+              host: "noveaindonesia.com"
+            },
+            {
+              scheme: "https",
               host: "noveaindonesia.com",
               pathPrefix: "/novel"
             },
