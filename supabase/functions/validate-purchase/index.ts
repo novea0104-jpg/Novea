@@ -23,60 +23,84 @@ const PRODUCT_COIN_MAP: Record<string, { coins: number; bonus: number; priceRupi
 };
 
 async function getGoogleAccessToken(serviceAccount: any): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const payload = {
-    iss: serviceAccount.client_email,
-    scope: "https://www.googleapis.com/auth/androidpublisher",
-    aud: "https://oauth2.googleapis.com/token",
-    iat: now,
-    exp: now + 3600,
-  };
+  try {
+    if (!serviceAccount.client_email) {
+      throw new Error("Service account missing client_email");
+    }
+    if (!serviceAccount.private_key) {
+      throw new Error("Service account missing private_key");
+    }
 
-  const encoder = new TextEncoder();
-  const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const unsignedToken = `${headerB64}.${payloadB64}`;
+    const now = Math.floor(Date.now() / 1000);
+    const header = { alg: "RS256", typ: "JWT" };
+    const payload = {
+      iss: serviceAccount.client_email,
+      scope: "https://www.googleapis.com/auth/androidpublisher",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    };
 
-  const privateKeyPem = serviceAccount.private_key;
-  const pemContents = privateKeyPem
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\s/g, "");
-  const binaryKey = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
+    const encoder = new TextEncoder();
+    const headerB64 = btoa(JSON.stringify(header)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    const payloadB64 = btoa(JSON.stringify(payload)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+    const unsignedToken = `${headerB64}.${payloadB64}`;
 
-  const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryKey,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
+    const privateKeyPem = serviceAccount.private_key;
+    const pemContents = privateKeyPem
+      .replace("-----BEGIN PRIVATE KEY-----", "")
+      .replace("-----END PRIVATE KEY-----", "")
+      .replace(/\s/g, "");
+    
+    if (!pemContents) {
+      throw new Error("Invalid private key format");
+    }
 
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    encoder.encode(unsignedToken)
-  );
+    const binaryKey = Uint8Array.from(atob(pemContents), (c) => c.charCodeAt(0));
 
-  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    const cryptoKey = await crypto.subtle.importKey(
+      "pkcs8",
+      binaryKey,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
 
-  const jwt = `${unsignedToken}.${signatureB64}`;
+    const signature = await crypto.subtle.sign(
+      "RSASSA-PKCS1-v1_5",
+      cryptoKey,
+      encoder.encode(unsignedToken)
+    );
 
-  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
-  });
+    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
 
-  const tokenData = await tokenResponse.json();
-  if (!tokenData.access_token) {
-    throw new Error("Failed to get Google access token");
+    const jwt = `${unsignedToken}.${signatureB64}`;
+
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+    });
+
+    const tokenData = await tokenResponse.json();
+    
+    if (!tokenResponse.ok) {
+      console.error("Token request failed:", tokenData);
+      throw new Error(`Failed to get Google access token: ${tokenData.error || tokenResponse.statusText}`);
+    }
+    
+    if (!tokenData.access_token) {
+      throw new Error("Google access token response missing access_token");
+    }
+    
+    return tokenData.access_token;
+  } catch (error: any) {
+    console.error("Error getting Google access token:", error);
+    throw new Error(`Google Service Account authentication failed: ${error.message}`);
   }
-  return tokenData.access_token;
 }
 
 async function verifyGooglePlayPurchase(
@@ -87,17 +111,39 @@ async function verifyGooglePlayPurchase(
 ): Promise<{ purchaseState: number }> {
   const url = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${packageName}/purchases/products/${productId}/tokens/${purchaseToken}`;
 
+  console.log("Verifying purchase:", { packageName, productId, purchaseTokenLength: purchaseToken?.length });
+
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error("Google Play API error:", error);
-    throw new Error(`Google Play verification failed: ${response.status}`);
+    const errorText = await response.text();
+    let errorMessage = `Google Play verification failed: ${response.status}`;
+    
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.error?.message || errorMessage;
+      console.error("Google Play API error details:", errorJson);
+    } catch {
+      console.error("Google Play API error (raw):", errorText);
+    }
+    
+    // More specific error messages
+    if (response.status === 401) {
+      throw new Error("Google Service Account authentication failed. Please check GOOGLE_SERVICE_ACCOUNT_JSON configuration.");
+    } else if (response.status === 403) {
+      throw new Error("Google Service Account does not have permission to verify purchases. Please grant 'View financial data' permission in Google Play Console.");
+    } else if (response.status === 404) {
+      throw new Error("Purchase not found. This may be a test purchase or the purchase token is invalid.");
+    } else {
+      throw new Error(errorMessage);
+    }
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log("Google Play verification result:", { purchaseState: result.purchaseState });
+  return result;
 }
 
 serve(async (req) => {
@@ -149,6 +195,7 @@ serve(async (req) => {
       );
     }
 
+    // Google Play verification
     if (!skipVerification && googleServiceAccountJson && purchaseToken) {
       try {
         const serviceAccount = JSON.parse(googleServiceAccountJson);
@@ -156,6 +203,7 @@ serve(async (req) => {
         const verification = await verifyGooglePlayPurchase(packageName, productId, purchaseToken, accessToken);
 
         if (verification.purchaseState !== 0) {
+          console.error("Purchase state not completed:", verification.purchaseState);
           return new Response(
             JSON.stringify({ success: false, totalCoins: 0, error: "Purchase not completed" }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -163,16 +211,33 @@ serve(async (req) => {
         }
         console.log("Google Play verification successful");
       } catch (verifyError: any) {
-        console.error("Google verification error:", verifyError.message);
+        console.error("Google verification error:", verifyError.message, verifyError);
+        // If verification fails but we have purchaseToken, log it but continue if skipVerification is enabled
+        // Otherwise, return error
         if (!skipVerification) {
+          // More detailed error message
+          const errorMsg = verifyError.message || "Unknown verification error";
+          console.error("Full verification error:", JSON.stringify(verifyError, null, 2));
           return new Response(
-            JSON.stringify({ success: false, totalCoins: 0, error: "Purchase verification failed: " + verifyError.message }),
+            JSON.stringify({ 
+              success: false, 
+              totalCoins: 0, 
+              error: `Purchase verification failed: ${errorMsg}. Please check Google Service Account configuration.` 
+            }),
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
+        } else {
+          console.log("Verification failed but skipVerification is enabled, continuing...");
         }
       }
     } else {
-      console.log("Skipping Google verification - processing purchase directly");
+      if (!purchaseToken) {
+        console.log("No purchaseToken provided - processing without verification");
+      } else if (!googleServiceAccountJson) {
+        console.log("No Google Service Account configured - processing without verification");
+      } else {
+        console.log("Skipping Google verification (SKIP_GOOGLE_VERIFICATION=true)");
+      }
     }
 
     const totalCoins = coinInfo.coins + coinInfo.bonus;
