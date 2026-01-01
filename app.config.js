@@ -11,7 +11,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.novea.app",
-      associatedDomains: ["applinks:noveaindonesia.com", "applinks:www.noveaindonesia.com"]
+      associatedDomains: ["applinks:noveaindonesia.com"]
     },
     android: {
       adaptiveIcon: {
@@ -41,16 +41,6 @@ module.exports = {
             {
               scheme: "https",
               host: "noveaindonesia.com",
-              pathPrefix: "/user"
-            },
-            {
-              scheme: "https",
-              host: "www.noveaindonesia.com",
-              pathPrefix: "/novel"
-            },
-            {
-              scheme: "https",
-              host: "www.noveaindonesia.com",
               pathPrefix: "/user"
             }
           ],
