@@ -6,7 +6,11 @@
   "cleanUrls": false,
   "rewrites": [
     {
-      "source": "/((?!\\.well-known).*)",
+      "source": "/.well-known/:path*",
+      "destination": "/.well-known/:path*"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
@@ -22,10 +26,6 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
         }
       ]
     }
