@@ -1,20 +1,17 @@
-const IS_EAS_BUILD = process.env.EAS_BUILD === 'true';
-
-const GOOGLE_TEST_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
-
-const config = {
+module.exports = {
   expo: {
     name: "Novea",
     slug: "novea",
-    version: "4.0.0",
-    orientation: "portrait",
+    version: "4.0.5",
+    orientation: "default",
     icon: "./assets/images/icon.png",
     scheme: "novea",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.novea.app"
+      bundleIdentifier: "com.novea.app",
+      associatedDomains: ["applinks:noveaindonesia.com", "applinks:www.noveaindonesia.com"]
     },
     android: {
       adaptiveIcon: {
@@ -23,16 +20,43 @@ const config = {
         backgroundImage: "./assets/images/android-icon-background.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png"
       },
-      edgeToEdgeEnabled: true,
+      // Disabled untuk menghindari deprecated API di Android 15
+      // edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
+      resizeableActivity: true,
+      softwareKeyboardLayoutMode: "pan",
       package: "com.novea.app",
-      versionCode: 5,
-      permissions: ["com.android.vending.BILLING"]
-    },
-    web: {
-      output: "single",
-      favicon: "./assets/images/favicon.png",
-      bundler: "metro"
+      versionCode: 10,
+      permissions: ["com.android.vending.BILLING"],
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "noveaindonesia.com",
+              pathPrefix: "/novel"
+            },
+            {
+              scheme: "https",
+              host: "noveaindonesia.com",
+              pathPrefix: "/user"
+            },
+            {
+              scheme: "https",
+              host: "www.noveaindonesia.com",
+              pathPrefix: "/novel"
+            },
+            {
+              scheme: "https",
+              host: "www.noveaindonesia.com",
+              pathPrefix: "/user"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     plugins: [
       [
@@ -42,38 +66,26 @@ const config = {
           imageWidth: 200,
           resizeMode: "contain",
           backgroundColor: "#ffffff",
-          dark: {
-            backgroundColor: "#000000"
-          }
+          dark: { backgroundColor: "#000000" }
         }
       ],
       "expo-web-browser",
       "react-native-iap",
+      [
+        "react-native-google-mobile-ads",
+        {
+          androidAppId: "ca-app-pub-4233873340910338~9509478256"
+        }
+      ]
     ],
-    experiments: {
-      reactCompiler: true
-    },
     extra: {
       eas: {
-        projectId: "519dbc22-beb2-443b-8192-4fccf3226146"
+        projectId: "751416dd-a4c9-4b9d-9b28-299e73879b73"
       },
-      admobAppId: process.env.ADMOB_APP_ID || null,
-      admobBannerId: process.env.ADMOB_BANNER_ID || null,
-      admobInterstitialId: process.env.ADMOB_INTERSTITIAL_ID || null,
-      admobRewardedId: process.env.ADMOB_REWARDED_ID || null,
+      admobAppId: "ca-app-pub-4233873340910338~9509478256",
+      admobBannerId: "ca-app-pub-4233873340910338/6726584004",
+      admobInterstitialId: "ca-app-pub-4233873340910338/8627641424",
+      admobRewardedId: "ca-app-pub-4233873340910338/4119945424"
     }
   }
 };
-
-if (IS_EAS_BUILD) {
-  const admobAppId = process.env.ADMOB_APP_ID || GOOGLE_TEST_APP_ID;
-  
-  config.expo.plugins.push([
-    "react-native-google-mobile-ads",
-    {
-      androidAppId: admobAppId,
-    }
-  ]);
-}
-
-module.exports = config;
