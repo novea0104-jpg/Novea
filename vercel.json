@@ -6,7 +6,11 @@
   "cleanUrls": false,
   "rewrites": [
     {
-      "source": "/((?!\\.well-known).*)",
+      "source": "/.well-known/:path*",
+      "destination": "/.well-known/:path*"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
