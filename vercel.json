@@ -3,10 +3,14 @@
   "outputDirectory": "static-build",
   "installCommand": "echo 'Skipping install'",
   "framework": null,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/((?!.well-known).*)",
-      "destination": "/index.html"
+      "src": "/.well-known/(.*)",
+      "dest": "/.well-known/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ],
   "headers": [
